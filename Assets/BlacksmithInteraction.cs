@@ -2,9 +2,8 @@ using UnityEngine;
 
 public class BlacksmithInteraction : MonoBehaviour
 {
-    [Header("Ustawienia Interakcji")]
-    public float reachDistance = 3f;
-    public Transform holdPosition; // Miejsce, gdzie trzymamy przedmiot
+    [Header("Ustawienia Interakcji")] public float reachDistance = 3f;
+    public Transform holdPosition;
 
     private Camera playerCamera;
     private GameObject heldItem;
@@ -17,76 +16,71 @@ public class BlacksmithInteraction : MonoBehaviour
 
     void Update()
     {
-        // LEWY PRZYCISK MYSZY - Kucie m³otem
         if (Input.GetMouseButtonDown(0))
         {
-            HitWithHammer();
+            if (!TryPickUp())
+                TryInteract(KeyCode.Mouse0);
         }
 
-        // PRAWY PRZYCISK MYSZY - Podnoszenie / Upuszczanie
         if (Input.GetMouseButtonDown(1))
         {
-            if (heldItem == null)
-            {
-                TryPickUp();
-            }
-            else
-            {
+            if (heldItem != null)
                 DropItem();
-            }
+            else
+                TryInteract(KeyCode.Mouse1);
         }
     }
 
-    void HitWithHammer()
-    {
-        // Zabezpieczenie: nie kujemy metalu, kiedy trzymamy go w powietrzu!
-        if (heldItem != null) return;
-
-        Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
-        if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
-        {
-            IronPiece iron = hit.collider.GetComponent<IronPiece>();
-            if (iron != null)
-            {
-                iron.HitMetal();
-            }
-        }
-    }
-
-    void TryPickUp()
+    bool TryInteract(KeyCode key)
     {
         Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
         if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
         {
-            IronPiece iron = hit.collider.GetComponent<IronPiece>();
-            if (iron != null)
-            {
-                heldItem = hit.collider.gameObject;
-                heldItemRb = heldItem.GetComponent<Rigidbody>();
+            IInteractable interactable = hit.collider.GetComponent<IInteractable>();
+            if (interactable == null) return false;
 
-                if (heldItemRb != null)
-                {
-                    // Wy³¹czamy grawitacjê i fizykê na czas trzymania, ¿eby obiekt nie wariowa³
-                    heldItemRb.useGravity = false;
-                    heldItemRb.isKinematic = true;
-                }
-
-                // Podpinamy sztabkê pod nasz punkt trzymania
-                heldItem.transform.SetParent(holdPosition);
-                heldItem.transform.localPosition = Vector3.zero; // Œrodkujemy w punkcie
-                heldItem.transform.localRotation = Quaternion.identity; // Resetujemy obrót
-            }
+            interactable.Interact(key);
+            return true;
         }
+        return false;
+    }
+
+    bool TryPickUp()
+    {
+        if (heldItem != null) return false;
+
+        Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
+        if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
+        {
+            IPickable pickable = hit.collider.GetComponent<IPickable>();
+            if (pickable == null) return false;
+
+            heldItem = hit.collider.gameObject;
+            heldItemRb = heldItem.GetComponent<Rigidbody>();
+
+            if (heldItemRb != null)
+            {
+                heldItemRb.useGravity = false;
+                heldItemRb.isKinematic = true;
+            }
+
+            heldItem.transform.SetParent(holdPosition);
+            heldItem.transform.localPosition = Vector3.zero;
+            heldItem.transform.localRotation = Quaternion.identity;
+
+            pickable.OnPickUp();
+            return true;
+        }
+        return false;
     }
 
     void DropItem()
     {
-        // Odepinamy sztabkê od gracza
+        heldItem.GetComponent<IPickable>()?.OnDrop();
         heldItem.transform.SetParent(null);
 
         if (heldItemRb != null)
         {
-            // W³¹czamy grawitacjê i fizykê z powrotem, ¿eby sztabka spad³a
             heldItemRb.useGravity = true;
             heldItemRb.isKinematic = false;
         }
