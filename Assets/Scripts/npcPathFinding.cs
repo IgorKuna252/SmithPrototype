@@ -35,6 +35,12 @@ public class npcPathFinding : MonoBehaviour, IInteractable
     public string ShowStats()
     {
         if (citizenStats == null) return "Brak danych";
-        return citizenStats.GetStats(); // metoda instancji, nie statyczna!
+        return citizenStats.GetStats();
+    }
+    
+    public void MoveToQueuePosition(Vector3 position)
+    {
+        agentNPC.updateRotation = false;
+        agentNPC.SetDestination(position);
     }
 }

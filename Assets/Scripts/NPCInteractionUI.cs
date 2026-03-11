@@ -18,11 +18,15 @@ public class NPCInteractionUI : MonoBehaviour
     public Button rejectButton;
 
     private npcPathFinding currentNPC;
+    private BlacksmithInteraction blacksmith;
+    private prefabSpawning queue;
 
     void Awake()
     {
         Instance = this;
         panel.SetActive(false);
+        blacksmith = FindObjectOfType<BlacksmithInteraction>();
+        queue = FindObjectOfType<prefabSpawning>();
     }
 
     public void Show(npcPathFinding npc)
@@ -30,7 +34,6 @@ public class NPCInteractionUI : MonoBehaviour
         currentNPC = npc;
         panel.SetActive(true);
 
-        // Statyczne statystyki na razie
         npcNameText.text = "Wędrowiec";
         npcStatsText.text = npc.ShowStats();
 
@@ -44,14 +47,14 @@ public class NPCInteractionUI : MonoBehaviour
     void OnAccept()
     {
         currentNPC.Interact(KeyCode.Mouse1);
-        BlacksmithInteraction blacksmith = FindObjectOfType<BlacksmithInteraction>();
+        queue.OnNPCProcessed();
         blacksmith.CloseNPCInteraction();
     }
 
     void OnReject()
     {
         currentNPC.Interact(KeyCode.Mouse0);
-        BlacksmithInteraction blacksmith = FindObjectOfType<BlacksmithInteraction>();
+        queue.OnNPCProcessed();
         blacksmith.CloseNPCInteraction();
     }
 

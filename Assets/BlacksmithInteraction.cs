@@ -20,7 +20,6 @@ public class BlacksmithInteraction : MonoBehaviour
 
     void Update()
     {
-        // Jeśli jesteśmy w trybie interakcji z NPC - blokujemy wszystko inne
         if (isInteractingWithNPC)
         {
             if (Input.GetKeyDown(KeyCode.Escape))
@@ -41,8 +40,6 @@ public class BlacksmithInteraction : MonoBehaviour
         {
             if (heldItem != null)
                 DropItem();
-            else
-                TryInteract(KeyCode.Mouse1);
         }
     }
 
@@ -54,7 +51,6 @@ public class BlacksmithInteraction : MonoBehaviour
             npcPathFinding npc = hit.collider.GetComponent<npcPathFinding>();
             if (npc == null) return;
 
-            // Blokujemy gracza i kamerę
             isInteractingWithNPC = true;
             playerMovement.enabled = false;
             Cursor.lockState = CursorLockMode.None;

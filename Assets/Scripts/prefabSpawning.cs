@@ -1,27 +1,56 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class prefabSpawning : MonoBehaviour
 {
     [SerializeField] GameObject prefabObject;
-    private static int spawnedCount = 5; 
-    [SerializeField] GameObject[] spawnedObjects;
+    [SerializeField] int spawnedCount = 5;
     [SerializeField] Transform spawnObject;
     [SerializeField] Transform targetNPCReject;
     [SerializeField] Transform targetNPCAccept;
+    [SerializeField] float queueSpacing = 1.5f;
+
+    private Queue<GameObject> npcQueue = new Queue<GameObject>();
+    private List<Vector3> queuePositions = new List<Vector3>();
+
     void Start()
     {
-        spawnedObjects = new GameObject[spawnedCount];
+        Vector3 origin = spawnObject.position;
+
         for (int i = 0; i < spawnedCount; i++)
         {
-            Vector3 spawnPosition = spawnObject.transform.position;
-            spawnedObjects[i] = Instantiate(prefabObject, spawnPosition, Quaternion.identity);
-            npcPathFinding npc = spawnedObjects[i].GetComponent<npcPathFinding>();
-            npc.rejectObject = targetNPCReject.transform;
-            npc.acceptObject = targetNPCAccept.transform;
-            ExiledCitizen citizen = spawnedObjects[i].GetComponent<ExiledCitizen>();
+            queuePositions.Add(origin + spawnObject.right * (i * queueSpacing));
+
+            GameObject obj = Instantiate(prefabObject, queuePositions[i], Quaternion.identity);
+
+            npcPathFinding npc = obj.GetComponent<npcPathFinding>();
+            npc.rejectObject = targetNPCReject;
+            npc.acceptObject = targetNPCAccept;
+
+            ExiledCitizen citizen = obj.GetComponent<ExiledCitizen>();
             citizen.GenerateRandomStats();
-            Debug.Log(spawnedObjects[i].name + " - Health: " + citizen.health + "/" + citizen.maxHealth + ", Strength: " + citizen.strength + ", Stamina: " + citizen.stamina);
-            spawnObject.transform.position += new Vector3(1.5f, 0, 0);
+
+            npcQueue.Enqueue(obj);
         }
+    }
+
+    public void OnNPCProcessed()
+    {
+        if (npcQueue.Count == 0) return;
+
+        npcQueue.Dequeue();
+
+        int index = 0;
+        foreach (GameObject npcObj in npcQueue)
+        {
+            npcObj.GetComponent<npcPathFinding>().MoveToQueuePosition(queuePositions[index]);
+            index++;
+        }
+    }
+
+    public GameObject GetFirstInQueue()
+    {
+        if (npcQueue.Count == 0) return null;
+        return npcQueue.Peek();
     }
 }
