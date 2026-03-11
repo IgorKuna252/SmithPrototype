@@ -2,20 +2,35 @@ using UnityEngine;
 
 public class BlacksmithInteraction : MonoBehaviour
 {
-    [Header("Ustawienia Interakcji")] public float reachDistance = 3f;
+    [Header("Ustawienia Interakcji")] 
+    public float reachDistance = 3f;
     public Transform holdPosition;
 
     private Camera playerCamera;
     private GameObject heldItem;
     private Rigidbody heldItemRb;
+    private PlayerMovement playerMovement;
+    private bool isInteractingWithNPC = false;
 
     void Start()
     {
         playerCamera = GetComponentInChildren<Camera>();
+        playerMovement = GetComponent<PlayerMovement>();
     }
 
     void Update()
     {
+        // Jeśli jesteśmy w trybie interakcji z NPC - blokujemy wszystko inne
+        if (isInteractingWithNPC)
+        {
+            if (Input.GetKeyDown(KeyCode.Escape))
+                CloseNPCInteraction();
+            return;
+        }
+
+        if (Input.GetKeyDown(KeyCode.E))
+            TryInteractWithNPC();
+
         if (Input.GetMouseButtonDown(0))
         {
             if (!TryPickUp())
@@ -29,6 +44,34 @@ public class BlacksmithInteraction : MonoBehaviour
             else
                 TryInteract(KeyCode.Mouse1);
         }
+    }
+
+    void TryInteractWithNPC()
+    {
+        Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
+        if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
+        {
+            npcPathFinding npc = hit.collider.GetComponent<npcPathFinding>();
+            if (npc == null) return;
+
+            // Blokujemy gracza i kamerę
+            isInteractingWithNPC = true;
+            playerMovement.enabled = false;
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+
+            NPCInteractionUI.Instance.Show(npc);
+        }
+    }
+
+    public void CloseNPCInteraction()
+    {
+        isInteractingWithNPC = false;
+        playerMovement.enabled = true;
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+
+        NPCInteractionUI.Instance.Hide();
     }
 
     bool TryInteract(KeyCode key)
