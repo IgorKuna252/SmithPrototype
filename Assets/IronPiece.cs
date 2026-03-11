@@ -1,96 +1,171 @@
 using UnityEngine;
 
+[RequireComponent(typeof(MeshFilter))]
+[RequireComponent(typeof(MeshCollider))]
 public class IronPiece : MonoBehaviour
 {
     [Header("Ustawienia Temperatury")]
-    public float currentTemperature = 20f; // Temperatura pokojowa
+    public float currentTemperature = 20f;
     public float maxTemperature = 1000f;
-    public float coolingRate = 10f; // Jak szybko stygnie
-    public float forgingTemperature = 500f; // Minimalna temp. do kucia
+    public float coolingRate = 10f;
+    public float forgingTemperature = 500f;
 
-    [Header("Ustawienia Kucia")]
-    public int hitsRequired = 10; // Ile uderzeñ potrzeba do ukoñczenia
-    private int currentHits = 0;
-    public bool isFinished = false;
+    [Header("Ustawienia Deformacji (Nowe!)")]
+    public float deformRadius = 0.01f; // Jak szeroki jest m³ot
+    public float deformForce = 0.05f;  // Jak mocno jedno uderzenie wgniata metal
+    public float minThickness = 0.15f; // Maksymalna deformacja (¿eby nie zrobiæ z tego naleœnika)
+    public float grindRadius = 0.30f;
 
+    private MeshFilter meshFilter;
+    private MeshCollider meshCollider;
+    private Mesh mesh;
+    private Vector3[] vertices;
     private MeshRenderer meshRenderer;
     private bool isInForge = false;
 
     void Start()
     {
         meshRenderer = GetComponent<MeshRenderer>();
+        meshFilter = GetComponent<MeshFilter>();
+        meshCollider = GetComponent<MeshCollider>();
+
+        // Klonujemy siatkê, ¿eby nie zepsuæ oryginalnego pliku na dysku!
+        mesh = meshFilter.mesh;
+        vertices = mesh.vertices;
     }
 
     void Update()
     {
-        // Ch³odzenie metalu, jeœli nie jest w piecu
         if (!isInForge && currentTemperature > 20f)
         {
             currentTemperature -= coolingRate * Time.deltaTime;
         }
-
         UpdateVisuals();
     }
 
-    // Funkcja wywo³ywana, gdy klikniemy na obiekt metalu (symulacja uderzenia m³otem)
-    public void HitMetal()
+    // Nowa funkcja HitMetal przyjmuje teraz DOK£ADNY punkt i k¹t uderzenia
+    public void HitMetal(Vector3 hitPoint, Vector3 hitNormal)
     {
-        if (isFinished) return;
-
         if (currentTemperature >= forgingTemperature)
         {
-            currentHits++;
-            Debug.Log($"Uderzenie! Postêp: {currentHits}/{hitsRequired}");
-
-            // Skalowanie obiektu, aby symulowaæ sp³aszczanie/wyd³u¿anie
-            transform.localScale = new Vector3(
-                transform.localScale.x + 0.01f,
-                transform.localScale.y - 0.01f,
-                transform.localScale.z + 0.05f
-            );
-
-            if (currentHits >= hitsRequired)
-            {
-                isFinished = true;
-                Debug.Log("Przedmiot zosta³ pomyœlnie wykuty!");
-                // Tutaj mo¿esz podmieniæ model na gotowy miecz
-            }
+            Debug.Log("Kucie! Deformacja siatki...");
+            DeformMesh(hitPoint, hitNormal);
         }
         else
         {
-            Debug.Log("Metal jest zbyt zimny, by go kuæ! W³ó¿ go do pieca.");
+            Debug.Log("Metal jest zbyt zimny, by go kuæ!");
         }
     }
 
-    // Funkcje do wykrywania pieca
+    // G£ÓWNA MATEMATYKA DEFORMACJI
+    // G£ÓWNA MATEMATYKA ROZLEWANIA (Rozp³aszczanie na boki)
+    // G£ÓWNA MATEMATYKA KUCIA (Sp³aszczanie i rozlewanie)
+    // G£ÓWNA MATEMATYKA KUCIA (Kontrolowane wyd³u¿anie - zero bananów!)
+    // G£ÓWNA MATEMATYKA KUCIA (Z zachowaniem masy / oporem materia³u)
+    // G£ÓWNA MATEMATYKA KUCIA (Naprawa stoj¹cych œcian i symetrii!)
+    private void DeformMesh(Vector3 hitPoint, Vector3 hitNormal)
+    {
+        Vector3 localHitPoint = transform.InverseTransformPoint(hitPoint);
+
+        // 1. OBLICZAMY OPÓR DLA CA£EGO UDERZENIA (A nie dla ka¿dego wierzcho³ka osobno!)
+        // Sprawdzamy, jak gruba jest sztabka w miejscu uderzenia m³ota.
+        float currentThickness = Mathf.Abs(localHitPoint.y) * 2f;
+
+        // Zabezpieczenie na wypadek uderzenia idealnie z boku
+        if (currentThickness < 0.005f) currentThickness = minThickness + 0.05f;
+
+        float resistanceFactor = Mathf.Clamp01((currentThickness - minThickness) / 0.02f);
+
+        if (resistanceFactor <= 0.01f) return; // Jeœli uderzy³eœ w p³askie miejsce, nic siê nie dzieje
+
+        bool wasDeformed = false;
+
+        for (int i = 0; i < vertices.Length; i++)
+        {
+            float distance = Vector3.Distance(localHitPoint, vertices[i]);
+
+            if (distance < deformRadius)
+            {
+                float baseForce = (deformRadius - distance) / deformRadius;
+                float finalForce = baseForce * deformForce * resistanceFactor;
+
+                // 2. BEZPIECZNE KIERUNKI (Naprawa wierzcho³ków uciekaj¹cych i stoj¹cych w miejscu)
+                // Zastêpujemy felerne Mathf.Sign w³asn¹, bezpieczn¹ logik¹ (zwracaj¹c¹ 0 dla œrodka)
+                float dirY = vertices[i].y > 0.001f ? 1f : (vertices[i].y < -0.001f ? -1f : 0f);
+                float dirZ = vertices[i].z > 0.001f ? 1f : (vertices[i].z < -0.001f ? -1f : 0f);
+                float dirX = vertices[i].x > 0.001f ? 1f : (vertices[i].x < -0.001f ? -1f : 0f);
+
+                // SP£ASZCZANIE 
+                float targetY = dirY * (minThickness / 2f);
+                vertices[i].y = Mathf.Lerp(vertices[i].y, targetY, finalForce);
+
+                // WYD£U¯ANIE I POSZERZANIE (Teraz ca³e œciany boczne id¹ równo!)
+                vertices[i].z += dirZ * (finalForce * 0.08f);
+                vertices[i].x += dirX * (finalForce * 0.01f);
+
+                wasDeformed = true;
+            }
+        }
+
+        if (wasDeformed)
+        {
+            mesh.vertices = vertices;
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            meshCollider.sharedMesh = null;
+            meshCollider.sharedMesh = mesh;
+        }
+    }
+
+    /// OSTATECZNE SZLIFOWANIE: Precyzyjne ³apanie tylko najbli¿szych wierzcho³ków
+    public void SharpenEdge(Vector3 hitPoint)
+    {
+        Vector3 localHitPoint = transform.InverseTransformPoint(hitPoint);
+        bool wasDeformed = false;
+
+        for (int i = 0; i < vertices.Length; i++)
+        {
+            float distance = Vector3.Distance(localHitPoint, vertices[i]);
+
+            // U¿ywamy dedykowanego, ma³ego promienia z Inspektora!
+            if (distance < grindRadius)
+            {
+                float force = (grindRadius - distance) / grindRadius;
+
+                // Œcinamy krawêdŸ. Zwiêkszy³em mno¿nik (0.2f), ¿eby dzia³a³o szybciej na ma³ym obszarze.
+                vertices[i].y = Mathf.Lerp(vertices[i].y, 0f, force * 0.2f);
+
+                wasDeformed = true;
+            }
+        }
+
+        if (wasDeformed)
+        {
+            mesh.vertices = vertices;
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            meshCollider.sharedMesh = null;
+            meshCollider.sharedMesh = mesh;
+        }
+    }
+
     void OnTriggerStay(Collider other)
     {
         if (other.CompareTag("Forge"))
         {
             isInForge = true;
-            // Ogrzewanie metalu
-            if (currentTemperature < maxTemperature)
-            {
-                currentTemperature += 50f * Time.deltaTime;
-            }
+            if (currentTemperature < maxTemperature) currentTemperature += 50f * Time.deltaTime;
         }
     }
 
     void OnTriggerExit(Collider other)
     {
-        if (other.CompareTag("Forge"))
-        {
-            isInForge = false;
-        }
+        if (other.CompareTag("Forge")) isInForge = false;
     }
 
-    // Zmiana koloru w zale¿noœci od temperatury (od szarego do czerwono-¿ó³tego)
     void UpdateVisuals()
     {
-        float temperatureNormalized = (currentTemperature - 20f) / (maxTemperature - 20f);
-        Color coldColor = Color.gray;
-        Color hotColor = new Color(1f, 0.4f, 0f); // ¯arz¹cy siê pomarañczowy
-
-        meshRenderer.material.color = Color.Lerp(coldColor, hotColor, temperatureNormalized);
+        float tempNormalized = (currentTemperature - 20f) / (maxTemperature - 20f);
+        meshRenderer.material.color = Color.Lerp(Color.gray, new Color(1f, 0.4f, 0f), tempNormalized);
     }
 }

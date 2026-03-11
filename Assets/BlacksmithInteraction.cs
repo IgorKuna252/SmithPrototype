@@ -6,6 +6,8 @@ public class BlacksmithInteraction : MonoBehaviour
     public float reachDistance = 3f;
     public Transform holdPosition; // Miejsce, gdzie trzymamy przedmiot
 
+    public Vector3 holdRotation = new Vector3(90f, 0f, 0f);
+
     private Camera playerCamera;
     private GameObject heldItem;
     private Rigidbody heldItemRb;
@@ -39,16 +41,18 @@ public class BlacksmithInteraction : MonoBehaviour
 
     void HitWithHammer()
     {
-        // Zabezpieczenie: nie kujemy metalu, kiedy trzymamy go w powietrzu!
         if (heldItem != null) return;
 
         Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
+
+        // U¿ywamy "out hit", ¿eby pobraæ dok³adne dane o punkcie kolizji
         if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
         {
             IronPiece iron = hit.collider.GetComponent<IronPiece>();
             if (iron != null)
             {
-                iron.HitMetal();
+                // Przekazujemy dok³adny punkt (hit.point) i k¹t uderzenia (hit.normal)
+                iron.HitMetal(hit.point, hit.normal);
             }
         }
     }
@@ -74,7 +78,7 @@ public class BlacksmithInteraction : MonoBehaviour
                 // Podpinamy sztabkê pod nasz punkt trzymania
                 heldItem.transform.SetParent(holdPosition);
                 heldItem.transform.localPosition = Vector3.zero; // Œrodkujemy w punkcie
-                heldItem.transform.localRotation = Quaternion.identity; // Resetujemy obrót
+                heldItem.transform.localRotation = Quaternion.Euler(holdRotation);
             }
         }
     }
