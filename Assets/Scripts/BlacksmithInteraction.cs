@@ -80,7 +80,16 @@ public class BlacksmithInteraction : MonoBehaviour
             IInteractable interactable = hit.collider.GetComponent<IInteractable>();
             if (interactable == null) return false;
 
-            return interactable.Interact(key);
+            if (!interactable.Interact(key)) return false;
+
+            // Jeśli to IronPiece, przekaż punkt uderzenia do deformacji mesh
+            IronPiece iron = hit.collider.GetComponent<IronPiece>();
+            if (iron != null)
+            {
+                iron.HitMetal(hit.point, hit.normal);
+            }
+
+            return true;
         }
         return false;
     }
