@@ -142,19 +142,7 @@ public class BlacksmithInteraction : MonoBehaviour
                     return;
                 }
             }
-            Anvil anvil = hit.collider.GetComponent<Anvil>();
-            if (table != null)
-            {
-                // Mamy ¿elazo i stó³ nie ma jeszcze ¿elaza
-                if (heldIron != null && !table.HasMetal())
-                {
-                    table.PlaceMetal(heldIron);
-                    ClearHand();
-                    return;
-                }
-            }
-
-            }
+        }
 
         // Jeœli nie trafiliœmy w stó³, albo miejsce jest zajête - rzucamy na ziemiê
         DropItem();
