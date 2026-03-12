@@ -9,7 +9,7 @@ public class IronPiece : MonoBehaviour
     public float forgingTemperature = 500f; // Minimalna temp. do kucia
 
     [Header("Ustawienia Kucia")]
-    public int hitsRequired = 10; // Ile uderzeñ potrzeba do ukoñczenia
+    public int hitsRequired = 5; // Ile uderzeñ potrzeba do ukoñczenia
     private int currentHits = 0;
     public bool isFinished = false;
 
@@ -42,10 +42,14 @@ public class IronPiece : MonoBehaviour
             currentHits++;
             Debug.Log($"Uderzenie! Postêp: {currentHits}/{hitsRequired}");
 
-            // Skalowanie obiektu, aby symulowaæ sp³aszczanie/wyd³u¿anie
+            float minThickness = 0.05f; // Minimalna gruboœæ na osi Y (mo¿esz j¹ zmieniæ!)
+            float newYScale = transform.localScale.y - 0.01f;
+
+            newYScale = Mathf.Max(newYScale, minThickness);
+
             transform.localScale = new Vector3(
                 transform.localScale.x + 0.01f,
-                transform.localScale.y - 0.01f,
+                newYScale, // U¿ywamy naszej bezpiecznej wartoœci
                 transform.localScale.z + 0.05f
             );
 
