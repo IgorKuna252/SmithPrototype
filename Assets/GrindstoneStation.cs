@@ -18,6 +18,9 @@ public class GrindstoneStation : MonoBehaviour
     private Vector3 originalCameraLocalPos;
     private Quaternion originalCameraLocalRot;
 
+    [Header("Efekty")]
+    public ParticleSystem sparksEffect;
+
     // ZABEZPIECZENIE: Czas wejścia do stacji, by uniknąć podwójnego kliknięcia
     private float grindStartTime = 0f;
 
@@ -106,10 +109,22 @@ public class GrindstoneStation : MonoBehaviour
         {
             currentIron.GrindPerfectEdge(-bladeSlidePosition, isFlipped);
             currentDip = Mathf.Lerp(currentDip, 0.04f, Time.deltaTime * 10f);
+
+            // NOWE: Włączamy iskry, jeśli jeszcze nie lecą
+            if (sparksEffect != null && !sparksEffect.isPlaying)
+            {
+                sparksEffect.Play();
+            }
         }
         else
         {
             currentDip = Mathf.Lerp(currentDip, 0f, Time.deltaTime * 10f);
+
+            // NOWE: Wyłączamy iskry, gdy puszczasz przycisk
+            if (sparksEffect != null && sparksEffect.isPlaying)
+            {
+                sparksEffect.Stop();
+            }
         }
 
         currentIron.transform.localPosition = new Vector3(currentDip, 0, bladeSlidePosition);
