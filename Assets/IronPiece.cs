@@ -141,7 +141,7 @@ public class IronPiece : MonoBehaviour
                     edgeFactor = Mathf.Clamp01(edgeFactor);
 
                     // Œcinamy krawêdŸ do zera
-                    vertices[i].y = Mathf.Lerp(vertices[i].y, 0f, edgeFactor * grindSpeed);
+                    vertices[i].y = Mathf.Lerp(vertices[i].y, 0.01f, edgeFactor * grindSpeed);
                     wasDeformed = true;
                 }
 

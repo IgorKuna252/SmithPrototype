@@ -791,6 +791,18 @@ PrefabInstance:
       value: fi_vil_forge_anvil
       objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: e73928dcf98647640a4d8bc67715e98f, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 2.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: e73928dcf98647640a4d8bc67715e98f, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: e73928dcf98647640a4d8bc67715e98f, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: e73928dcf98647640a4d8bc67715e98f, type: 3}
       propertyPath: m_LocalPosition.x
       value: -16.860193
       objectReference: {fileID: 0}
@@ -6536,7 +6548,7 @@ MonoBehaviour:
   forgingTemperature: 500
   deformRadius: 0.6
   deformForce: 0.5
-  minThickness: 0.01
+  minThickness: 0.05
   grindRadius: 0.02
   tipLength: 0.05
   grindSpeed: 0.05
@@ -6551,7 +6563,7 @@ Rigidbody:
   serializedVersion: 5
   m_Mass: 1
   m_LinearDamping: 0
-  m_AngularDamping: 0.05
+  m_AngularDamping: 0.01
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -6567,7 +6579,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 2
 --- !u!64 &1561558950
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -18340,7 +18352,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 2
 --- !u!64 &1659780108
 MeshCollider:
   m_ObjectHideFlags: 0
