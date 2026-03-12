@@ -31,9 +31,9 @@ public class IronPiece : MonoBehaviour, IInteractable, IPickable
         UpdateVisuals();
     }
 
-    public void Interact(KeyCode key)
+    public bool Interact(KeyCode key)
     {
-        if (isFinished) return;
+        if (isFinished) return false;
 
         if (currentTemperature >= forgingTemperature)
         {
@@ -51,10 +51,12 @@ public class IronPiece : MonoBehaviour, IInteractable, IPickable
                 isFinished = true;
                 Debug.Log("Przedmiot został pomyślnie wykuty!");
             }
+            return true;
         }
         else
         {
             Debug.Log("Metal jest zbyt zimny, by go kuć! Włóż go do pieca.");
+            return false;
         }
     }
 

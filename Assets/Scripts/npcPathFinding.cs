@@ -24,12 +24,13 @@ public class npcPathFinding : MonoBehaviour, IInteractable
             agentNPC.SetDestination(target.position);
     }
 
-    public void Interact(KeyCode key)
+    public bool Interact(KeyCode key)
     {
         if (key == KeyCode.Mouse0)
             SetDestination(rejectObject);
         else if (key == KeyCode.Mouse1)
             SetDestination(acceptObject);
+        return true;
     }
 
     public string ShowStats()

@@ -32,14 +32,16 @@ public class BlacksmithInteraction : MonoBehaviour
 
         if (Input.GetMouseButtonDown(0))
         {
-            if (!TryPickUp())
-                TryInteract(KeyCode.Mouse0);
+            if (!TryInteract(KeyCode.Mouse0))
+                TryPickUp();
         }
 
         if (Input.GetMouseButtonDown(1))
         {
             if (heldItem != null)
                 DropItem();
+            else
+                TryPickUp();
         }
     }
 
@@ -78,8 +80,7 @@ public class BlacksmithInteraction : MonoBehaviour
             IInteractable interactable = hit.collider.GetComponent<IInteractable>();
             if (interactable == null) return false;
 
-            interactable.Interact(key);
-            return true;
+            return interactable.Interact(key);
         }
         return false;
     }

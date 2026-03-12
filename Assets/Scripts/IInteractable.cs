@@ -2,5 +2,5 @@ using UnityEngine;
 
 public interface IInteractable
 {
-    void Interact(KeyCode key);
+    bool Interact(KeyCode key);
 }
