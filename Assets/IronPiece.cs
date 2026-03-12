@@ -16,6 +16,11 @@ public class IronPiece : MonoBehaviour
     public float minThickness = 0.15f; // Maksymalna deformacja (¿eby nie zrobiæ z tego naleœnika)
     public float grindRadius = 0.30f;
 
+    [Header("Ustawienia Szpikulca (Zaktualizowane)")]
+    public float tipLength = 0.15f;      // Jak d³uga jest strefa czubka (Np. 15 centymetrów)
+    public float grindSpeed = 0.05f;     // GLOBALNA szybkoœæ - ¿eby nie by³o "natychmiastowo"
+    public float maxHalfWidth = 0.1f;    // Po³owa szerokoœci Twojej sztaby
+
     private MeshFilter meshFilter;
     private MeshCollider meshCollider;
     private Mesh mesh;
@@ -104,6 +109,71 @@ public class IronPiece : MonoBehaviour
                 vertices[i].x += dirX * (finalForce * 0.01f);
 
                 wasDeformed = true;
+            }
+        }
+
+        if (wasDeformed)
+        {
+            mesh.vertices = vertices;
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            meshCollider.sharedMesh = null;
+            meshCollider.sharedMesh = mesh;
+        }
+    }
+    // Zaktualizowana metoda GrindPerfectEdge - ostrzenie szpikulca jednostronnie i póŸniej z drugiej strony
+    public void GrindPerfectEdge(float localZPosition, bool isFlipped)
+    {
+        bool wasDeformed = false;
+        float stoneWidth = 0.05f;
+
+        float actualBladeLength = mesh.bounds.max.z;
+        float tipStartPoint = actualBladeLength - tipLength;
+
+        for (int i = 0; i < vertices.Length; i++)
+        {
+            if (Mathf.Abs(vertices[i].z - localZPosition) < stoneWidth)
+            {
+                // 1. OSTRZENIE KRAWÊDZI BOKU (Wybieramy stronê za pomoc¹ obrotu isFlipped)
+                if ((!isFlipped && vertices[i].x > 0.001f) || (isFlipped && vertices[i].x < -0.001f))
+                {
+                    float edgeFactor = Mathf.Abs(vertices[i].x) / maxHalfWidth;
+                    edgeFactor = Mathf.Clamp01(edgeFactor);
+
+                    // Œcinamy krawêdŸ do zera
+                    vertices[i].y = Mathf.Lerp(vertices[i].y, 0f, edgeFactor * grindSpeed);
+                    wasDeformed = true;
+                }
+
+                // 2. OSTRZENIE SZPIKULCA (Ca³kowita wolnoœæ kszta³tu)
+                if (vertices[i].z > tipStartPoint)
+                {
+                    float tipFactor = (vertices[i].z - tipStartPoint) / tipLength;
+                    tipFactor = Mathf.Clamp01(tipFactor);
+
+                    // CELUJEMY W ŒRODEK (0). Dziêki temu boki nigdy nie zamieni¹ siê miejscami!
+                    float targetWidth = Mathf.Lerp(maxHalfWidth, 0f, tipFactor);
+
+                    if (!isFlipped && vertices[i].x > 0.001f) // Szlifujemy PRAW¥ krawêdŸ
+                    {
+                        // ZASADA SUBTRAKTYWNA: Œcinamy TYLKO wtedy, gdy metal wystaje.
+                        // Dziêki temu raz zeszlifowany szpikulec "zastyga" i nie da siê go cofn¹æ!
+                        if (vertices[i].x > targetWidth)
+                        {
+                            vertices[i].x = Mathf.Lerp(vertices[i].x, targetWidth, grindSpeed * 0.1f);
+                            wasDeformed = true;
+                        }
+                    }
+                    else if (isFlipped && vertices[i].x < -0.001f) // Szlifujemy LEW¥ krawêdŸ
+                    {
+                        // To samo dla lewej strony (-targetWidth)
+                        if (vertices[i].x < -targetWidth)
+                        {
+                            vertices[i].x = Mathf.Lerp(vertices[i].x, -targetWidth, grindSpeed * 0.1f);
+                            wasDeformed = true;
+                        }
+                    }
+                }
             }
         }
 

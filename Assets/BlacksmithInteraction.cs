@@ -37,6 +37,21 @@ public class BlacksmithInteraction : MonoBehaviour
                 DropItem();
             }
         }
+        // KLIKNIÊCIE "E" - Wejœcie w stacjê (gdy patrzymy na ni¹ z obiektem w d³oni)
+        if (Input.GetKeyDown(KeyCode.E) && heldItem != null)
+        {
+            Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
+            if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
+            {
+                GrindstoneStation station = hit.collider.GetComponent<GrindstoneStation>();
+                if (station != null)
+                {
+                    // Rozpoczynamy mini-grê i "upuszczamy" obiekt z r¹k gracza na poczet stacji
+                    station.EnterGrindingMode(heldItem.GetComponent<IronPiece>());
+                    heldItem = null; // Opró¿niamy rêce gracza
+                }
+            }
+        }
     }
 
     void HitWithHammer()
