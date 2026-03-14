@@ -10,6 +10,9 @@ public class prefabSpawning : MonoBehaviour
     [SerializeField] Transform targetNPCAccept;
     [SerializeField] float queueSpacing = 1.5f;
 
+    [Header("Obiekt do trzymania przez NPC (opcjonalny)")]
+    [SerializeField] GameObject holdingObject;
+
     private Queue<GameObject> npcQueue = new Queue<GameObject>();
     private List<Vector3> queuePositions = new List<Vector3>();
 
@@ -29,6 +32,12 @@ public class prefabSpawning : MonoBehaviour
 
             ExiledCitizen citizen = obj.GetComponent<ExiledCitizen>();
             citizen.GenerateRandomStats();
+
+            if (holdingObject != null)
+            {
+                GameObject item = Instantiate(holdingObject);
+                npc.GiveItem(item);
+            }
 
             npcQueue.Enqueue(obj);
         }

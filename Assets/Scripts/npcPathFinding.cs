@@ -5,6 +5,7 @@ public class npcPathFinding : MonoBehaviour, IInteractable
 {
     NavMeshAgent agentNPC;
     ExiledCitizen citizenStats;
+    WeaponIKHandler weaponIK;
     public Transform rejectObject;
     public Transform acceptObject;
 
@@ -12,10 +13,36 @@ public class npcPathFinding : MonoBehaviour, IInteractable
     {
         agentNPC = GetComponent<NavMeshAgent>();
         citizenStats = GetComponent<ExiledCitizen>();
+        weaponIK = GetComponent<WeaponIKHandler>();
         if (citizenStats == null || agentNPC == null)
         {
             Debug.LogWarning("There is no NavMeshAgent or ExiledCitizen attached to " + gameObject.name);
         }
+    }
+
+    /// <summary>
+    /// Przekaż obiekt NPC-owi do trzymania przez IK.
+    /// </summary>
+    public void GiveItem(GameObject item)
+    {
+        if (weaponIK == null)
+            weaponIK = GetComponent<WeaponIKHandler>();
+
+        if (weaponIK == null)
+        {
+            Debug.LogWarning("Brak WeaponIKHandler na " + gameObject.name);
+            return;
+        }
+        weaponIK.SetHeldObject(item);
+    }
+
+    /// <summary>
+    /// Zabierz obiekt z rąk NPC.
+    /// </summary>
+    public void TakeItem()
+    {
+        if (weaponIK != null)
+            weaponIK.ClearHeldObject();
     }
 
     void SetDestination(Transform target)

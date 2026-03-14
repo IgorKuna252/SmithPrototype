@@ -276,6 +276,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   reachDistance: 3
   holdPosition: {fileID: 1101390372}
+  holdRotation: {x: 90, y: 0, z: 0}
 --- !u!114 &11554876
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1637,6 +1638,7 @@ GameObject:
   - component: {fileID: 711604994}
   - component: {fileID: 711604993}
   - component: {fileID: 711604992}
+  - component: {fileID: 711604998}
   m_Layer: 0
   m_Name: IronPiece
   m_TagString: Untagged
@@ -1660,8 +1662,13 @@ MonoBehaviour:
   maxTemperature: 1000
   coolingRate: 10
   forgingTemperature: 500
-  hitsRequired: 10
-  isFinished: 0
+  deformRadius: 0.01
+  deformForce: 0.05
+  minThickness: 0.15
+  grindRadius: 0.3
+  tipLength: 0.15
+  grindSpeed: 0.05
+  maxHalfWidth: 0.1
 --- !u!54 &711604993
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1782,6 +1789,28 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!64 &711604998
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 711604991}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1 &763026559
 GameObject:
   m_ObjectHideFlags: 0
@@ -2059,11 +2088,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5902d0d538df364fb1b512af4eeeed9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  prefabObject: {fileID: 2799431850128738207, guid: b7e0e60cdcf8b744590b2f15aa832e6b, type: 3}
-  spawnedObjects: []
+  prefabObject: {fileID: 7814115913216143297, guid: f4ed40878b733cb40944e8dff8bfc060, type: 3}
+  spawnedCount: 5
   spawnObject: {fileID: 1389533116}
   targetNPCReject: {fileID: 1511761701}
   targetNPCAccept: {fileID: 373495768}
+  queueSpacing: 1.5
+  holdingObject: {fileID: 6160454756867652827, guid: 2cb1d42e86013a442a6af6694fc63c05, type: 3}
 --- !u!4 &811233156
 Transform:
   m_ObjectHideFlags: 0
@@ -2073,7 +2104,7 @@ Transform:
   m_GameObject: {fileID: 811233154}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 9.6, y: -0, z: -11.97654}
+  m_LocalPosition: {x: 9.6, y: 0, z: -11.97654}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

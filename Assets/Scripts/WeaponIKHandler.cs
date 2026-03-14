@@ -3,80 +3,107 @@ using UnityEngine.Animations.Rigging;
 
 public class WeaponIKHandler : MonoBehaviour
 {
-    [Header("IK Targets (puste obiekty pod Weapon_Rig)")]
-    public Transform rightHandTarget;
+    [Header("IK Target lewej ręki (pusty obiekt pod Weapon_Rig)")]
     public Transform leftHandTarget;
-
-    [Header("Obiekt do trzymania")]
-    public GameObject heldObject;
 
     [Header("Kość prawej dłoni (przeciągnij z hierarchii kości)")]
     public Transform rightHandBone;
 
-    [Header("Offset pozycji i rotacji w dłoni")]
+    [Header("Offset pozycji i rotacji miecza w prawej dłoni")]
     public Vector3 holdOffset = Vector3.zero;
-    public Vector3 holdRotationOffset = Vector3.zero;
+    public Vector3 holdRotationOffset = new Vector3(0f, 0f, 90f);
 
     [Header("Rig")]
     public Rig weaponRig;
 
-    [Header("Ustawienia IK")]
-    [Tooltip("Czy kopiować rotację z gripów? Wyłącz jeśli nadgarstki się wykręcają.")]
-    public bool useGripRotation = false;
+    [Header("Obiekt do trzymania (opcjonalny - można ustawić dynamicznie)")]
+    public GameObject heldObject;
 
-    private Transform gripRight;
     private Transform gripLeft;
 
     void Start()
     {
-        if (heldObject != null && rightHandBone != null)
+        // Na start wyłącz IK
+        if (weaponRig != null)
+            weaponRig.weight = 0f;
+
+        if (heldObject != null)
+            SetHeldObject(heldObject);
+    }
+
+    /// <summary>
+    /// Dynamicznie przypisuje obiekt do trzymania.
+    /// Obiekt musi mieć child "Grip_Left" do pozycjonowania lewej ręki.
+    /// Prawa ręka trzyma naturalnie przez parenting do kości.
+    /// </summary>
+    public void SetHeldObject(GameObject obj)
+    {
+        if (obj == null || rightHandBone == null)
         {
-            heldObject.transform.SetParent(rightHandBone);
-            heldObject.transform.localPosition = holdOffset;
-            heldObject.transform.localRotation = Quaternion.Euler(holdRotationOffset);
-
-            Rigidbody rb = heldObject.GetComponent<Rigidbody>();
-            if (rb != null)
-            {
-                rb.useGravity = false;
-                rb.isKinematic = true;
-            }
-
-            gripRight = heldObject.transform.Find("Grip_Right");
-            gripLeft = heldObject.transform.Find("Grip_Left");
+            Debug.LogWarning($"SetHeldObject: obj={obj}, rightHandBone={rightHandBone}");
+            return;
         }
 
-        if (weaponRig != null && gripRight != null)
+        if (heldObject != null && heldObject != obj)
+            ClearHeldObject();
+
+        heldObject = obj;
+
+        // Parentuj do kości prawej ręki (worldPositionStays=false żeby odziedziczyć pozycję)
+        heldObject.transform.SetParent(rightHandBone, false);
+        heldObject.transform.localPosition = holdOffset;
+        heldObject.transform.localRotation = Quaternion.Euler(holdRotationOffset);
+
+        Rigidbody rb = heldObject.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.useGravity = false;
+            rb.isKinematic = true;
+        }
+
+        // Szukaj tylko lewego gripa - prawa ręka nie potrzebuje IK
+        gripLeft = heldObject.transform.Find("Grip_Left");
+
+        if (gripLeft == null)
+            Debug.LogWarning($"Brak 'Grip_Left' na {obj.name} — lewa ręka nie dociągnie do miecza");
+
+        // Włącz IK tylko jeśli mamy grip dla lewej ręki
+        if (weaponRig != null && gripLeft != null)
             weaponRig.weight = 1f;
     }
 
+    public void ClearHeldObject()
+    {
+        if (heldObject == null) return;
+
+        heldObject.transform.SetParent(null);
+
+        Rigidbody rb = heldObject.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.useGravity = true;
+            rb.isKinematic = false;
+        }
+
+        heldObject = null;
+        gripLeft = null;
+
+        if (weaponRig != null)
+            weaponRig.weight = 0f;
+    }
+
+    public bool IsHolding => heldObject != null;
+
     void LateUpdate()
     {
-        // Prawa ręka — tylko pozycja (rotacja z kości)
-        if (gripRight != null && rightHandTarget != null)
-        {
-            rightHandTarget.position = gripRight.position;
+        if (heldObject == null || gripLeft == null || leftHandTarget == null) return;
 
-            if (useGripRotation)
-                rightHandTarget.rotation = gripRight.rotation;
-        }
+        // Tylko lewa ręka dociąga przez IK do gripa na mieczu
+        // Prawa ręka trzyma miecz naturalnie (parenting do kości)
+        leftHandTarget.position = gripLeft.position;
 
-        // Lewa ręka — pozycja + patrzenie w kierunku sztabki
-        if (gripLeft != null && leftHandTarget != null)
-        {
-            leftHandTarget.position = gripLeft.position;
-
-            if (useGripRotation)
-            {
-                leftHandTarget.rotation = gripLeft.rotation;
-            }
-            else if (heldObject != null)
-            {
-                // Lewa dłoń patrzy w kierunku środka sztabki — naturalny chwyt
-                Vector3 dirToObject = heldObject.transform.position - gripLeft.position;
-                if (dirToObject.sqrMagnitude > 0.001f)
-                    leftHandTarget.rotation = Quaternion.LookRotation(dirToObject, Vector3.up);
-            }
-        }
+        Vector3 dirToObject = heldObject.transform.position - gripLeft.position;
+        if (dirToObject.sqrMagnitude > 0.001f)
+            leftHandTarget.rotation = Quaternion.LookRotation(dirToObject, Vector3.up);
     }
 }
