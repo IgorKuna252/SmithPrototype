@@ -17,4 +17,9 @@ public class CitizenData
         intelligence = citizen.intelligence;
         speed = citizen.speed;
     }
+
+    public string GetStats()
+    {
+        return $"{name}\nHP: {health:F0}/{maxHealth:F0}\nSTR: {strength:F0}\nINT: {intelligence:F0}\nSPD: {speed:F0}";
+    }
 }

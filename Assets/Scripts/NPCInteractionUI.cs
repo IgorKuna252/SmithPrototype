@@ -20,6 +20,7 @@ public class NPCInteractionUI : MonoBehaviour
     private npcPathFinding currentNPC;
     private BlacksmithInteraction blacksmith;
     private prefabSpawning queue;
+    private gameManager manager;
 
     void Awake()
     {
@@ -27,6 +28,7 @@ public class NPCInteractionUI : MonoBehaviour
         panel.SetActive(false);
         blacksmith = FindObjectOfType<BlacksmithInteraction>();
         queue = FindObjectOfType<prefabSpawning>();
+        manager = FindObjectOfType<gameManager>();
     }
 
     public void Show(npcPathFinding npc)
@@ -36,6 +38,9 @@ public class NPCInteractionUI : MonoBehaviour
 
         npcNameText.text = "Wędrowiec";
         npcStatsText.text = npc.ShowStats();
+
+        bool teamFull = manager.team.Count >= gameManager.teamSize;
+        acceptButton.interactable = !teamFull;
 
         acceptButton.onClick.RemoveAllListeners();
         rejectButton.onClick.RemoveAllListeners();

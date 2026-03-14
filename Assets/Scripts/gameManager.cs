@@ -1,17 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
-using TMPro;
 
 public class gameManager : MonoBehaviour
 {
     public List<CitizenData> team = new List<CitizenData>();
     public const int teamSize = 4;
-    public TextMeshProUGUI teamCounterText;
-
-    void Start()
-    {
-        syncCounter();
-    }
+    public bool updated = false;
 
     public bool addTeamMember(GameObject npc)
     {
@@ -29,7 +23,7 @@ public class gameManager : MonoBehaviour
         }
 
         team.Add(new CitizenData(npc.name, citizen));
-        syncCounter();
+        updated = true;
         return true;
     }
 
@@ -38,7 +32,7 @@ public class gameManager : MonoBehaviour
         if (index >= 0 && index < team.Count)
         {
             team.RemoveAt(index);
-            syncCounter();
+            updated = true;
             return true;
         }
 
@@ -51,10 +45,5 @@ public class gameManager : MonoBehaviour
         if (index >= 0 && index < team.Count)
             return team[index];
         return null;
-    }
-
-    void syncCounter()
-    {
-        teamCounterText.text = team.Count + "/" + teamSize;
     }
 }
