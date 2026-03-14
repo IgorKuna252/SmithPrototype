@@ -33,6 +33,7 @@ public class IronPiece : MonoBehaviour, IInteractable, IPickable
         meshRenderer = GetComponent<MeshRenderer>();
         meshFilter = GetComponent<MeshFilter>();
         meshCollider = GetComponent<MeshCollider>();
+        meshCollider.convex = true;
 
         // Klonujemy siatk�, �eby nie zepsu� oryginalnego pliku na dysku!
         mesh = meshFilter.mesh;
