@@ -1,65 +1,60 @@
-using System;
+using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+
 public class gameManager : MonoBehaviour
 {
-    public GameObject[] team;
+    public List<CitizenData> team = new List<CitizenData>();
     public const int teamSize = 4;
     public TextMeshProUGUI teamCounterText;
-    
-    
-    
+
     void Start()
     {
-        team = Array.Empty<GameObject>();
         syncCounter();
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
     }
 
     public bool addTeamMember(GameObject npc)
     {
-        if(team.Length < teamSize)
-        {
-            team[team.Length] = npc;
-            syncCounter();
-            return true;
-        }
-        else
+        if (team.Count >= teamSize)
         {
             Debug.Log("Team is full!");
             return false;
         }
+
+        ExiledCitizen citizen = npc.GetComponent<ExiledCitizen>();
+        if (citizen == null)
+        {
+            Debug.LogWarning("No ExiledCitizen on " + npc.name);
+            return false;
+        }
+
+        team.Add(new CitizenData(npc.name, citizen));
+        syncCounter();
+        return true;
     }
 
-    public bool removeTeamMember(GameObject npc)
+    public bool removeTeamMember(int index)
     {
-        if(team.Length > 0)
+        if (index >= 0 && index < team.Count)
         {
-            for(int i = 0; i < team.Length; i++)
-            {
-                if(team[i] == npc)
-                {
-                    team[i] = null;
-                    return true;
-                }
-            }
-            Debug.Log("NPC not found in team!");
-            return false;
+            team.RemoveAt(index);
+            syncCounter();
+            return true;
         }
-        else
-        {
-            Debug.Log("Team is empty!");
-            return false;
-        }
+
+        Debug.Log("Invalid team index!");
+        return false;
+    }
+
+    public CitizenData getMember(int index)
+    {
+        if (index >= 0 && index < team.Count)
+            return team[index];
+        return null;
     }
 
     void syncCounter()
     {
-        teamCounterText.text = team.Length.ToString()+"/"+teamSize.ToString();
+        teamCounterText.text = team.Count + "/" + teamSize;
     }
 }

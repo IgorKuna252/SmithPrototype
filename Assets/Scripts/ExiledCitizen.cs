@@ -5,14 +5,16 @@ public class ExiledCitizen : MonoBehaviour
     public float health;
     public float maxHealth;
     public float strength;
-    public float stamina;
+    public float intelligence;
+    public float speed;
 
-    public void Initialize(float maxHealth, float strength, float stamina)
+    public void Initialize(float maxHealth, float strength, float intelligence, float speed)
     {
         this.maxHealth = maxHealth;
         this.health = maxHealth;
         this.strength = strength;
-        this.stamina = stamina;
+        this.intelligence = intelligence;
+        this.speed = speed;
     }
 
     public void GenerateRandomStats()
@@ -21,11 +23,12 @@ public class ExiledCitizen : MonoBehaviour
         health = maxHealth;
 
         strength = Random.Range(5f, 20f);
-        stamina = Random.Range(5f, 20f);
+        intelligence = Random.Range(5f, 20f);
+        speed = Random.Range(5f, 20f);
     }
 
     public string GetStats()
     {
-        return $"Health: {health:F2}/{maxHealth:F2}\nStrength: {strength:F2}\nStamina: {stamina:F2}";
+        return $"Health: {health:F2}/{maxHealth:F2}\nStrength: {strength:F2}\nIntelligence: {intelligence:F2}\nSpeed: {speed:F2}";
     }
 }
