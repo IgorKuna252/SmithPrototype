@@ -1,10 +1,11 @@
 using UnityEngine;
 using UnityEngine.AI;
 
-public class npcPathFinding : MonoBehaviour, IInteractable
+public class npcPathFinding : MonoBehaviour
 {
     NavMeshAgent agentNPC;
     ExiledCitizen citizenStats;
+    gameManager manager;
     public Transform rejectObject;
     public Transform acceptObject;
 
@@ -12,7 +13,8 @@ public class npcPathFinding : MonoBehaviour, IInteractable
     {
         agentNPC = GetComponent<NavMeshAgent>();
         citizenStats = GetComponent<ExiledCitizen>();
-        if (citizenStats == null || agentNPC == null)
+        manager = GetComponent<gameManager>();
+        if (citizenStats == null || agentNPC == null || manager == null)
         {
             Debug.LogWarning("There is no NavMeshAgent or ExiledCitizen attached to " + gameObject.name);
         }
@@ -24,13 +26,15 @@ public class npcPathFinding : MonoBehaviour, IInteractable
             agentNPC.SetDestination(target.position);
     }
 
-    public bool Interact(KeyCode key)
+    public void Accept()
     {
-        if (key == KeyCode.Mouse0)
-            SetDestination(rejectObject);
-        else if (key == KeyCode.Mouse1)
-            SetDestination(acceptObject);
-        return true;
+        SetDestination(acceptObject);
+        manager.addTeamMember(this.gameObject);
+    }
+
+    public void Reject()
+    {
+        SetDestination(rejectObject);
     }
 
     public string ShowStats()

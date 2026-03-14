@@ -48,9 +48,8 @@ public class IronPiece : MonoBehaviour, IInteractable, IPickable
         UpdateVisuals();
     }
 
-    public bool Interact(KeyCode key)
+    public bool Interact()
     {
-        // Interact bez punktu uderzenia — zwraca true jeśli gorący (blokuje pickup)
         return currentTemperature >= forgingTemperature;
     }
 

@@ -46,14 +46,14 @@ public class NPCInteractionUI : MonoBehaviour
 
     void OnAccept()
     {
-        currentNPC.Interact(KeyCode.Mouse1);
+        currentNPC.Accept();
         queue.OnNPCProcessed();
         blacksmith.CloseNPCInteraction();
     }
 
     void OnReject()
     {
-        currentNPC.Interact(KeyCode.Mouse0);
+        currentNPC.Reject();
         queue.OnNPCProcessed();
         blacksmith.CloseNPCInteraction();
     }

@@ -40,7 +40,7 @@ public class BlacksmithInteraction : MonoBehaviour
         // LEWY PRZYCISK - kucie (jeśli gorący), albo podnoszenie
         if (Input.GetMouseButtonDown(0))
         {
-            if (!TryInteract(KeyCode.Mouse0))
+            if (!TryInteract())
                 TryPickUp();
         }
 
@@ -95,7 +95,7 @@ public class BlacksmithInteraction : MonoBehaviour
         }
     }
 
-    bool TryInteract(KeyCode key)
+    bool TryInteract()
     {
         Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
         if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
@@ -103,7 +103,7 @@ public class BlacksmithInteraction : MonoBehaviour
             IInteractable interactable = hit.collider.GetComponent<IInteractable>();
             if (interactable == null) return false;
 
-            if (!interactable.Interact(key)) return false;
+            if (!interactable.Interact()) return false;
 
             // Jeśli to IronPiece, przekaż punkt uderzenia do deformacji mesh
             IronPiece iron = hit.collider.GetComponent<IronPiece>();
