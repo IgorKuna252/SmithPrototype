@@ -18,6 +18,9 @@ public class IK_Implementation : MonoBehaviour
     public Vector3 rightHandRotationOffset;
     public Vector3 leftHandRotationOffset;
 
+    [Header("Hold Point Offset (local space)")]
+    public Vector3 holdOffset;
+
     [Header("Swing Settings")]
     public float swingRange = 0.6f;
     public float swingSpeed = 5f;
@@ -29,7 +32,10 @@ public class IK_Implementation : MonoBehaviour
             float t = Mathf.Sin(Time.time * swingSpeed);
             float horizontal = t * swingRange;
             float depth = -Mathf.Abs(t) * swingRange * 0.5f;
-            weapon.position = weaponHoldPoint.position
+            Vector3 offset = transform.right * holdOffset.x
+                + transform.up * holdOffset.y
+                + transform.forward * holdOffset.z;
+            weapon.position = weaponHoldPoint.position + offset
                 + transform.right * horizontal
                 + transform.forward * depth;
             weapon.rotation = weaponHoldPoint.rotation;
