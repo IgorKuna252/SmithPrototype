@@ -12,10 +12,10 @@ public class BlacksmithInteraction : MonoBehaviour
     private GameObject heldItem;
     private Rigidbody heldItemRb;
 
-    // ZapamiÍtujemy, JAKI to typ przedmiotu
-    private IronPiece heldIron;
+    // Zapamiƒôtujemy, JAKI to typ przedmiotu
+    private MetalPiece heldMetal;
     private WoodPiece heldWood;
-    private LeatherPiece heldLeather;
+    private FinishedObject heldFinishedWeapon;
 
     void Start()
     {
@@ -24,39 +24,34 @@ public class BlacksmithInteraction : MonoBehaviour
 
     void Update()
     {
-        // LEWY PRZYCISK MYSZY - Kucie m≥otem
+        // LEWY PRZYCISK MYSZY - Kucie m≈Çotem
         if (Input.GetMouseButtonDown(0))
         {
             HitWithHammer();
         }
 
-        // PRAWY PRZYCISK MYSZY - Podnoszenie / K≥adzenie na stÛ≥ / Upuszczanie
+        // PRAWY PRZYCISK MYSZY - Podnoszenie / K≈Çadzenie na st√≥≈Ç / Upuszczanie
         if (Input.GetMouseButtonDown(1))
         {
             if (heldItem == null) TryPickUp();
             else TryPlaceOrDrop();
         }
 
-        // KLAWISZ E - Prze≥πczanie kamery na stÛ≥
+        // KLAWISZ E - Prze≈ÇƒÖczanie kamery na st√≥≈Ç
         if (Input.GetKeyDown(KeyCode.E))
         {
             TryInteractWithTable();
         }
     }
 
-    // NOWA FUNKCJA
     void TryInteractWithTable()
     {
-        // Jeúli trzymamy przedmiot w rÍku, moøemy zablokowaÊ prze≥πczanie kamery (opcjonalnie)
-        // if (heldItem != null) return; 
-
         Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
         if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
         {
             MergingTable table = hit.collider.GetComponent<MergingTable>();
             if (table != null)
             {
-                // Przekazujemy kamerÍ gracza do sto≥u, øeby stÛ≥ wiedzia≥, co wy≥πczyÊ i co potem w≥πczyÊ
                 table.ToggleAssemblyCamera(playerCamera.gameObject);
             }
         }
@@ -69,10 +64,11 @@ public class BlacksmithInteraction : MonoBehaviour
         Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
         if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
         {
-            IronPiece iron = hit.collider.GetComponent<IronPiece>();
-            if (iron != null)
+            // Tutaj te≈º dodajemy InParent, na wypadek gdyby≈õ kiedy≈õ zrobi≈Ç ostrze z kilku czƒô≈õci!
+            MetalPiece metal = hit.collider.GetComponentInParent<MetalPiece>();
+            if (metal != null)
             {
-                iron.HitMetal();
+                metal.HitMetal();
             }
         }
     }
@@ -82,20 +78,23 @@ public class BlacksmithInteraction : MonoBehaviour
         Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
         if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
         {
-            // Sprawdzamy czy trafiliúmy w metal lub drewno
-            IronPiece iron = hit.collider.GetComponent<IronPiece>();
-            WoodPiece wood = hit.collider.GetComponent<WoodPiece>();
-            LeatherPiece leather = hit.collider.GetComponent<LeatherPiece>();
+            // ZMIANA 1: Szukamy skrypt√≥w r√≥wnie≈º na rodzicach!
+            MetalPiece metal = hit.collider.GetComponentInParent<MetalPiece>();
+            WoodPiece wood = hit.collider.GetComponentInParent<WoodPiece>();
+            FinishedObject finishedWeapon = hit.collider.GetComponentInParent<FinishedObject>();
 
-            if (iron != null || wood != null || leather != null)
+            if (metal != null || wood != null || finishedWeapon != null)
             {
-                heldItem = hit.collider.gameObject;
+                // ZMIANA 2: Podnosimy ca≈Çy G≈Å√ìWNY obiekt ze skryptem, a nie samƒÖ trafionƒÖ belkƒô!
+                if (metal != null) heldItem = metal.gameObject;
+                else if (wood != null) heldItem = wood.gameObject;
+                else if (finishedWeapon != null) heldItem = finishedWeapon.gameObject;
+
                 heldItemRb = heldItem.GetComponent<Rigidbody>();
 
-                // Zapisujemy komponenty (jedno z nich bÍdzie nullem, drugie nie)
-                heldIron = iron;
+                heldMetal = metal;
                 heldWood = wood;
-                heldLeather = leather;
+                heldFinishedWeapon = finishedWeapon;
 
                 if (heldItemRb != null)
                 {
@@ -110,41 +109,33 @@ public class BlacksmithInteraction : MonoBehaviour
         }
     }
 
-    // NOWA METODA: Sprawdza, czy patrzymy na stÛ≥. Jeúli tak -> k≥adzie. Jeúli nie -> upuszcza.
     void TryPlaceOrDrop()
     {
         Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
         if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
         {
-            // Sprawdzamy czy patrzymy na stÛ≥
+            // Sprawdzamy czy patrzymy na st√≥≈Ç
             MergingTable table = hit.collider.GetComponent<MergingTable>();
             if (table != null)
             {
-                // Mamy øelazo i stÛ≥ nie ma jeszcze øelaza
-                if (heldIron != null && !table.HasMetal())
+                // Mamy metal i st√≥≈Ç nie ma jeszcze metalu
+                if (heldMetal != null && !table.HasMetal())
                 {
-                    table.PlaceMetal(heldIron);
+                    table.PlaceMetal(heldMetal);
                     ClearHand();
-                    return; // ZakoÒcz, øeby nie upuúciÊ przedmiotu na ziemiÍ
+                    return; 
                 }
-                // Mamy drewno i stÛ≥ nie ma jeszcze drewna
+                // Mamy drewno i st√≥≈Ç nie ma jeszcze drewna
                 else if (heldWood != null && !table.HasWood())
                 {
                     table.PlaceWood(heldWood);
                     ClearHand();
-                    return; // ZakoÒcz
-                }
-
-                else if (heldLeather != null && !table.HasLeather())
-                {
-                    table.PlaceLeather(heldLeather);
-                    ClearHand();
-                    return;
+                    return; 
                 }
             }
         }
 
-        // Jeúli nie trafiliúmy w stÛ≥, albo miejsce jest zajÍte - rzucamy na ziemiÍ
+        // Je≈õli nie trafili≈õmy w st√≥≈Ç, albo miejsce jest zajƒôte - rzucamy na ziemiƒô
         DropItem();
     }
 
@@ -161,13 +152,12 @@ public class BlacksmithInteraction : MonoBehaviour
         ClearHand();
     }
 
-    // Ma≥a funkcja czyszczπca nasze "rÍce"
     void ClearHand()
     {
         heldItem = null;
         heldItemRb = null;
-        heldIron = null;
+        heldMetal = null;
         heldWood = null;
-        heldLeather = null;
+        heldFinishedWeapon = null;
     }
 }
