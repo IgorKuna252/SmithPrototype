@@ -1,14 +1,17 @@
 using UnityEngine;
-using UnityEngine.SceneManagement; // Wymagane do ładowania scen!
+using UnityEngine.SceneManagement;
 
 public class SceneTransition : MonoBehaviour
 {
-    [Header("Ustawienia przejścia")][Tooltip("Dokładna nazwa sceny, do której przechodzimy (np. Level_02)")]
     public string sceneToLoad;
 
     public void ChangeScene()
     {
-        Debug.Log($"Przechodzenie do sceny: {sceneToLoad}");
+        // 1. Zresetuj kursor przed przejściem do nowej sceny
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        // 2. Załaduj scenę
         SceneManager.LoadScene(sceneToLoad);
     }
 }
