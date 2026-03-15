@@ -34,7 +34,7 @@ public class BlacksmithInteraction : MonoBehaviour
             if (heldItem != null)
                 TryEnterGrindstone();
             else
-                TryInteractWithNPC();
+                TryInteractWithE();
         }
 
         // LEWY PRZYCISK - kucie (jeśli gorący), albo podnoszenie
@@ -54,20 +54,33 @@ public class BlacksmithInteraction : MonoBehaviour
         }
     }
 
-    void TryInteractWithNPC()
+    void TryInteractWithE()
     {
         Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
+        
+        // Strzelamy promieniem RAZ dla wszystkich interakcji pod klawiszem 'E'
         if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
         {
+            // 1. Sprawdzenie, czy to NPC
             npcPathFinding npc = hit.collider.GetComponent<npcPathFinding>();
-            if (npc == null) return;
+            if (npc != null)
+            {
+                isInteractingWithNPC = true;
+                playerMovement.enabled = false;
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
 
-            isInteractingWithNPC = true;
-            playerMovement.enabled = false;
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+                NPCInteractionUI.Instance.Show(npc);
+                return; // Znaleźliśmy NPC, wychodzimy z metody
+            }
 
-            NPCInteractionUI.Instance.Show(npc);
+            // 2. Sprawdzenie, czy to obiekt do zmiany sceny
+            SceneTransition sceneTransition = hit.collider.GetComponent<SceneTransition>();
+            if (sceneTransition != null)
+            {
+                sceneTransition.ChangeScene();
+                return; // Znaleźliśmy przejście, wychodzimy z metody
+            }
         }
     }
 
