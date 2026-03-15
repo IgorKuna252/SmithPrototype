@@ -13,7 +13,8 @@ public class npcPathFinding : MonoBehaviour
     {
         agentNPC = GetComponent<NavMeshAgent>();
         citizenStats = GetComponent<ExiledCitizen>();
-        manager = FindObjectOfType<gameManager>();
+        manager = gameManager.Instance; 
+
         if (citizenStats == null || agentNPC == null || manager == null)
         {
             Debug.LogWarning("There is no NavMeshAgent or ExiledCitizen attached to " + gameObject.name);

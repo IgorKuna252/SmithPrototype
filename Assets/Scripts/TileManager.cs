@@ -1,5 +1,6 @@
 using UnityEngine;
-using TMPro; // Upewnij się, że masz to na górze
+using TMPro;
+using System.Collections.Generic;
 
 public class TileManager : MonoBehaviour
 {
@@ -8,8 +9,13 @@ public class TileManager : MonoBehaviour
     [Header("UI References")]
     [SerializeField] private GameObject uiPanel;
     [SerializeField] private TextMeshProUGUI statusText;
-    [SerializeField] private GameObject fightButton; // PRZECIĄGNIJ TU GUZIK WALCZ W INSPEKTORZE
+    [SerializeField] private GameObject fightButton;
+    
+    [Header("Team Cards")]
+    [SerializeField] private Transform cardContainer; // Kontener z Horizontal Layout Group
+    [SerializeField] private GameObject cardPrefab;    // Prefab Twojej karty
 
+    private List<GameObject> activeCards = new List<GameObject>();
     private Tile selectedTile;
 
     void Awake() => Instance = this;
@@ -19,35 +25,48 @@ public class TileManager : MonoBehaviour
         selectedTile = tile;
         uiPanel.SetActive(true);
 
-        Debug.Log($"Otwieram panel. Czy pole jest zajęte (isOwned)? {tile.isOwned}");
+        foreach (var card in activeCards) Destroy(card);
+        activeCards.Clear();
 
         if (tile.isOwned)
         {
             statusText.text = "Zająłeś już ten teren";
-            fightButton.SetActive(false); 
-            Debug.Log("Ukrywam guzik Walka!");
+            fightButton.SetActive(false);
         }
         else
         {
-            statusText.text = "Walka!";
-            fightButton.SetActive(true); 
-            Debug.Log("Pokazuję guzik Walka!");
+            statusText.text = "Twoja drużyna:";
+            fightButton.SetActive(true);
+
+            foreach (var member in gameManager.Instance.team)
+            {
+                Debug.Log($"Tworzę kartę dla: {member.name}"); // TEST 1
+                GameObject newCard = Instantiate(cardPrefab, cardContainer);
+            
+                TextMeshProUGUI cardText = newCard.GetComponentInChildren<TextMeshProUGUI>();
+            
+                if (cardText != null)
+                {
+                    cardText.text = member.GetStats();
+                    Debug.Log($"Znaleziono tekst na karcie, ustawiam: {member.GetStats()}"); // TEST 2
+                }
+                else
+                {
+                    Debug.LogError("BŁĄD: Nie znaleziono TextMeshProUGUI w prefabie karty!"); // TEST 3
+                }
+            
+                activeCards.Add(newCard);
+            }
         }
     }
 
     public void Fight()
     {
-        if (selectedTile != null)
-        {
-            selectedTile.isOwned = true;
-            selectedTile.UpdateVisuals();
-            CloseUI(); // Używamy dedykowanej metody
-        }
+        Debug.Log("Walka rozpoczęta!");
+        selectedTile.isOwned = true;
+        selectedTile.UpdateVisuals();
+        CloseUI();
     }
 
-    // Dodaj to, żebyś mógł użyć tej samej metody w guziku Anuluj
-    public void CloseUI()
-    {
-        uiPanel.SetActive(false);
-    }
+    public void CloseUI() => uiPanel.SetActive(false);
 }

@@ -5,6 +5,7 @@ using TMPro;
 public class NPCInteractionUI : MonoBehaviour
 {
     public static NPCInteractionUI Instance;
+    public static event System.Action OnNPCInteractionFinished;
 
     [Header("Panel")]
     public GameObject panel;
@@ -28,7 +29,7 @@ public class NPCInteractionUI : MonoBehaviour
         panel.SetActive(false);
         blacksmith = FindObjectOfType<BlacksmithInteraction>();
         queue = FindObjectOfType<prefabSpawning>();
-        manager = FindObjectOfType<gameManager>();
+        manager = gameManager.Instance;
     }
 
     public void Show(npcPathFinding npc)
@@ -52,7 +53,7 @@ public class NPCInteractionUI : MonoBehaviour
     void OnAccept()
     {
         currentNPC.Accept();
-        queue.OnNPCProcessed();
+        OnNPCInteractionFinished?.Invoke(); // Powiadamiamy każdego, kto słucha
         blacksmith.CloseNPCInteraction();
     }
 

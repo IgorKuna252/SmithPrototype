@@ -3,10 +3,26 @@ using UnityEngine;
 
 public class gameManager : MonoBehaviour
 {
+    // Singleton
+    public static gameManager Instance { get; private set; }
+
     public List<CitizenData> team = new List<CitizenData>();
     public const int teamSize = 4;
     public bool updated = false;
-
+    private void Awake()
+    {
+        // Jeśli instancja już istnieje i to nie my, zniszcz się
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        
+        // Zapisz tę instancję jako globalną i nie usuwaj przy zmianie sceny
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+    }
+    
     public bool addTeamMember(GameObject npc)
     {
         if (team.Count >= teamSize)
