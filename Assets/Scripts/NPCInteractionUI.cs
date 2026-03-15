@@ -36,17 +36,29 @@ public class NPCInteractionUI : MonoBehaviour
         currentNPC = npc;
         panel.SetActive(true);
 
-        npcNameText.text = "Wędrowiec";
         npcStatsText.text = npc.ShowStats();
 
-        bool teamFull = manager.team.Count >= gameManager.teamSize;
-        acceptButton.interactable = !teamFull;
+        if (npc.isInTeam)
+        {
+            npcNameText.text = "Członek drużyny";
+            acceptButton.gameObject.SetActive(false);
+            rejectButton.gameObject.SetActive(false);
+        }
+        else
+        {
+            npcNameText.text = "Wędrowiec";
+            acceptButton.gameObject.SetActive(true);
+            rejectButton.gameObject.SetActive(true);
 
-        acceptButton.onClick.RemoveAllListeners();
-        rejectButton.onClick.RemoveAllListeners();
+            bool teamFull = manager.team.Count >= gameManager.teamSize;
+            acceptButton.interactable = !teamFull;
 
-        acceptButton.onClick.AddListener(OnAccept);
-        rejectButton.onClick.AddListener(OnReject);
+            acceptButton.onClick.RemoveAllListeners();
+            rejectButton.onClick.RemoveAllListeners();
+
+            acceptButton.onClick.AddListener(OnAccept);
+            rejectButton.onClick.AddListener(OnReject);
+        }
     }
 
     void OnAccept()

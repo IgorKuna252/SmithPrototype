@@ -8,6 +8,8 @@ public class npcPathFinding : MonoBehaviour
     gameManager manager;
     public Transform rejectObject;
     public Transform acceptObject;
+    [SerializeField] float teamSpacing = 1.5f;
+    [HideInInspector] public bool isInTeam = false;
 
     void Start()
     {
@@ -28,8 +30,11 @@ public class npcPathFinding : MonoBehaviour
 
     public void Accept()
     {
-        SetDestination(acceptObject);
+        int index = manager.team.Count;
+        Vector3 offset = acceptObject.right * (index * teamSpacing);
+        agentNPC.SetDestination(acceptObject.position + offset);
         manager.addTeamMember(this.gameObject);
+        isInTeam = true;
     }
 
     public void Reject()

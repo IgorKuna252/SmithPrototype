@@ -1032,9 +1032,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   team: []
-  teamCounterText: {fileID: 842110250}
   updated: 0
-  columnWidth: 150
 --- !u!4 &367259723
 Transform:
   m_ObjectHideFlags: 0
@@ -1403,7 +1401,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 528109489}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -2112,6 +2110,7 @@ GameObject:
   - component: {fileID: 763026562}
   - component: {fileID: 763026561}
   - component: {fileID: 763026560}
+  - component: {fileID: 763026564}
   m_Layer: 5
   m_Name: UI
   m_TagString: Untagged
@@ -2203,6 +2202,19 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
+--- !u!114 &763026564
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 763026559}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a95c6dbd568df38428ca243a3c643588, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::updaterMainUI
+  teamCounterText: {fileID: 842110250}
 --- !u!1 &779124034
 GameObject:
   m_ObjectHideFlags: 0
@@ -2347,7 +2359,7 @@ MonoBehaviour:
   m_OverrideVoxelSize: 0
   m_VoxelSize: 0.16666667
   m_MinRegionArea: 2
-  m_NavMeshData: {fileID: 23800000, guid: 0fb80adffea0f284a8e8bb930330ebf9, type: 2}
+  m_NavMeshData: {fileID: 23800000, guid: 23d72c18578d6154e8a433f761769697, type: 2}
   m_BuildHeightMesh: 0
 --- !u!1 &794893887
 GameObject:
@@ -2851,8 +2863,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 481f3b1aaa667a24088a2362827fbe95, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  textBoard: {fileID: 1029269002}
-  manager: {fileID: 367259722}
+  teamSlots:
+  - {fileID: 1029269002}
+  - {fileID: 592287369}
+  - {fileID: 1378051210}
+  - {fileID: 2115110073}
 --- !u!1 &884810632
 GameObject:
   m_ObjectHideFlags: 0
@@ -8143,7 +8158,7 @@ Transform:
   m_GameObject: {fileID: 1087163813}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -32.58, y: 0.98, z: -13.06352}
+  m_LocalPosition: {x: -32.58, y: 0.98, z: -18.49}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -8177,7 +8192,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1087163813}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
