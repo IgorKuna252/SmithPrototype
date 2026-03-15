@@ -9,7 +9,7 @@ public class IronPiece : MonoBehaviour
     public float forgingTemperature = 500f; // Minimalna temp. do kucia
 
     [Header("Ustawienia Kucia")]
-    public int hitsRequired = 5; // Ile uderzeï¿½ potrzeba do ukoï¿½czenia
+    public int hitsRequired = 5; // Ile uderzeñ potrzeba do ukoñczenia
     private int currentHits = 0;
     public bool isFinished = false;
 
@@ -23,7 +23,7 @@ public class IronPiece : MonoBehaviour
 
     void Update()
     {
-        // Chï¿½odzenie metalu, jeï¿½li nie jest w piecu
+        // Ch³odzenie metalu, jeœli nie jest w piecu
         if (!isInForge && currentTemperature > 20f)
         {
             currentTemperature -= coolingRate * Time.deltaTime;
@@ -32,7 +32,7 @@ public class IronPiece : MonoBehaviour
         UpdateVisuals();
     }
 
-    // Funkcja wywoï¿½ywana, gdy klikniemy na obiekt metalu (symulacja uderzenia mï¿½otem)
+    // Funkcja wywo³ywana, gdy klikniemy na obiekt metalu (symulacja uderzenia m³otem)
     public void HitMetal()
     {
         if (isFinished) return;
@@ -40,29 +40,29 @@ public class IronPiece : MonoBehaviour
         if (currentTemperature >= forgingTemperature)
         {
             currentHits++;
-            Debug.Log($"Uderzenie! Postï¿½p: {currentHits}/{hitsRequired}");
+            Debug.Log($"Uderzenie! Postêp: {currentHits}/{hitsRequired}");
 
-            float minThickness = 0.05f; // Minimalna gruboï¿½ï¿½ na osi Y (moï¿½esz jï¿½ zmieniï¿½!)
+            float minThickness = 0.05f; // Minimalna gruboœæ na osi Y (mo¿esz j¹ zmieniæ!)
             float newYScale = transform.localScale.y - 0.01f;
 
             newYScale = Mathf.Max(newYScale, minThickness);
 
             transform.localScale = new Vector3(
                 transform.localScale.x + 0.01f,
-                newYScale, // Uï¿½ywamy naszej bezpiecznej wartoï¿½ci
+                newYScale, // U¿ywamy naszej bezpiecznej wartoœci
                 transform.localScale.z + 0.05f
             );
 
             if (currentHits >= hitsRequired)
             {
                 isFinished = true;
-                Debug.Log("Przedmiot zostaï¿½ pomyï¿½lnie wykuty!");
-                // Tutaj moï¿½esz podmieniï¿½ model na gotowy miecz
+                Debug.Log("Przedmiot zosta³ pomyœlnie wykuty!");
+                // Tutaj mo¿esz podmieniæ model na gotowy miecz
             }
         }
         else
         {
-            Debug.Log("Metal jest zbyt zimny, by go kuï¿½! Wï¿½ï¿½ go do pieca.");
+            Debug.Log("Metal jest zbyt zimny, by go kuæ! W³ó¿ go do pieca.");
         }
     }
 
@@ -88,12 +88,12 @@ public class IronPiece : MonoBehaviour
         }
     }
 
-    // Zmiana koloru w zaleï¿½noï¿½ci od temperatury (od szarego do czerwono-ï¿½ï¿½tego)
+    // Zmiana koloru w zale¿noœci od temperatury (od szarego do czerwono-¿ó³tego)
     void UpdateVisuals()
     {
         float temperatureNormalized = (currentTemperature - 20f) / (maxTemperature - 20f);
         Color coldColor = Color.gray;
-        Color hotColor = new Color(1f, 0.4f, 0f); // ï¿½arzï¿½cy siï¿½ pomaraï¿½czowy
+        Color hotColor = new Color(1f, 0.4f, 0f); // ¯arz¹cy siê pomarañczowy
 
         meshRenderer.material.color = Color.Lerp(coldColor, hotColor, temperatureNormalized);
     }
