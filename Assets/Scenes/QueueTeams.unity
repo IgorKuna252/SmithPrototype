@@ -8857,7 +8857,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9fea04689192c2d439039814b975a2f1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  grindRate: 0.1
 --- !u!1 &1378051208
 GameObject:
   m_ObjectHideFlags: 0
@@ -9539,6 +9538,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: da0d0779af1dd2040923f042c40a466d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IronPiece
+  isFinished: 0
+  metalTier: 2
   currentTemperature: 1000
   maxTemperature: 1000
   coolingRate: 10
@@ -33037,6 +33038,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: da0d0779af1dd2040923f042c40a466d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IronPiece
+  isFinished: 0
+  metalTier: 2
   currentTemperature: 20
   maxTemperature: 1000
   coolingRate: 10
