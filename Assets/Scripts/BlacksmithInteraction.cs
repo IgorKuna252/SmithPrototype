@@ -38,12 +38,7 @@ public class BlacksmithInteraction : MonoBehaviour
         // LEWY PRZYCISK MYSZY - Używanie (Kucie) lub Podnoszenie
         if (Input.GetMouseButtonDown(0))
         {
-            // Najpierw próbujemy użyć obiektu (np. uderzyć młotem)
-            if (!TryHitOrInteract())
-            {
-                // Jeśli się nie udało, próbujemy podnieść
-                TryPickUp();
-            }
+            TryPickUp(); // Najpierw próbujemy podnieść, jeśli trzymamy coś - to nic się nie stanie
         }
 
         // PRAWY PRZYCISK MYSZY - Kładzenie na stół, Upuszczanie lub Podnoszenie
@@ -105,6 +100,19 @@ public class BlacksmithInteraction : MonoBehaviour
                 }
                 return;
             }
+
+            //5. Sprawdzenie, czy to Kowadło
+            AnvilStation anvil = hit.collider.GetComponentInParent<AnvilStation>();
+            if (anvil != null && heldItem != null)
+            {
+                MetalPiece metal = heldItem.GetComponent<MetalPiece>();
+                if (metal != null)
+                {
+                    anvil.EnterForgingMode(metal);
+                    ClearHand();
+                }
+                return;
+            }
         }
     }
 
@@ -118,28 +126,28 @@ public class BlacksmithInteraction : MonoBehaviour
         NPCInteractionUI.Instance.Hide();
     }
 
-    bool TryHitOrInteract()
-    {
-        Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
-        if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
-        {
-            // Ten log powie nam DOKŁADNIE w co celujesz
-            Debug.Log($"Raycast trafił w: {hit.collider.gameObject.name} na warstwie: {hit.collider.gameObject.layer}");
+    //bool TryHitOrInteract()
+    //{
+    //    Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
+    //    if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
+    //    {
+    //        // Ten log powie nam DOKŁADNIE w co celujesz
+    //        Debug.Log($"Raycast trafił w: {hit.collider.gameObject.name} na warstwie: {hit.collider.gameObject.layer}");
 
-            MetalPiece metal = hit.collider.GetComponentInParent<MetalPiece>();
-            if (metal != null)
-            {
-                Debug.Log("Znalazłem skrypt MetalPiece! Wysyłam uderzenie...");
-                metal.HitMetal(hit.point, hit.normal);
-                return true;
-            }
-        }
-        else
-        {
-            Debug.Log("Raycast w nic nie trafił. Może reachDistance jest za mały?");
-        }
-        return false;
-    }
+    //        MetalPiece metal = hit.collider.GetComponentInParent<MetalPiece>();
+    //        if (metal != null)
+    //        {
+    //            Debug.Log("Znalazłem skrypt MetalPiece! Wysyłam uderzenie...");
+    //            metal.HitMetal(hit.point, hit.normal);
+    //            return true;
+    //        }
+    //    }
+    //    else
+    //    {
+    //        Debug.Log("Raycast w nic nie trafił. Może reachDistance jest za mały?");
+    //    }
+    //    return false;
+    //}
 
     bool TryPickUp()
     {

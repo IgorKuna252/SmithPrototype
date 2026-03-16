@@ -126,7 +126,8 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
         Vector3 localHitPoint = transform.InverseTransformPoint(hitPoint);
 
         // OBLICZAMY GRUBOŚĆ
-        float currentThickness = Mathf.Abs(localHitPoint.y) * 2f;
+        float currentThickness = mesh.bounds.size.y;
+
 
         // --- DEBUG LOGI ---
         Debug.Log($"[DEBUG KUCIA] Wykryta grubość: {currentThickness} | Limit minThickness: {minThickness}");
