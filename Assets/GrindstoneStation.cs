@@ -7,7 +7,8 @@ public class GrindstoneStation : MonoBehaviour
     public Transform cameraSocket;
     public GameObject playerObject;
 
-    private IronPiece currentIron;
+    // ZMIANA: Z IronPiece na MetalPiece
+    private MetalPiece currentMetal;
     private bool isGrindingMode = false;
     private float bladeSlidePosition = 0f;
     private float currentDip = 0f;
@@ -31,7 +32,7 @@ public class GrindstoneStation : MonoBehaviour
 
     void Update()
     {
-        if (isGrindingMode && currentIron != null)
+        if (isGrindingMode && currentMetal != null)
         {
             HandleGrindingMinigame();
 
@@ -43,9 +44,9 @@ public class GrindstoneStation : MonoBehaviour
         }
     }
 
-    public void EnterGrindingMode(IronPiece iron)
+    public void EnterGrindingMode(MetalPiece metal)
     {
-        currentIron = iron;
+        currentMetal = metal;
         isGrindingMode = true;
         grindStartTime = Time.time; // Zapisujemy, o której weszliśmy
 
@@ -58,7 +59,7 @@ public class GrindstoneStation : MonoBehaviour
         currentDip = 0f;
         isFlipped = false;
 
-        Rigidbody rb = currentIron.GetComponent<Rigidbody>();
+        Rigidbody rb = currentMetal.GetComponent<Rigidbody>();
         if (rb != null)
         {
             rb.linearVelocity = Vector3.zero;
@@ -66,9 +67,9 @@ public class GrindstoneStation : MonoBehaviour
             rb.isKinematic = true;
         }
 
-        currentIron.transform.SetParent(snapPoint);
-        currentIron.transform.localPosition = Vector3.zero;
-        currentIron.transform.localRotation = Quaternion.identity;
+        currentMetal.transform.SetParent(snapPoint);
+        currentMetal.transform.localPosition = Vector3.zero;
+        currentMetal.transform.localRotation = Quaternion.identity;
 
         if (mainCamera != null)
         {
@@ -96,18 +97,18 @@ public class GrindstoneStation : MonoBehaviour
 
         if (Input.GetMouseButtonDown(1)) isFlipped = !isFlipped;
         float targetRotationZ = isFlipped ? 180f : 0f;
-        currentIron.transform.localRotation = Quaternion.Lerp(currentIron.transform.localRotation, Quaternion.Euler(0, 0, targetRotationZ), Time.deltaTime * 8f);
+        currentMetal.transform.localRotation = Quaternion.Lerp(currentMetal.transform.localRotation, Quaternion.Euler(0, 0, targetRotationZ), Time.deltaTime * 8f);
 
         float scroll = Input.mouseScrollDelta.y;
         bladeSlidePosition += scroll * 0.05f;
 
-        Mesh mesh = currentIron.GetComponent<MeshFilter>().mesh;
+        Mesh mesh = currentMetal.GetComponent<MeshFilter>().mesh;
         float maxSlide = mesh.bounds.extents.z + 0.05f;
         bladeSlidePosition = Mathf.Clamp(bladeSlidePosition, -maxSlide, maxSlide);
 
         if (Input.GetMouseButton(0))
         {
-            currentIron.GrindPerfectEdge(-bladeSlidePosition, isFlipped);
+            currentMetal.GrindPerfectEdge(-bladeSlidePosition, isFlipped);
             currentDip = Mathf.Lerp(currentDip, 0.04f, Time.deltaTime * 10f);
 
             // NOWE: Włączamy iskry, jeśli jeszcze nie lecą
@@ -127,17 +128,24 @@ public class GrindstoneStation : MonoBehaviour
             }
         }
 
-        currentIron.transform.localPosition = new Vector3(currentDip, 0, bladeSlidePosition);
+        currentMetal.transform.localPosition = new Vector3(currentDip, 0, bladeSlidePosition);
     }
 
     private void ExitGrindingMode()
     {
         isGrindingMode = false;
 
-        currentIron.transform.SetParent(null);
-        Rigidbody rb = currentIron.GetComponent<Rigidbody>();
-        if (rb != null) rb.isKinematic = false;
-        currentIron = null;
+        currentMetal.transform.SetParent(null);
+        Rigidbody rb = currentMetal.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = false;
+            rb.useGravity = true; // Zawsze warto upewnić się, że grawitacja wraca
+            // --- KLUCZOWA ZMIANA: Włączamy kolizje! Bez tego nie podniesiesz przedmiotu! ---
+            rb.detectCollisions = true;
+        }
+
+        currentMetal = null;
 
         if (playerObject != null)
         {

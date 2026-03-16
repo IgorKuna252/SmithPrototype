@@ -21,6 +21,7 @@ public class BlacksmithInteraction : MonoBehaviour
 
     void Update()
     {
+        // Jeśli rozmawiamy z NPC, blokujemy resztę akcji
         if (isInteractingWithNPC)
         {
             if (Input.GetKeyDown(KeyCode.Escape))
@@ -28,37 +29,37 @@ public class BlacksmithInteraction : MonoBehaviour
             return;
         }
 
-        // E - interakcja z NPC lub wejście w stację szlifierską
+        // KLAWISZ E - Interakcje ze środowiskiem (NPC, Sceny, Stół montażowy, Szlifierka)
         if (Input.GetKeyDown(KeyCode.E))
         {
-            if (heldItem != null)
-                TryEnterGrindstone();
-            else
-                TryInteractWithE();
+            TryInteractWithEnvironmentE();
         }
 
-        // LEWY PRZYCISK - kucie (jeśli gorący), albo podnoszenie
+        // LEWY PRZYCISK MYSZY - Używanie (Kucie) lub Podnoszenie
         if (Input.GetMouseButtonDown(0))
         {
-            if (!TryInteract())
+            // Najpierw próbujemy użyć obiektu (np. uderzyć młotem)
+            if (!TryHitOrInteract())
+            {
+                // Jeśli się nie udało, próbujemy podnieść
                 TryPickUp();
+            }
         }
 
-        // PRAWY PRZYCISK - podnoszenie / upuszczanie
+        // PRAWY PRZYCISK MYSZY - Kładzenie na stół, Upuszczanie lub Podnoszenie
         if (Input.GetMouseButtonDown(1))
         {
             if (heldItem != null)
-                DropItem();
+                TryPlaceOnTableOrDrop();
             else
                 TryPickUp();
         }
     }
 
-    void TryInteractWithE()
+    void TryInteractWithEnvironmentE()
     {
         Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
-        
-        // Strzelamy promieniem RAZ dla wszystkich interakcji pod klawiszem 'E'
+
         if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
         {
             // 1. Sprawdzenie, czy to NPC
@@ -71,7 +72,7 @@ public class BlacksmithInteraction : MonoBehaviour
                 Cursor.visible = true;
 
                 NPCInteractionUI.Instance.Show(npc);
-                return; // Znaleźliśmy NPC, wychodzimy z metody
+                return;
             }
 
             // 2. Sprawdzenie, czy to obiekt do zmiany sceny
@@ -79,7 +80,30 @@ public class BlacksmithInteraction : MonoBehaviour
             if (sceneTransition != null)
             {
                 sceneTransition.ChangeScene();
-                return; // Znaleźliśmy przejście, wychodzimy z metody
+                return;
+            }
+
+            // 3. Sprawdzenie, czy to stół montażowy
+            MergingTable table = hit.collider.GetComponent<MergingTable>();
+            if (table != null)
+            {
+                table.ToggleAssemblyCamera(playerCamera.gameObject);
+                return;
+            }
+
+            // 4. Sprawdzenie, czy to szlifierka - działa tylko gdy coś trzymamy i jest to MetalPiece
+            GrindstoneStation station = hit.collider.GetComponent<GrindstoneStation>();
+            if (station != null && heldItem != null)
+            {
+                MetalPiece metal = heldItem.GetComponent<MetalPiece>();
+                if (metal != null)
+                {
+                    // Upewnij się, że GrindstoneStation w Twoim projekcie zostało zaktualizowane, 
+                    // aby przyjmować MetalPiece zamiast IronPiece!
+                    station.EnterGrindingMode(metal);
+                    ClearHand();
+                }
+                return;
             }
         }
     }
@@ -94,38 +118,25 @@ public class BlacksmithInteraction : MonoBehaviour
         NPCInteractionUI.Instance.Hide();
     }
 
-    void TryEnterGrindstone()
+    bool TryHitOrInteract()
     {
         Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
         if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
         {
-            GrindstoneStation station = hit.collider.GetComponent<GrindstoneStation>();
-            if (station != null)
+            // Ten log powie nam DOKŁADNIE w co celujesz
+            Debug.Log($"Raycast trafił w: {hit.collider.gameObject.name} na warstwie: {hit.collider.gameObject.layer}");
+
+            MetalPiece metal = hit.collider.GetComponentInParent<MetalPiece>();
+            if (metal != null)
             {
-                station.EnterGrindingMode(heldItem.GetComponent<IronPiece>());
-                heldItem = null;
+                Debug.Log("Znalazłem skrypt MetalPiece! Wysyłam uderzenie...");
+                metal.HitMetal(hit.point, hit.normal);
+                return true;
             }
         }
-    }
-
-    bool TryInteract()
-    {
-        Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
-        if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
+        else
         {
-            IInteractable interactable = hit.collider.GetComponent<IInteractable>();
-            if (interactable == null) return false;
-
-            if (!interactable.Interact()) return false;
-
-            // Jeśli to IronPiece, przekaż punkt uderzenia do deformacji mesh
-            IronPiece iron = hit.collider.GetComponent<IronPiece>();
-            if (iron != null)
-            {
-                iron.HitMetal(hit.point, hit.normal);
-            }
-
-            return true;
+            Debug.Log("Raycast w nic nie trafił. Może reachDistance jest za mały?");
         }
         return false;
     }
@@ -137,26 +148,81 @@ public class BlacksmithInteraction : MonoBehaviour
         Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
         if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
         {
-            IPickable pickable = hit.collider.GetComponent<IPickable>();
-            if (pickable == null) return false;
+            GameObject targetObj = null;
+            IPickable pickable = hit.collider.GetComponentInParent<IPickable>();
 
-            heldItem = hit.collider.gameObject;
-            heldItemRb = heldItem.GetComponent<Rigidbody>();
-
-            if (heldItemRb != null)
+            // Sprawdzamy nowy system z Main (IPickable)
+            if (pickable != null)
             {
-                heldItemRb.useGravity = false;
-                heldItemRb.isKinematic = true;
+                targetObj = ((MonoBehaviour)pickable).gameObject;
+            }
+            else
+            {
+                // Fallback na starszy system (szukanie w rodzicach)
+                MetalPiece metal = hit.collider.GetComponentInParent<MetalPiece>();
+                WoodPiece wood = hit.collider.GetComponentInParent<WoodPiece>();
+                FinishedObject finishedWeapon = hit.collider.GetComponentInParent<FinishedObject>();
+
+                if (metal != null) targetObj = metal.gameObject;
+                else if (wood != null) targetObj = wood.gameObject;
+                else if (finishedWeapon != null) targetObj = finishedWeapon.gameObject;
             }
 
-            heldItem.transform.SetParent(holdPosition);
-            heldItem.transform.localPosition = Vector3.zero;
-            heldItem.transform.localRotation = Quaternion.Euler(holdRotation);
+            // Jeśli znaleźliśmy obiekt do podniesienia
+            if (targetObj != null)
+            {
+                heldItem = targetObj;
+                heldItemRb = heldItem.GetComponent<Rigidbody>();
 
-            pickable.OnPickUp();
-            return true;
+                if (heldItemRb != null)
+                {
+                    heldItemRb.useGravity = false;
+                    heldItemRb.isKinematic = true;
+                    heldItemRb.detectCollisions = false;
+                }
+
+                heldItem.transform.SetParent(holdPosition);
+                heldItem.transform.localPosition = Vector3.zero;
+                heldItem.transform.localRotation = Quaternion.Euler(holdRotation);
+
+                pickable?.OnPickUp();
+                return true;
+            }
         }
         return false;
+    }
+
+    void TryPlaceOnTableOrDrop()
+    {
+        Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
+        if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
+        {
+            // Sprawdzamy czy patrzymy na stół montażowy
+            MergingTable table = hit.collider.GetComponent<MergingTable>();
+            if (table != null)
+            {
+                MetalPiece heldMetal = heldItem.GetComponent<MetalPiece>();
+                WoodPiece heldWood = heldItem.GetComponent<WoodPiece>();
+
+                // Kładziemy metal
+                if (heldMetal != null && !table.HasMetal())
+                {
+                    table.PlaceMetal(heldMetal);
+                    ClearHand();
+                    return;
+                }
+                // Kładziemy drewno
+                else if (heldWood != null && !table.HasWood())
+                {
+                    table.PlaceWood(heldWood);
+                    ClearHand();
+                    return;
+                }
+            }
+        }
+
+        // Jeśli nie trafiliśmy w stół lub nie mieliśmy odpowiedniego przedmiotu - upuszczamy
+        DropItem();
     }
 
     void DropItem()
@@ -168,8 +234,14 @@ public class BlacksmithInteraction : MonoBehaviour
         {
             heldItemRb.useGravity = true;
             heldItemRb.isKinematic = false;
+            heldItemRb.detectCollisions = true;
         }
 
+        ClearHand();
+    }
+
+    void ClearHand()
+    {
         heldItem = null;
         heldItemRb = null;
     }
