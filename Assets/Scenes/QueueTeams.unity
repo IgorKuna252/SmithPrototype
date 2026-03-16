@@ -33037,7 +33037,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: da0d0779af1dd2040923f042c40a466d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IronPiece
-  currentTemperature: 1000
+  currentTemperature: 20
   maxTemperature: 1000
   coolingRate: 10
   forgingTemperature: 500
