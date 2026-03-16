@@ -106,7 +106,7 @@ public void ToggleAssemblyCamera(GameObject playerCam)
     {
         if (placedMetal != null && placedWood != null)
         {
-            if (!placedMetal.isFinished) return;
+            //if (!placedMetal.isFinished) return;
 
             GameObject craftedWeapon = new GameObject("CraftedWeapon_" + placedMetal.metalTier.ToString());
             

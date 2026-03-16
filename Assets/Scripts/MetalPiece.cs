@@ -105,51 +105,57 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
         UpdateVisuals();
     }
 
-    public void HitMetal(Vector3 hitPoint, Vector3 hitNormal)
+    // Zmieniamy void na bool!
+    public bool HitMetal(Vector3 hitPoint, Vector3 hitNormal)
     {
         if (currentTemperature >= forgingTemperature)
         {
             Debug.Log("Kucie! Deformacja siatki...");
-            DeformMesh(hitPoint, hitNormal);
-            isFinished = true; // Stół montażowy to zaakceptuje
+
+            // Zapisujemy wynik uderzenia
+            bool success = DeformMesh(hitPoint, hitNormal);
+
+            // Jeśli faktycznie odkształciliśmy metal (nie było pudła), oznaczamy go jako wykuty!
+            if (success)
+            {
+                isFinished = true;
+            }
+
+            return success;
         }
         else
         {
             Debug.Log("Metal jest zbyt zimny, by go kuć!");
+            return false;
         }
     }
 
-    // --- TWOJA SPRAWDZONA MATEMATYKA DEFORMACJI ---
-    private void DeformMesh(Vector3 hitPoint, Vector3 hitNormal)
-
+    // Zmieniamy void na bool!
+    private bool DeformMesh(Vector3 hitPoint, Vector3 hitNormal)
     {
         Vector3 localHitPoint = transform.InverseTransformPoint(hitPoint);
 
-        // OBLICZAMY GRUBOŚĆ
-        float currentThickness = mesh.bounds.size.y;
-
-
-        // --- DEBUG LOGI ---
-        Debug.Log($"[DEBUG KUCIA] Wykryta grubość: {currentThickness} | Limit minThickness: {minThickness}");
-
-        if (currentThickness < minThickness)
+        // --- NOWOŚĆ: TWARDA WERYFIKACJA PUDŁA ---
+        // Sprawdzamy odległość kursora od najbliższego wierzchołka metalu (ignorujemy oś Y, bo blacha jest płaska)
+        float closestDistance = float.MaxValue;
+        for (int i = 0; i < vertices.Length; i++)
         {
-            Debug.LogWarning("<color=red>[BLOKADA]</color> Metal jest już zbyt cienki! Kucie przerwane.");
-            return;
+            float dist = Vector2.Distance(new Vector2(localHitPoint.x, localHitPoint.z), new Vector2(vertices[i].x, vertices[i].z));
+            if (dist < closestDistance) closestDistance = dist;
         }
-        // ------------------
 
+        // Jeśli najbliższy punkt metalu jest dalej niż 3 cm od uderzenia - pudło! Ignorujemy.
+        if (closestDistance > 0.05f)
+        {
+            return false;
+        }
+
+        // 1. OBLICZAMY OPÓR DLA CAŁEGO UDERZENIA
+        float currentThickness = Mathf.Abs(localHitPoint.y) * 2f;
         if (currentThickness < 0.005f) currentThickness = minThickness + 0.05f;
 
         float resistanceFactor = Mathf.Clamp01((currentThickness - minThickness) / 0.02f);
-
-        Debug.Log($"[DEBUG KUCIA] Resistance Factor: {resistanceFactor}");
-
-        if (resistanceFactor <= 0.01f)
-        {
-            Debug.LogWarning("<color=orange>[BLOKADA]</color> Resistance Factor za niski! Kucie przerwane.");
-            return;
-        }
+        if (resistanceFactor <= 0.01f) return false;
 
         bool wasDeformed = false;
 
@@ -184,6 +190,9 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
             meshCollider.sharedMesh = null;
             meshCollider.sharedMesh = mesh;
         }
+
+        // Zwracamy informację, czy cokolwiek zostało zniekształcone
+        return wasDeformed;
     }
 
     public void GrindPerfectEdge(float localZPosition, bool isFlipped)
