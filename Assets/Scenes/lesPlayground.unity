@@ -25255,7 +25255,7 @@ BoxCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
@@ -25944,8 +25944,10 @@ MonoBehaviour:
   scriptsToDisable: []
   craftSpawnPoint: {fileID: 2139982732}
   craftingUI: {fileID: 0}
+  connectionOffset: -0.03
   handleOffset: {x: 0, y: 0, z: -0.4}
   bladeOffset: {x: 0, y: 0, z: 0}
+  gripRotation: {x: 0, y: -90, z: -30}
 --- !u!65 &645811089
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -26542,7 +26544,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 779124034}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7a5ac11cc976e418e8d13136b07e1f52, type: 3}
   m_Name: 
@@ -26565,7 +26567,7 @@ MonoBehaviour:
   m_OverrideVoxelSize: 0
   m_VoxelSize: 0.16666667
   m_MinRegionArea: 2
-  m_NavMeshData: {fileID: 23800000, guid: 23d72c18578d6154e8a433f761769697, type: 2}
+  m_NavMeshData: {fileID: 23800000, guid: 127ecef9f07c40741a31483ee2884721, type: 2}
   m_BuildHeightMesh: 0
 --- !u!1 &794893887
 GameObject:
@@ -56113,7 +56115,7 @@ BoxCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
@@ -56346,7 +56348,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5902d0d538df364fb1b512af4eeeed9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  prefabObject: {fileID: 2799431850128738207, guid: b7e0e60cdcf8b744590b2f15aa832e6b, type: 3}
+  prefabObject: {fileID: 4316528496479175685, guid: 5e36a6cd028e3254b80bf20b09841f83, type: 3}
   spawnedCount: 5
   spawnObject: {fileID: 398805054}
   targetNPCReject: {fileID: 528109493}

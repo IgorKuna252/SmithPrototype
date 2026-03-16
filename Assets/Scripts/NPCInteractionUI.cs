@@ -65,7 +65,8 @@ public class NPCInteractionUI : MonoBehaviour
     void OnAccept()
     {
         currentNPC.Accept();
-        OnNPCInteractionFinished?.Invoke(); // Powiadamiamy każdego, kto słucha
+        queue.OnNPCProcessed();
+        OnNPCInteractionFinished?.Invoke();
         blacksmith.CloseNPCInteraction();
     }
 

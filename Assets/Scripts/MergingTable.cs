@@ -18,8 +18,12 @@ public class MergingTable : MonoBehaviour
     public float connectionOffset = -0.03f;
 
     [Header("Ustawienia Pozycji Części")]
-    public Vector3 handleOffset = new Vector3(0, 0, -0.4f); // To zastąpi Twoje twarde liczby
-    public Vector3 bladeOffset = Vector3.zero;             // Na wypadek, gdybyś chciał ruszyć ostrze   
+    public Vector3 handleOffset = new Vector3(0, 0, -0.4f);
+    public Vector3 bladeOffset = Vector3.zero;
+
+    [Header("Grip - Rotacja broni w dłoni NPC")]
+    [Tooltip("Rotacja GripPointa — dostosuj żeby ostrze celowało do przodu NPC")]
+    public Vector3 gripRotation = new Vector3(0f, 0f, -90f);
 
     private GameObject mainPlayerCamera; 
     private bool isAssemblyMode = false;
@@ -152,15 +156,31 @@ public void ToggleAssemblyCamera(GameObject playerCam)
 
             placedMetal.ForceCoolDown();
 
+            // Zapamiętaj pozycję rączki PRZED zniszczeniem komponentów
+            Vector3 gripLocalPos = placedWood.transform.localPosition;
+
             Destroy(placedMetal.GetComponent<Rigidbody>());
             Destroy(placedWood.GetComponent<Rigidbody>());
-            Destroy(placedMetal); 
-            Destroy(placedWood);  
+            Destroy(placedMetal);
+            Destroy(placedWood);
 
             Rigidbody weaponRb = craftedWeapon.AddComponent<Rigidbody>();
-            weaponRb.mass = 2.5f; 
-            
+            weaponRb.mass = 2.5f;
+
             craftedWeapon.AddComponent<FinishedObject>();
+
+            BoxCollider col = craftedWeapon.AddComponent<BoxCollider>();
+            col.size = new Vector3(0.1f, 0.1f, 1f);
+            col.center = new Vector3(0, 0, 0.2f);
+
+            craftedWeapon.AddComponent<WeaponHitbox>();
+
+            // GripPoint — punkt chwytu w środku rączki
+            // Rotacja: oś Y GripPointa = oś ostrza (Z+ broni), żeby broń celowała do przodu NPC
+            GameObject grip = new GameObject("GripPoint");
+            grip.transform.SetParent(craftedWeapon.transform);
+            grip.transform.localPosition = gripLocalPos;
+            grip.transform.localRotation = Quaternion.Euler(gripRotation);
 
             placedMetal = null;
             placedWood = null;

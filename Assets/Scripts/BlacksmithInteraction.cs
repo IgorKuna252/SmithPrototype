@@ -77,7 +77,29 @@ public class BlacksmithInteraction : MonoBehaviour
         Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
         if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
         {
+            // Gracz trzyma broń — spróbuj dać NPC z WeaponSocket
+            if (heldItem != null && heldItem.GetComponent<FinishedObject>() != null)
+            {
+                WeaponSocket socket = hit.collider.GetComponent<WeaponSocket>();
+                if (socket == null) socket = hit.collider.GetComponentInParent<WeaponSocket>();
+                if (socket != null)
+                {
+                    heldItem.GetComponent<IPickable>()?.OnDrop();
+                    heldItem.transform.SetParent(null);
+                    socket.EquipWeapon(heldItem);
+                    ClearHand();
+
+                    NPCCombat combat = socket.GetComponent<NPCCombat>();
+                    if (combat != null)
+                        combat.SetCombatActive(true);
+
+                    Debug.Log($"Dano broń dla {socket.gameObject.name}!");
+                    return;
+                }
+            }
+
             npcPathFinding npc = hit.collider.GetComponent<npcPathFinding>();
+            if (npc == null) npc = hit.collider.GetComponentInParent<npcPathFinding>();
             if (npc != null)
             {
                 isInteractingWithNPC = true;

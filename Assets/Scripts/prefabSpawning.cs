@@ -43,7 +43,9 @@ public class prefabSpawning : MonoBehaviour
         int index = 0;
         foreach (GameObject npcObj in npcQueue)
         {
-            npcObj.GetComponent<npcPathFinding>().MoveToQueuePosition(queuePositions[index]);
+            npcPathFinding npc = npcObj.GetComponent<npcPathFinding>();
+            if (npc.isInTeam) continue;
+            npc.MoveToQueuePosition(queuePositions[index]);
             index++;
         }
     }
