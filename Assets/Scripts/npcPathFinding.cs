@@ -51,9 +51,6 @@ public class npcPathFinding : MonoBehaviour
 
         if (animator != null)
             animator.SetFloat("Speed", speed);
-
-        // DEBUG — usuń po naprawieniu
-        Debug.Log($"[{gameObject.name}] hasPath={agentNPC.hasPath} pathPending={agentNPC.pathPending} remDist={agentNPC.remainingDistance:F2} vel={agentNPC.velocity.magnitude:F3} animSpeed={speed:F3} animatorNull={animator == null}");
     }
 
     void SetDestination(Transform target)
