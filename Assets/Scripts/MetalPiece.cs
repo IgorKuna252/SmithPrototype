@@ -312,4 +312,19 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
         block.SetColor("_Color", currentColor);
         meshRenderer.SetPropertyBlock(block);
     }
+
+    public float GetActualBackOfBlade()
+    {
+        float minZ = float.MaxValue;
+        // Przeszukujemy naszą zmodyfikowaną listę wierzchołków
+        foreach (Vector3 v in vertices)
+        {
+            if (v.z < minZ) 
+            {
+                minZ = v.z;
+            }
+        }
+        // Zwracamy najmniejsze Z (tył), uwzględniając skalę obiektu
+        return minZ * transform.localScale.z;
+    }
 }
