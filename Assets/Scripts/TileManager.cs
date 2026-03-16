@@ -81,23 +81,52 @@ public class TileManager : MonoBehaviour
         teamStrengthText.text = $"Siła Drużyny: {totalStrength:F0}";
     }
     
+    [Header("Result UI")]
+    [SerializeField] private GameObject resultPanel; // Nowy panel z wynikiem
+    [SerializeField] private TextMeshProUGUI resultTitleText;
+    [SerializeField] private TextMeshProUGUI resultDescriptionText;
+
     public void Fight()
     {
-        bool anySelected = false;
+        float totalStrength = 0;
+    
+        // Obliczamy sumę statystyk
         for (int i = 0; i < currentToggles.Count; i++)
         {
             if (currentToggles[i].isOn)
             {
-                anySelected = true;
-                Debug.Log($"Wysyłam do walki: {gameManager.Instance.team[i].name}");
+                var member = gameManager.Instance.team[i];
+                // Tu zsumuj dokładnie to, co chcesz:
+                totalStrength += (member.health + member.strength + member.intelligence + member.speed);
             }
         }
 
-        if (!anySelected) return;
+        // DEBUG: Wypiszmy to na ekranie/w konsoli przed porównaniem
+        Debug.Log($"WALKA: Siła drużyny: {totalStrength} | Trudność kafelka: {selectedTile.difficulty}");
 
-        selectedTile.isOwned = true;
-        selectedTile.UpdateVisuals();
         CloseUI();
+        resultPanel.SetActive(true);
+
+        if (totalStrength >= selectedTile.difficulty)
+        {
+            // WYGRANA
+            int randomAmount = Random.Range(1, 6); // 1 do 5
+            string[] resources = { "żelazo", "srebro", "złoto" };
+            string randomResource = resources[Random.Range(0, resources.Length)];
+
+            resultTitleText.text = "Wygrałeś!";
+            resultDescriptionText.text = $"Otrzymujesz {randomAmount} jednostek surowca: {randomResource}";
+        
+            // Oznaczamy kafelek jako wygrany
+            selectedTile.isOwned = true;
+            selectedTile.UpdateVisuals();
+        }
+        else
+        {
+            // PRZEGRANA
+            resultTitleText.text = "Przegrałeś!";
+            resultDescriptionText.text = "Nie wystarczyło sił, aby zdobyć ten teren.";
+        }
     }
 
     public void CloseUI() => uiPanel.SetActive(false);
