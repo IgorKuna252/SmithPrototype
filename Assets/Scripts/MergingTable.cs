@@ -14,6 +14,9 @@ public class MergingTable : MonoBehaviour
     public Transform craftSpawnPoint; 
     public GameObject craftingUI; 
 
+    [Header("Mikro-korekta łączenia")]
+    public float connectionOffset = -0.03f;
+
     [Header("Ustawienia Pozycji Części")]
     public Vector3 handleOffset = new Vector3(0, 0, -0.4f); // To zastąpi Twoje twarde liczby
     public Vector3 bladeOffset = Vector3.zero;             // Na wypadek, gdybyś chciał ruszyć ostrze   
@@ -30,26 +33,7 @@ public class MergingTable : MonoBehaviour
         if (craftingUI != null) craftingUI.SetActive(false);
     }
 
-    void Update()
-    {
-        if (isAssemblyMode && Input.GetKeyDown(KeyCode.E) && Time.time > assemblyStartTime + 0.2f)
-        {
-            ExitAssemblyMode();
-        }
-
-        if (isAssemblyMode && Input.GetKeyDown(KeyCode.Space))
-        {
-            CombineItems();
-        }
-
-        // Automatyczne czyszczenie, jeśli gracz zabrał przedmiot ręcznie
-        if (placedMetal != null && placedMetal.transform.parent != ingotPreview.parent)
-            placedMetal = null;
-        if (placedWood != null && placedWood.transform.parent != handlePreview.parent)
-            placedWood = null;
-    }
-
-    public void ToggleAssemblyCamera(GameObject playerCam)
+public void ToggleAssemblyCamera(GameObject playerCam)
     {
         if (isAssemblyMode) return;
 
@@ -57,17 +41,14 @@ public class MergingTable : MonoBehaviour
         mainPlayerCamera.SetActive(false);
         assemblyCamera.SetActive(true);
         isAssemblyMode = true;
-        assemblyStartTime = Time.time;
+        // assemblyStartTime = Time.time; <-- To też możesz usunąć, jeśli nie masz już Update() w stole
 
         if (craftingUI != null) craftingUI.SetActive(true);
 
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
-
-        foreach (MonoBehaviour script in scriptsToDisable)
-        {
-            if (script != null) script.enabled = false;
-        }
+        
+        // CAŁKOWICIE USUNIĘTO pętlę wyłączającą skrypty!
     }
 
     public void ExitAssemblyMode()
@@ -83,10 +64,7 @@ public class MergingTable : MonoBehaviour
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
 
-        foreach (MonoBehaviour script in scriptsToDisable)
-        {
-            if (script != null) script.enabled = true;
-        }
+        // CAŁKOWICIE USUNIĘTO pętlę włączającą skrypty!
     }
 
     public bool HasMetal() => placedMetal != null;
@@ -144,8 +122,33 @@ public class MergingTable : MonoBehaviour
             placedWood.transform.localRotation = Quaternion.identity;
             placedMetal.transform.localRotation = Quaternion.identity;
 
-            placedWood.transform.localPosition = new Vector3(0, 0, -0.4f);
-            placedMetal.transform.localPosition = new Vector3(0, 0, 0);
+            // --- AUTOMATYCZNE OBLICZANIE POZYCJI (Zczytywanie na żywo) ---
+            
+            // Ostrze idzie na pozycję Zero
+            placedMetal.transform.localPosition = Vector3.zero;
+
+            MeshFilter woodFilter = placedWood.GetComponentInChildren<MeshFilter>();
+
+            if (woodFilter != null)
+            {
+                // POBIERAMY ZMODYFIKOWANY TYŁ MIECZA BEZPOŚREDNIO Z WIERZCHOŁKÓW
+                float backOfBlade = placedMetal.GetActualBackOfBlade(); 
+                
+                // Rączka się nie deformuje, więc jej bounds są zawsze poprawne
+                float frontOfHandle = woodFilter.mesh.bounds.max.z * woodFilter.transform.localScale.z;
+
+                // Obliczamy idealne miejsce na styk
+                float targetZ = backOfBlade - frontOfHandle + connectionOffset;
+                
+                placedWood.transform.localPosition = new Vector3(0, 0, targetZ);
+                
+                Debug.Log($"[Automatyczny Pivot] Tył wykutego ostrza to: {backOfBlade}. Przesuwam rączkę na: {targetZ}");
+            }
+            else
+            {
+                placedWood.transform.localPosition = new Vector3(0, 0, -0.4f);
+            }
+            // ----------------------------------------------
 
             placedMetal.ForceCoolDown();
 

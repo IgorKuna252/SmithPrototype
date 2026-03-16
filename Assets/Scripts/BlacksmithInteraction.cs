@@ -13,6 +13,8 @@ public class BlacksmithInteraction : MonoBehaviour
     private Rigidbody heldItemRb;
     private PlayerMovement playerMovement;
     private bool isInteractingWithNPC = false;
+    private bool isInteractingWithTable = false;
+    private MergingTable activeTable = null;
 
     void Start()
     {
@@ -28,6 +30,22 @@ public class BlacksmithInteraction : MonoBehaviour
             return;
         }
 
+        if (isInteractingWithTable)
+        {
+            // Wychodzenie ze stołu (E lub ESC)
+            if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.E))
+            {
+                CloseTableInteraction();
+            }
+            
+            // Łączenie przedmiotów spacją
+            if (Input.GetKeyDown(KeyCode.Space) && activeTable != null)
+            {
+                activeTable.CombineItems();
+            }
+            return; // Blokujemy resztę Update, żeby gracz nie rzucał promieniami w tle!
+        }
+
         if (Input.GetKeyDown(KeyCode.E)) TryInteractWithEnvironmentE();
 
         if (Input.GetMouseButtonDown(0))
@@ -40,6 +58,18 @@ public class BlacksmithInteraction : MonoBehaviour
             if (heldItem != null) TryPlaceOnTableOrDrop();
             else TryPickUp();
         }
+        
+    }
+
+    public void CloseTableInteraction()
+    {
+        if (activeTable != null)
+        {
+            activeTable.ExitAssemblyMode();
+        }
+        isInteractingWithTable = false;
+        activeTable = null;
+        playerMovement.enabled = true; // Oddajemy chodzenie
     }
 
     void TryInteractWithEnvironmentE()
@@ -62,7 +92,14 @@ public class BlacksmithInteraction : MonoBehaviour
             if (sceneTransition != null) { sceneTransition.ChangeScene(); return; }
 
             MergingTable table = hit.collider.GetComponent<MergingTable>();
-            if (table != null) { table.ToggleAssemblyCamera(playerCamera.gameObject); return; }
+            if (table != null) 
+            { 
+                activeTable = table;
+                isInteractingWithTable = true;
+                playerMovement.enabled = false; // Zabieramy chodzenie
+                table.ToggleAssemblyCamera(playerCamera.gameObject); 
+                return; 
+            }
 
             GrindstoneStation station = hit.collider.GetComponent<GrindstoneStation>();
             if (station != null && heldItem != null)
