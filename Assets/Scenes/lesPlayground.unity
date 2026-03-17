@@ -158,8 +158,8 @@ MonoBehaviour:
   holdRotation: {x: 0, y: 0, z: 0}
   swordHoldPosition: {x: 0, y: 0, z: 0}
   swordHoldRotation: {x: -90, y: 180, z: 90}
-  axeHoldPosition: {x: 0, y: 0.3, z: 1.7}
-  axeHoldRotation: {x: 0, y: 180, z: 0}
+  axeHoldPosition: {x: 1, y: 1, z: 1}
+  axeHoldRotation: {x: 270, y: 270, z: 180}
 --- !u!114 &11554876
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -26063,7 +26063,7 @@ MonoBehaviour:
   handleOffset: {x: 0, y: 0, z: 0}
   bladeOffset: {x: 0, y: 0, z: 0}
   swordGripRotation: {x: 0, y: -90, z: -30}
-  axeGripRotation: {x: 0, y: 0, z: -90}
+  axeGripRotation: {x: -180, y: -90, z: -30}
 --- !u!65 &645811089
 BoxCollider:
   m_ObjectHideFlags: 0
