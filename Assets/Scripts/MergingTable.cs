@@ -15,7 +15,8 @@ public class MergingTable : MonoBehaviour
     public GameObject craftingUI; 
 
     [Header("Mikro-korekta łączenia")]
-    public float connectionOffset = -0.03f;
+    public float swordConnectionOffset = -0.03f; // Offset dla miecza
+    public float axeConnectionOffset = -0.05f;   // Offset dla topora
 
     [Header("Ustawienia Pozycji Części")]
     public Vector3 handleOffset = new Vector3(0, 0, -0.4f);
@@ -105,12 +106,10 @@ public void ToggleAssemblyCamera(GameObject playerCam)
         placedWood = wood;
     }
 
-    public void CombineItems()
+public void CombineItems()
 {
     if (placedMetal != null && placedWood != null)
     {
-        if (!placedMetal.isFinished) return;
-
         // --- LOGIKA ROZPOZNAWANIA PRZEPISU ---
         string weaponName = "Zniszczona Broń";
         bool validRecipe = false;
@@ -159,13 +158,21 @@ public void ToggleAssemblyCamera(GameObject playerCam)
         if (woodFilter != null)
         {
             float backOfBlade = placedMetal.GetActualBackOfBlade(); 
+            
+            // POBIERAMY PRZÓD RĄCZKI (Na osi Z)
             float frontOfHandle = woodFilter.mesh.bounds.max.z * woodFilter.transform.localScale.z;
 
-            // Możesz dodać osobne offsety dla miecza i topora jeśli trzeba:
-            float currentOffset = (placedMetal.partType == MetalPiece.MetalPartType.AxeHead) ? connectionOffset : connectionOffset; 
+            float currentOffset = (placedMetal.partType == MetalPiece.MetalPartType.AxeHead) 
+                              ? axeConnectionOffset 
+                              : swordConnectionOffset;
 
+            // OBLICZAMY Z
             float targetZ = backOfBlade - frontOfHandle + currentOffset;
+            
+            // PRZYPISUJEMY DO OSI Z (0, 0, targetZ) - TO JEST TA KLUCZOWA POPRAWKA!
             placedWood.transform.localPosition = new Vector3(0, 0, targetZ);
+            
+            Debug.Log($"[Dynamiczny Pivot Z] Tył ostrza: {backOfBlade}. Przesuwam rączkę na Z: {targetZ}");
         }
 
         // --- FINALIZACJA ---
@@ -202,7 +209,10 @@ public void ToggleAssemblyCamera(GameObject playerCam)
 }
 
 // Wyciągnąłem to do osobnej funkcji, żeby kod był czystszy
-private void FinalizeCrafting(GameObject weapon)
+// W CombineItems upewnij się, że wywołujesz to z odpowiednim flagowaniem:
+// FinalizeCrafting(craftedWeapon, placedMetal.partType == MetalPiece.MetalPartType.AxeHead);
+
+private void FinalizeCrafting(GameObject weapon, bool isAxe)
 {
     placedMetal.ForceCoolDown();
 
@@ -212,13 +222,15 @@ private void FinalizeCrafting(GameObject weapon)
     Destroy(placedWood);  
 
     Rigidbody weaponRb = weapon.AddComponent<Rigidbody>();
-    weaponRb.mass = (weapon.name.Contains("Topór")) ? 4.0f : 2.5f; // Topór cięższy!
+    weaponRb.mass = isAxe ? 4.0f : 2.5f; // Topór jest cięższy
     
-    weapon.AddComponent<FinishedObject>();
+    // Dodajemy skrypt FinishedObject i od razu przypisujemy mu odpowiedni typ!
+    FinishedObject finishedObj = weapon.AddComponent<FinishedObject>();
+    finishedObj.weaponType = isAxe ? FinishedObject.WeaponType.Axe : FinishedObject.WeaponType.Sword;
 
     placedMetal = null;
     placedWood = null;
     
-    Debug.Log("Stworzono: " + weapon.name);
+    Debug.Log($"Stworzono: {weapon.name} typu: {finishedObj.weaponType}");
 }
 }
