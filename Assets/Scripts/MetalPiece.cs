@@ -13,10 +13,16 @@ public enum MetalType
     Vibranium    // Wibranium
 }
 
+
+
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(MeshCollider))]
 public class MetalPiece : MonoBehaviour, IInteractable, IPickable
 {
+
+    public enum MetalPartType { SwordBlade, AxeHead }
+    public MetalPartType partType;
+    
     [Header("Dane dla Stołu Montażowego")]
     public bool isFinished = false;
     public MetalType metalTier = MetalType.Iron;
