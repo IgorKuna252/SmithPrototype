@@ -15,6 +15,7 @@ public class BlacksmithInteraction : MonoBehaviour
     private bool isInteractingWithNPC = false;
     private bool isInteractingWithTable = false;
     private MergingTable activeTable = null;
+    public static BlacksmithInteraction Instance;
 
     void Start()
     {
@@ -59,6 +60,14 @@ public class BlacksmithInteraction : MonoBehaviour
             else TryPickUp();
         }
         
+    }
+
+    void Awake() { Instance = this; }
+
+    public bool IsHoldingItem()
+    {
+        // Zwraca true, jeśli w ręku gracza znajduje się jakikolwiek obiekt
+        return heldItem != null; 
     }
 
     public void CloseTableInteraction()

@@ -105,11 +105,35 @@ public void ToggleAssemblyCamera(GameObject playerCam)
 {
     if (placedMetal != null && placedWood != null)
     {
-        // Sprawdzamy, czy metal został wykuty
         if (!placedMetal.isFinished) return;
 
-        // 1. Tworzymy kontener dla broni
-        GameObject craftedWeapon = new GameObject("CraftedWeapon_" + placedMetal.metalTier.ToString());
+        // --- LOGIKA ROZPOZNAWANIA PRZEPISU ---
+        string weaponName = "Zniszczona Broń";
+        bool validRecipe = false;
+
+        // Sprawdzamy czy to Topór
+        if (placedMetal.partType == MetalPiece.MetalPartType.AxeHead && 
+            placedWood.partType == WoodPiece.HandleType.AxeHandle)
+        {
+            weaponName = "Wykuty Topór";
+            validRecipe = true;
+        }
+        // Sprawdzamy czy to Miecz
+        else if (placedMetal.partType == MetalPiece.MetalPartType.SwordBlade && 
+                 placedWood.partType == WoodPiece.HandleType.SwordHandle)
+        {
+            weaponName = "Wykuty Miecz";
+            validRecipe = true;
+        }
+
+        if (!validRecipe)
+        {
+            Debug.LogWarning("Te części do siebie nie pasują!");
+            return;
+        }
+
+        // 1. Tworzymy kontener z nazwą konkretnej broni
+        GameObject craftedWeapon = new GameObject(weaponName + "_" + placedMetal.metalTier.ToString());
         
         if (craftSpawnPoint != null)
         {
@@ -117,64 +141,52 @@ public void ToggleAssemblyCamera(GameObject playerCam)
             craftedWeapon.transform.rotation = craftSpawnPoint.rotation;
         }
 
-        // 2. Podpinamy Rodziców (Axe_Root, Handle_Root) do nowej broni
+        // 2. Podpinanie do rodzica
         placedWood.transform.SetParent(craftedWeapon.transform);
         placedMetal.transform.SetParent(craftedWeapon.transform);
 
-        // 3. Resetujemy rotacje - osie Rodziców stają się osiami broni
         placedWood.transform.localRotation = Quaternion.identity;
         placedMetal.transform.localRotation = Quaternion.identity;
 
-        // --- DYNAMICZNE OBLICZANIE POZYCJI (Na bazie Rodziców) ---
-        
-        // Ostrze (Rodzic) idzie na Zero
+        // 3. Pozycjonowanie (Używamy Twojej dynamicznej logiki)
         placedMetal.transform.localPosition = Vector3.zero;
 
         MeshFilter woodFilter = placedWood.GetComponentInChildren<MeshFilter>();
-
         if (woodFilter != null)
         {
-            // POBIERAMY TYŁ OSTRZA: 
-            // Zakładamy, że GetActualBackOfBlade zwraca pozycję wierzchołka 
-            // w lokalnym układzie Rodzica (skala 1:1)
             float backOfBlade = placedMetal.GetActualBackOfBlade(); 
-            
-            // POBIERAMY PRZÓD RĄCZKI:
-            // Musimy uwzględnić skalę dziecka, żeby wiedzieć, gdzie fizycznie kończy się rączka 
-            // względem swojego Rodzica (Handle_Root)
             float frontOfHandle = woodFilter.mesh.bounds.max.z * woodFilter.transform.localScale.z;
 
-            // Obliczamy idealne miejsce styku dla Rodzica rączki
-            float targetY = backOfBlade - frontOfHandle + connectionOffset;
-            
-            // Ustawiamy Rodzica rączki na obliczonej pozycji
-            placedWood.transform.localPosition = new Vector3(0, 0, targetY);
-            
-            Debug.Log($"[Dynamiczny Pivot Root] Tył ostrza: {backOfBlade}. Przesuwam Rodzica rączki na: {targetY}");
-        }
-        else
-        {
-            // Failsafe, jeśli nie znajdzie mesha rączki
-            placedWood.transform.localPosition = handleOffset;
+            // Możesz dodać osobne offsety dla miecza i topora jeśli trzeba:
+            float currentOffset = (placedMetal.partType == MetalPiece.MetalPartType.AxeHead) ? connectionOffset : connectionOffset; 
+
+            float targetZ = backOfBlade - frontOfHandle + currentOffset;
+            placedWood.transform.localPosition = new Vector3(0, 0, targetZ);
         }
 
         // --- FINALIZACJA ---
-        placedMetal.ForceCoolDown();
-
-        // Usuwamy fizykę części, by nie gryzła się z fizyką całej broni
-        Destroy(placedMetal.GetComponent<Rigidbody>());
-        Destroy(placedWood.GetComponent<Rigidbody>());
-        Destroy(placedMetal); 
-        Destroy(placedWood);  
-
-        Rigidbody weaponRb = craftedWeapon.AddComponent<Rigidbody>();
-        weaponRb.mass = 2.5f; 
-        
-        // Zgodnie z ustaleniami: używamy finishedObject
-        craftedWeapon.AddComponent<FinishedObject>();
-
-        placedMetal = null;
-        placedWood = null;
+        FinalizeCrafting(craftedWeapon);
     }
+}
+
+// Wyciągnąłem to do osobnej funkcji, żeby kod był czystszy
+private void FinalizeCrafting(GameObject weapon)
+{
+    placedMetal.ForceCoolDown();
+
+    Destroy(placedMetal.GetComponent<Rigidbody>());
+    Destroy(placedWood.GetComponent<Rigidbody>());
+    Destroy(placedMetal); 
+    Destroy(placedWood);  
+
+    Rigidbody weaponRb = weapon.AddComponent<Rigidbody>();
+    weaponRb.mass = (weapon.name.Contains("Topór")) ? 4.0f : 2.5f; // Topór cięższy!
+    
+    weapon.AddComponent<FinishedObject>();
+
+    placedMetal = null;
+    placedWood = null;
+    
+    Debug.Log("Stworzono: " + weapon.name);
 }
 }
