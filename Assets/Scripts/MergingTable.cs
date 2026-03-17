@@ -23,8 +23,10 @@ public class MergingTable : MonoBehaviour
     public Vector3 bladeOffset = Vector3.zero;
 
     [Header("Grip - Rotacja broni w dłoni NPC")]
-    [Tooltip("Rotacja GripPointa — dostosuj żeby ostrze celowało do przodu NPC")]
-    public Vector3 gripRotation = new Vector3(0f, 0f, -90f);
+    [Tooltip("Rotacja GripPointa miecza — dostosuj żeby ostrze celowało do przodu NPC")]
+    public Vector3 swordGripRotation = new Vector3(0f, -90f, -30f);
+    [Tooltip("Rotacja GripPointa topora — dostosuj żeby ostrze celowało do przodu NPC")]
+    public Vector3 axeGripRotation = new Vector3(0f, 0f, -90f);
 
     private GameObject mainPlayerCamera; 
     private bool isAssemblyMode = false;
@@ -113,16 +115,18 @@ public void CombineItems()
         // --- LOGIKA ROZPOZNAWANIA PRZEPISU ---
         string weaponName = "Zniszczona Broń";
         bool validRecipe = false;
+        bool isAxe = false;
 
         // Sprawdzamy czy to Topór
-        if (placedMetal.partType == MetalPiece.MetalPartType.AxeHead && 
+        if (placedMetal.partType == MetalPiece.MetalPartType.AxeHead &&
             placedWood.partType == WoodPiece.HandleType.AxeHandle)
         {
             weaponName = "Wykuty Topór";
             validRecipe = true;
+            isAxe = true;
         }
         // Sprawdzamy czy to Miecz
-        else if (placedMetal.partType == MetalPiece.MetalPartType.SwordBlade && 
+        else if (placedMetal.partType == MetalPiece.MetalPartType.SwordBlade &&
                  placedWood.partType == WoodPiece.HandleType.SwordHandle)
         {
             weaponName = "Wykuty Miecz";
@@ -190,7 +194,8 @@ public void CombineItems()
         Rigidbody weaponRb = craftedWeapon.AddComponent<Rigidbody>();
         weaponRb.mass = 2.5f;
 
-        craftedWeapon.AddComponent<FinishedObject>();
+        FinishedObject finishedObj = craftedWeapon.AddComponent<FinishedObject>();
+        finishedObj.weaponType = isAxe ? FinishedObject.WeaponType.Axe : FinishedObject.WeaponType.Sword;
 
         BoxCollider col = craftedWeapon.AddComponent<BoxCollider>();
         col.size = new Vector3(0.1f, 0.1f, 1f);
@@ -201,36 +206,10 @@ public void CombineItems()
         GameObject grip = new GameObject("GripPoint");
         grip.transform.SetParent(craftedWeapon.transform);
         grip.transform.localPosition = gripLocalPos;
-        grip.transform.localRotation = Quaternion.Euler(gripRotation);
+        grip.transform.localRotation = Quaternion.Euler(isAxe ? axeGripRotation : swordGripRotation);
 
         placedMetal = null;
         placedWood = null;
     }
-}
-
-// Wyciągnąłem to do osobnej funkcji, żeby kod był czystszy
-// W CombineItems upewnij się, że wywołujesz to z odpowiednim flagowaniem:
-// FinalizeCrafting(craftedWeapon, placedMetal.partType == MetalPiece.MetalPartType.AxeHead);
-
-private void FinalizeCrafting(GameObject weapon, bool isAxe)
-{
-    placedMetal.ForceCoolDown();
-
-    Destroy(placedMetal.GetComponent<Rigidbody>());
-    Destroy(placedWood.GetComponent<Rigidbody>());
-    Destroy(placedMetal); 
-    Destroy(placedWood);  
-
-    Rigidbody weaponRb = weapon.AddComponent<Rigidbody>();
-    weaponRb.mass = isAxe ? 4.0f : 2.5f; // Topór jest cięższy
-    
-    // Dodajemy skrypt FinishedObject i od razu przypisujemy mu odpowiedni typ!
-    FinishedObject finishedObj = weapon.AddComponent<FinishedObject>();
-    finishedObj.weaponType = isAxe ? FinishedObject.WeaponType.Axe : FinishedObject.WeaponType.Sword;
-
-    placedMetal = null;
-    placedWood = null;
-    
-    Debug.Log($"Stworzono: {weapon.name} typu: {finishedObj.weaponType}");
 }
 }

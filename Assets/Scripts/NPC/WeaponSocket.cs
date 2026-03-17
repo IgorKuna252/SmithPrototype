@@ -31,7 +31,6 @@ public class WeaponSocket : MonoBehaviour
             rb.detectCollisions = false;
         }
 
-        // Szukamy GripPoint na broni — child o nazwie "GripPoint"
         gripPoint = weapon.transform.Find("GripPoint");
 
         weapon.transform.SetParent(socketBone);
@@ -39,10 +38,8 @@ public class WeaponSocket : MonoBehaviour
 
         if (gripPoint != null)
         {
-            // Najpierw zastosuj odwrotność rotacji GripPointa
             Quaternion rotCorrection = Quaternion.Inverse(gripPoint.localRotation);
             weapon.transform.localRotation = rotCorrection;
-            // Potem przesuń tak żeby GripPoint trafił w origin socketa
             weapon.transform.localPosition = -(rotCorrection * gripPoint.localPosition);
         }
         else
