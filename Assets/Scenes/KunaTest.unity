@@ -30872,6 +30872,7 @@ MonoBehaviour:
   connectionOffset: -0.03
   handleOffset: {x: 0, y: 0, z: -0.4}
   bladeOffset: {x: 0, y: 0, z: 0}
+  gripRotation: {x: 0, y: 0, z: -90}
 --- !u!65 &645811089
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -31169,7 +31170,7 @@ MonoBehaviour:
   snapPoint: {fileID: 369292259}
   cameraSocket: {fileID: 1146699557}
   playerObject: {fileID: 11554874}
-  hammerObject: {fileID: 932973223}
+  hammerPrefab: {fileID: 100000, guid: 8010c8bda8f3c62409d805b17923338f, type: 3}
   hammerHoverOffset: {x: 0, y: 0.3, z: 0.4}
   hammerStrikeRotation: {x: -60, y: 0, z: 0}
   hammerCooldown: 0.2
@@ -60537,11 +60538,6 @@ ParticleSystem:
         m_PostInfinity: 2
         m_RotationOrder: 4
     vectorLabel1_3: W
---- !u!4 &932973223 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 400000, guid: 6e8dbe4ccace5f145ac7f067dfcd212c, type: 3}
-  m_PrefabInstance: {fileID: 1491306357}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1001394711
 GameObject:
   m_ObjectHideFlags: 0
