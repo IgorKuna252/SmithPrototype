@@ -5,7 +5,6 @@ public class WeaponHitbox : MonoBehaviour
     Collider hitboxCollider;
     float currentDamage;
     GameObject owner;
-    bool isActive;
 
     void Awake()
     {
@@ -17,38 +16,33 @@ public class WeaponHitbox : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Włączany przez NPCCombat na czas zamachu.
-    /// </summary>
     public void Activate(float damage, GameObject attackOwner)
     {
         currentDamage = damage;
         owner = attackOwner;
-        isActive = true;
-        if (hitboxCollider != null)
-            hitboxCollider.enabled = true;
+        if (hitboxCollider != null) hitboxCollider.enabled = true;
+        // WeaponSocket ustawia detectCollisions=false żeby broń nie odpychała obiektów —
+        // włączamy tylko na czas zamachu żeby trigger działał
+        Rigidbody rb = GetComponentInParent<Rigidbody>();
+        if (rb != null) rb.detectCollisions = true;
     }
 
     public void Deactivate()
     {
-        isActive = false;
-        if (hitboxCollider != null)
-            hitboxCollider.enabled = false;
+        if (hitboxCollider != null) hitboxCollider.enabled = false;
+        Rigidbody rb = GetComponentInParent<Rigidbody>();
+        if (rb != null) rb.detectCollisions = false;
     }
 
     void OnTriggerEnter(Collider other)
     {
-        if (!isActive) return;
-
-        // Nie bij samego siebie
         if (other.gameObject == owner) return;
         if (other.transform.IsChildOf(owner.transform)) return;
 
-        ExiledCitizen target = other.GetComponentInParent<ExiledCitizen>();
-        if (target != null)
-        {
-            target.health -= currentDamage;
-            Debug.Log($"[WeaponHitbox] {owner.name} zadał {currentDamage:F1} obrażeń dla {target.gameObject.name} (HP: {target.health:F1}/{target.maxHealth:F1})");
-        }
+        Enemy enemy = other.GetComponentInParent<Enemy>();
+        if (enemy != null) enemy.TakeDamage(currentDamage);
+
+        ExiledCitizen citizen = other.GetComponentInParent<ExiledCitizen>();
+        if (citizen != null) citizen.health -= currentDamage;
     }
 }

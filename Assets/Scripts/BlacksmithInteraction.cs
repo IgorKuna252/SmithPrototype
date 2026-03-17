@@ -91,7 +91,7 @@ public class BlacksmithInteraction : MonoBehaviour
 
                     NPCCombat combat = socket.GetComponent<NPCCombat>();
                     if (combat != null)
-                        combat.SetCombatActive(true);
+                        combat.SetMode(NPCCombatMode.ArmedIdle);
 
                     Debug.Log($"Dano broń dla {socket.gameObject.name}!");
                     return;

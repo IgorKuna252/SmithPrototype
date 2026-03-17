@@ -2529,13 +2529,14 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8902890780862108925}
-  - component: {fileID: 7141357016598596628}
-  - component: {fileID: 3195324698991328936}
-  - component: {fileID: 7159525049598194826}
-  - component: {fileID: 7020101178905024488}
   - component: {fileID: 4418441859405303442}
   - component: {fileID: 2039667141512675678}
+  - component: {fileID: 7141357016598596628}
+  - component: {fileID: 7020101178905024488}
   - component: {fileID: 6028756744746030056}
+  - component: {fileID: 3195324698991328936}
+  - component: {fileID: 7159525049598194826}
+  - component: {fileID: 3458153959580206967}
   m_Layer: 0
   m_Name: HumanMale_Character_FREE
   m_TagString: Untagged
@@ -2561,76 +2562,6 @@ Transform:
   - {fileID: 7026272110965773623}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!95 &7141357016598596628
-Animator:
-  serializedVersion: 7
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4316528496479175685}
-  m_Enabled: 1
-  m_Avatar: {fileID: 9000000, guid: de13a7420582ded45a8d7d3f96889aca, type: 3}
-  m_Controller: {fileID: 9100000, guid: 4c7fe8e1a3919c549a79a706afefd1ce, type: 2}
-  m_CullingMode: 0
-  m_UpdateMode: 0
-  m_ApplyRootMotion: 0
-  m_LinearVelocityBlending: 0
-  m_StabilizeFeet: 0
-  m_AnimatePhysics: 0
-  m_WarningMessage: 
-  m_HasTransformHierarchy: 1
-  m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorStateOnDisable: 0
-  m_WriteDefaultValuesOnDisable: 0
---- !u!114 &3195324698991328936
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4316528496479175685}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 83a49f7861ab96e44bc80826501b4930, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::WeaponSocket
-  socketBoneName: jointItemR
---- !u!114 &7159525049598194826
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4316528496479175685}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0bca916e3f7c8da4ca7e09b2599af8b4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::NPCCombat
-  baseDamage: 5
-  attackCooldown: 1.2
-  attackTrigger: Attack
-  combatBool: InCombat
-  hitboxActiveDelay: 0.1
-  hitboxActiveDuration: 0.3
---- !u!114 &7020101178905024488
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4316528496479175685}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 06528f5d050255c4a96e2c59ae0f5685, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ExiledCitizen
-  health: 0
-  maxHealth: 0
-  strength: 0
-  intelligence: 0
-  speed: 0
 --- !u!136 &4418441859405303442
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -2676,6 +2607,45 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
+--- !u!95 &7141357016598596628
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4316528496479175685}
+  m_Enabled: 1
+  m_Avatar: {fileID: 9000000, guid: de13a7420582ded45a8d7d3f96889aca, type: 3}
+  m_Controller: {fileID: 9100000, guid: 4c7fe8e1a3919c549a79a706afefd1ce, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &7020101178905024488
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4316528496479175685}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06528f5d050255c4a96e2c59ae0f5685, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ExiledCitizen
+  health: 0
+  maxHealth: 0
+  strength: 0
+  intelligence: 0
+  speed: 0
 --- !u!114 &6028756744746030056
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2692,6 +2662,51 @@ MonoBehaviour:
   acceptObject: {fileID: 0}
   teamSpacing: 1.5
   isInTeam: 0
+--- !u!114 &3195324698991328936
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4316528496479175685}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83a49f7861ab96e44bc80826501b4930, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponSocket
+  socketBoneName: jointItemR
+--- !u!114 &7159525049598194826
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4316528496479175685}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bca916e3f7c8da4ca7e09b2599af8b4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NPCCombat
+  attackCooldown: 1.2
+  attackTrigger: Attack
+  combatBool: InCombat
+  hitboxActiveDelay: 0.1
+  hitboxActiveDuration: 0.3
+--- !u!114 &3458153959580206967
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4316528496479175685}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 781d0b405aa3c6e40ad29ce2fb7dba39, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NPCFightBehavior
+  detectionRadius: 8
+  attackRange: 2
+  checkInterval: 0.25
 --- !u!1 &4505246088591205311
 GameObject:
   m_ObjectHideFlags: 0
