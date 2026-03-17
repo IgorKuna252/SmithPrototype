@@ -133,14 +133,31 @@ public class MoldManager : MonoBehaviour, IInteractable
         if (mold.liquidMat != null) mold.liquidMat.color = new Color(1f, 0.4f, 0f);
     }
 
+    // Zmień nagłówek metody Interact, aby przyjmowała informację o ręce gracza
     public bool Interact()
     {
-        if (currentFill > 0 || isCooled) return false;
+        // 1. BLOKADA: Jeśli wlewasz metal, forma jest pełna lub stygnie - nie przełączaj
+        if (isFilling || currentFill > 0 || isCooled) 
+        {
+            Debug.Log("Nie można zmienić formy: proces odlewania w toku.");
+            return false;
+        }
 
+        // 2. BLOKADA: Sprawdzamy, czy gracz trzyma cokolwiek w ręku
+        // Zakładamy, że masz dostęp do skryptu BlacksmithInteraction.
+        // Jeśli używasz Singletona (Instance), możesz to sprawdzić tak:
+        if (BlacksmithInteraction.Instance != null && BlacksmithInteraction.Instance.IsHoldingItem())
+        {
+            Debug.Log("Nie możesz zmienić formy, trzymając przedmiot!");
+            return false;
+        }
+
+        // Jeśli wszystko OK - przełączamy formę
         molds[currentMoldIndex].moldGroupParent.SetActive(false);
         currentMoldIndex = (currentMoldIndex + 1) % molds.Count;
         molds[currentMoldIndex].moldGroupParent.SetActive(true);
         
+        Debug.Log("Zmieniono formę na: " + molds[currentMoldIndex].moldName);
         return true;
     }
 }
