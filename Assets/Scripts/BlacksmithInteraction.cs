@@ -10,8 +10,8 @@ public class BlacksmithInteraction : MonoBehaviour
     [Header("Pozycje trzymania w ręku - Typy")]
         public Vector3 swordHoldPosition = Vector3.zero;
         public Vector3 swordHoldRotation = Vector3.zero;
-        public Vector3 axeHoldPosition = new Vector3(0, 0, 0.2f); 
-        public Vector3 axeHoldRotation = new Vector3(90, 0, 0);
+        public Vector3 axeHoldPosition = new Vector3(1f, 1f, 1f); 
+        public Vector3 axeHoldRotation = new Vector3(270, 270, 180);
 
     private Camera playerCamera;
     private GameObject heldItem;
