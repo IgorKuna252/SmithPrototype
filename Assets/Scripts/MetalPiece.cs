@@ -48,9 +48,9 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
 
     void Start()
     {
-        meshRenderer = GetComponent<MeshRenderer>();
-        meshFilter = GetComponent<MeshFilter>();
-        meshCollider = GetComponent<MeshCollider>();
+        meshRenderer = GetComponentInChildren<MeshRenderer>();
+        meshFilter = GetComponentInChildren<MeshFilter>();
+        meshCollider = GetComponentInChildren<MeshCollider>();
 
         // Klonujemy siatkę, żeby nie zepsuć oryginalnego pliku na dysku!
         mesh = meshFilter.mesh;
@@ -61,12 +61,11 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
 
     void OnValidate()
     {
-        if (meshRenderer == null) meshRenderer = GetComponent<MeshRenderer>();
+        // Szukamy w dzieciach również w edytorze
+        if (meshRenderer == null) meshRenderer = GetComponentInChildren<MeshRenderer>();
         if (meshRenderer != null)
         {
             SetBaseColor();
-
-            // Kolorowanie w edytorze (używamy "_Color" dla Standard/ProBuilder Shadera)
             MaterialPropertyBlock block = new MaterialPropertyBlock();
             meshRenderer.GetPropertyBlock(block);
             block.SetColor("_Color", baseColdColor);
@@ -123,7 +122,7 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
     private void DeformMesh(Vector3 hitPoint, Vector3 hitNormal)
 
     {
-        Vector3 localHitPoint = transform.InverseTransformPoint(hitPoint);
+        Vector3 localHitPoint = meshFilter.transform.InverseTransformPoint(hitPoint);
 
         // OBLICZAMY GRUBOŚĆ
         float currentThickness = Mathf.Abs(localHitPoint.y) * 2f;
@@ -314,16 +313,16 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
 
     public float GetActualBackOfBlade()
     {
-        float minZ = float.MaxValue;
+        float minY = float.MaxValue;
         // Przeszukujemy naszą zmodyfikowaną listę wierzchołków
         foreach (Vector3 v in vertices)
         {
-            if (v.z < minZ) 
+            if (v.z < minY) 
             {
-                minZ = v.z;
+                minY = v.z;
             }
         }
         // Zwracamy najmniejsze Z (tył), uwzględniając skalę obiektu
-        return minZ * transform.localScale.z;
+        return minY * transform.localScale.z;
     }
 }
