@@ -156,7 +156,10 @@ MonoBehaviour:
   reachDistance: 3
   holdPosition: {fileID: 1101390372}
   holdRotation: {x: 0, y: 0, z: 0}
+  swordHoldPosition: {x: 0, y: 0, z: 0}
   swordHoldRotation: {x: -90, y: 180, z: 90}
+  axeHoldPosition: {x: 0, y: 0.3, z: 1.7}
+  axeHoldRotation: {x: 0, y: 180, z: 0}
 --- !u!114 &11554876
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -26163,7 +26166,8 @@ MonoBehaviour:
   - {fileID: 11554876}
   craftSpawnPoint: {fileID: 2139982732}
   craftingUI: {fileID: 0}
-  connectionOffset: -0.07
+  swordConnectionOffset: -0.1
+  axeConnectionOffset: 0
   handleOffset: {x: 0, y: 0, z: 0}
   bladeOffset: {x: 0, y: 0, z: 0}
 --- !u!65 &645811089
@@ -56670,6 +56674,7 @@ GameObject:
   - component: {fileID: 1116922451}
   - component: {fileID: 1116922450}
   - component: {fileID: 1116922449}
+  - component: {fileID: 1116922452}
   m_Layer: 0
   m_Name: Part1
   m_TagString: Untagged
@@ -56770,6 +56775,19 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1116922447}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &1116922452
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1116922447}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 42a4044f05ebb5a40a92c9cdcb430419, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WoodPiece
+  partType: 1
 --- !u!1 &1213753505
 GameObject:
   m_ObjectHideFlags: 0
@@ -58032,7 +58050,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: da0d0779af1dd2040923f042c40a466d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IronPiece
-  partType: 1
+  partType: 0
   isFinished: 0
   metalTier: 2
   currentTemperature: 20
