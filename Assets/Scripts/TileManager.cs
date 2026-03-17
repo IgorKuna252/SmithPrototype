@@ -111,9 +111,11 @@ public class TileManager : MonoBehaviour
         {
             // WYGRANA
             int randomAmount = Random.Range(1, 6); // 1 do 5
-            string[] resources = { "żelazo", "srebro", "złoto" };
+            string[] resources = { "Copper", "Bronze", "Iron", "Steel", "Gold", "Platinum", "BlueSteel", "Vibranium" };
             string randomResource = resources[Random.Range(0, resources.Length)];
 
+            gameManager.Instance.AddResource(randomResource, randomAmount);
+            
             resultTitleText.text = "Wygrałeś!";
             resultDescriptionText.text = $"Otrzymujesz {randomAmount} jednostek surowca: {randomResource}";
         
