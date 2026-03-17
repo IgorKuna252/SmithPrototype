@@ -18,15 +18,12 @@ public class MergingTable : MonoBehaviour
     public float connectionOffset = -0.03f;
 
     [Header("Ustawienia Pozycji Części")]
-    public Vector3 handleOffset = new Vector3(0, 0, -0.4f);
-    public Vector3 bladeOffset = Vector3.zero;
-
-    [Header("Grip - Rotacja broni w dłoni NPC")]
-    [Tooltip("Rotacja GripPointa — dostosuj żeby ostrze celowało do przodu NPC")]
-    public Vector3 gripRotation = new Vector3(0f, 0f, -90f);
+    public Vector3 handleOffset = new Vector3(0, 0, -0.4f); // To zastąpi Twoje twarde liczby
+    public Vector3 bladeOffset = Vector3.zero;             // Na wypadek, gdybyś chciał ruszyć ostrze   
 
     private GameObject mainPlayerCamera; 
     private bool isAssemblyMode = false;
+    private float assemblyStartTime = 0f;
 
     private MetalPiece placedMetal; 
     private WoodPiece placedWood; 
@@ -106,92 +103,67 @@ public void ToggleAssemblyCamera(GameObject playerCam)
     }
 
     public void CombineItems()
-{
-    if (placedMetal != null && placedWood != null)
     {
-        // Sprawdzamy, czy metal został wykuty
-        if (!placedMetal.isFinished) return;
-
-        // 1. Tworzymy kontener dla broni
-        GameObject craftedWeapon = new GameObject("CraftedWeapon_" + placedMetal.metalTier.ToString());
-        
-        if (craftSpawnPoint != null)
+        if (placedMetal != null && placedWood != null)
         {
-            craftedWeapon.transform.position = craftSpawnPoint.position;
-            craftedWeapon.transform.rotation = craftSpawnPoint.rotation;
-        }
+            //if (!placedMetal.isFinished) return;
 
-        // 2. Podpinamy Rodziców (Axe_Root, Handle_Root) do nowej broni
-        placedWood.transform.SetParent(craftedWeapon.transform);
-        placedMetal.transform.SetParent(craftedWeapon.transform);
-
-        // 3. Resetujemy rotacje - osie Rodziców stają się osiami broni
-        placedWood.transform.localRotation = Quaternion.identity;
-        placedMetal.transform.localRotation = Quaternion.identity;
-
-        // --- DYNAMICZNE OBLICZANIE POZYCJI (Na bazie Rodziców) ---
-        
-        // Ostrze (Rodzic) idzie na Zero
-        placedMetal.transform.localPosition = Vector3.zero;
-
-        MeshFilter woodFilter = placedWood.GetComponentInChildren<MeshFilter>();
-
-        if (woodFilter != null)
-        {
-            // POBIERAMY TYŁ OSTRZA: 
-            // Zakładamy, że GetActualBackOfBlade zwraca pozycję wierzchołka 
-            // w lokalnym układzie Rodzica (skala 1:1)
-            float backOfBlade = placedMetal.GetActualBackOfBlade(); 
+            GameObject craftedWeapon = new GameObject("CraftedWeapon_" + placedMetal.metalTier.ToString());
             
-            // POBIERAMY PRZÓD RĄCZKI:
-            // Musimy uwzględnić skalę dziecka, żeby wiedzieć, gdzie fizycznie kończy się rączka 
-            // względem swojego Rodzica (Handle_Root)
-            float frontOfHandle = woodFilter.mesh.bounds.max.z * woodFilter.transform.localScale.z;
+            if (craftSpawnPoint != null)
+            {
+                craftedWeapon.transform.position = craftSpawnPoint.position; 
+                craftedWeapon.transform.rotation = craftSpawnPoint.rotation;
+            }
 
-            // Obliczamy idealne miejsce styku dla Rodzica rączki
-            float targetY = backOfBlade - frontOfHandle + connectionOffset;
+            placedWood.transform.SetParent(craftedWeapon.transform);
+            placedMetal.transform.SetParent(craftedWeapon.transform);
+
+            placedWood.transform.localRotation = Quaternion.identity;
+            placedMetal.transform.localRotation = Quaternion.identity;
+
+            // --- AUTOMATYCZNE OBLICZANIE POZYCJI (Zczytywanie na żywo) ---
             
-            // Ustawiamy Rodzica rączki na obliczonej pozycji
-            placedWood.transform.localPosition = new Vector3(0, 0, targetY);
+            // Ostrze idzie na pozycję Zero
+            placedMetal.transform.localPosition = Vector3.zero;
+
+            MeshFilter woodFilter = placedWood.GetComponentInChildren<MeshFilter>();
+
+            if (woodFilter != null)
+            {
+                // POBIERAMY ZMODYFIKOWANY TYŁ MIECZA BEZPOŚREDNIO Z WIERZCHOŁKÓW
+                float backOfBlade = placedMetal.GetActualBackOfBlade(); 
+                
+                // Rączka się nie deformuje, więc jej bounds są zawsze poprawne
+                float frontOfHandle = woodFilter.mesh.bounds.max.z * woodFilter.transform.localScale.z;
+
+                // Obliczamy idealne miejsce na styk
+                float targetZ = backOfBlade - frontOfHandle + connectionOffset;
+                
+                placedWood.transform.localPosition = new Vector3(0, 0, targetZ);
+                
+                Debug.Log($"[Automatyczny Pivot] Tył wykutego ostrza to: {backOfBlade}. Przesuwam rączkę na: {targetZ}");
+            }
+            else
+            {
+                placedWood.transform.localPosition = new Vector3(0, 0, -0.4f);
+            }
+            // ----------------------------------------------
+
+            placedMetal.ForceCoolDown();
+
+            Destroy(placedMetal.GetComponent<Rigidbody>());
+            Destroy(placedWood.GetComponent<Rigidbody>());
+            Destroy(placedMetal); 
+            Destroy(placedWood);  
+
+            Rigidbody weaponRb = craftedWeapon.AddComponent<Rigidbody>();
+            weaponRb.mass = 2.5f; 
             
-            Debug.Log($"[Dynamiczny Pivot Root] Tył ostrza: {backOfBlade}. Przesuwam Rodzica rączki na: {targetY}");
+            craftedWeapon.AddComponent<FinishedObject>();
+
+            placedMetal = null;
+            placedWood = null;
         }
-        else
-        {
-            // Failsafe, jeśli nie znajdzie mesha rączki
-            placedWood.transform.localPosition = handleOffset;
-        }
-
-        // --- FINALIZACJA ---
-        placedMetal.ForceCoolDown();
-
-        // Zapamiętaj pozycję rączki PRZED zniszczeniem komponentów
-        Vector3 gripLocalPos = placedWood.transform.localPosition;
-
-        // Usuwamy fizykę części, by nie gryzła się z fizyką całej broni
-        Destroy(placedMetal.GetComponent<Rigidbody>());
-        Destroy(placedWood.GetComponent<Rigidbody>());
-        Destroy(placedMetal);
-        Destroy(placedWood);
-
-        Rigidbody weaponRb = craftedWeapon.AddComponent<Rigidbody>();
-        weaponRb.mass = 2.5f;
-
-        craftedWeapon.AddComponent<FinishedObject>();
-
-        BoxCollider col = craftedWeapon.AddComponent<BoxCollider>();
-        col.size = new Vector3(0.1f, 0.1f, 1f);
-        col.center = new Vector3(0, 0, 0.2f);
-
-        craftedWeapon.AddComponent<WeaponHitbox>();
-
-        GameObject grip = new GameObject("GripPoint");
-        grip.transform.SetParent(craftedWeapon.transform);
-        grip.transform.localPosition = gripLocalPos;
-        grip.transform.localRotation = Quaternion.Euler(gripRotation);
-
-        placedMetal = null;
-        placedWood = null;
     }
-}
 }
