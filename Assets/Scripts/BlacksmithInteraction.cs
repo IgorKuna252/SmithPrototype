@@ -6,7 +6,12 @@ public class BlacksmithInteraction : MonoBehaviour
     public float reachDistance = 3f;
     public Transform holdPosition;
     public Vector3 holdRotation = new Vector3(90f, 0f, 0f);
-    public Vector3 swordHoldRotation = new Vector3(0f, 0f, 0f);
+
+    [Header("Pozycje trzymania w ręku - Typy")]
+        public Vector3 swordHoldPosition = Vector3.zero;
+        public Vector3 swordHoldRotation = Vector3.zero;
+        public Vector3 axeHoldPosition = new Vector3(0, 0, 0.2f); 
+        public Vector3 axeHoldRotation = new Vector3(90, 0, 0);
 
     private Camera playerCamera;
     private GameObject heldItem;
@@ -150,94 +155,110 @@ public class BlacksmithInteraction : MonoBehaviour
         return false;
     }
 
-    bool TryPickUp()
+bool TryPickUp()
+{
+    if (heldItem != null) return false;
+
+    Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
+    if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
     {
-        if (heldItem != null) return false;
+        GameObject targetObj = null;
+        MetalPiece metal = hit.collider.GetComponentInParent<MetalPiece>();
+        WoodPiece wood = hit.collider.GetComponentInParent<WoodPiece>();
+        FinishedObject finished = hit.collider.GetComponentInParent<FinishedObject>();
+        Crucible crucible = hit.collider.GetComponentInParent<Crucible>();
+        MoldManager mold = hit.collider.GetComponentInParent<MoldManager>();
 
-        Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
-        if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
+        if (metal != null) targetObj = metal.gameObject;
+        else if (wood != null) targetObj = wood.gameObject;
+        else if (finished != null) targetObj = finished.gameObject;
+        else if (crucible != null) targetObj = crucible.gameObject;
+
+        if (mold != null && mold.IsReadyToExtract()) 
         {
-            GameObject targetObj = null;
-            MetalPiece metal = hit.collider.GetComponentInParent<MetalPiece>();
-            WoodPiece wood = hit.collider.GetComponentInParent<WoodPiece>();
-            FinishedObject finished = hit.collider.GetComponentInParent<FinishedObject>();
-            Crucible crucible = hit.collider.GetComponentInParent<Crucible>();
-            MoldManager mold = hit.collider.GetComponentInParent<MoldManager>();
+            targetObj = mold.ExtractItem();
+        }
 
-            if (metal != null) targetObj = metal.gameObject;
-            else if (wood != null) targetObj = wood.gameObject;
-            else if (finished != null) targetObj = finished.gameObject;
-            else if (crucible != null) targetObj = crucible.gameObject;
-
-            if (mold != null && mold.IsReadyToExtract()) 
+        // stojaczki kodzik
+        if (targetObj != null)
+        {
+            // Przypadek 1: Gracz celownikiem trafił idealnie w sam miecz.
+            WeaponRack rack = targetObj.GetComponentInParent<WeaponRack>();
+            if (rack != null) rack.TakeWeapon();
+        }
+        else
+        {
+            // Przypadek 2: Gracz nie trafił w miecz, ale trafił w duży hitbox stojaka.
+            WeaponRack rack = hit.collider.GetComponent<WeaponRack>();
+            if (rack != null && !rack.IsEmpty())
             {
-                targetObj = mold.ExtractItem();
-            }
-
-            // stojaczki kodzik
-            if (targetObj != null)
-            {
-                // Przypadek 1: Gracz celownikiem trafił idealnie w sam miecz.
-                // Sprawdzamy, czy miecz leży na stojaku. Jeśli tak, zwalniamy z niego miejsce.
-                WeaponRack rack = targetObj.GetComponentInParent<WeaponRack>();
-                if (rack != null) rack.TakeWeapon();
-            }
-            else
-            {
-                // Przypadek 2: Gracz nie trafił w miecz, ale trafił w duży, niewidzialny hitbox stojaka.
-                WeaponRack rack = hit.collider.GetComponent<WeaponRack>();
-                if (rack != null && !rack.IsEmpty())
+                FinishedObject weaponFromRack = rack.TakeWeapon();
+                if (weaponFromRack != null)
                 {
-                    // "Wyciągamy" broń ze stojaka i ustawiamy ją jako nasz cel do podniesienia
-                    FinishedObject weaponFromRack = rack.TakeWeapon();
-                    if (weaponFromRack != null)
-                    {
-                        targetObj = weaponFromRack.gameObject;
-                    }
+                    targetObj = weaponFromRack.gameObject;
                 }
             }
+        }
 
-            if (targetObj != null)
+        if (targetObj != null)
+        {
+            // Odpinamy od stołu/kowadła przed podniesieniem
+            targetObj.transform.SetParent(null);
+
+            heldItem = targetObj;
+            heldItemRb = heldItem.GetComponent<Rigidbody>();
+
+            if (heldItemRb != null)
             {
-                // Odpinamy od stołu/kowadła przed podniesieniem
-                targetObj.transform.SetParent(null);
+                heldItemRb.useGravity = false;
+                heldItemRb.isKinematic = true;
+                heldItemRb.detectCollisions = false;
+            }
 
-                heldItem = targetObj;
-                heldItemRb = heldItem.GetComponent<Rigidbody>();
+            heldItem.transform.SetParent(holdPosition);
+            // --- MAGIA: Różna pozycja i rotacja TYLKO dla gotowych broni ---
+            
+            FinishedObject heldFinished = heldItem.GetComponentInParent<FinishedObject>();
 
-                if (heldItemRb != null)
+            if (heldFinished != null)
+            {
+                // To jest gotowa broń zmontowana na stole, sprawdzamy jej TYP:
+                if (heldFinished.weaponType == FinishedObject.WeaponType.Axe)
                 {
-                    heldItemRb.useGravity = false;
-                    heldItemRb.isKinematic = true;
-                    heldItemRb.detectCollisions = false;
+                    heldItem.transform.localPosition = axeHoldPosition;
+                    heldItem.transform.localRotation = Quaternion.Euler(axeHoldRotation);
                 }
-
-                heldItem.transform.SetParent(holdPosition);
-                heldItem.transform.localPosition = Vector3.zero;
-
-                // --- MAGIA: Różna rotacja dla miecza i dla surowców ---
-                if (heldItem.GetComponentInParent<FinishedObject>() != null)
+                else if (heldFinished.weaponType == FinishedObject.WeaponType.Sword)
                 {
-                    // To jest gotowy miecz! Używamy nowej rotacji
+                    heldItem.transform.localPosition = swordHoldPosition;
                     heldItem.transform.localRotation = Quaternion.Euler(swordHoldRotation);
-                }
-                else if (heldItem.GetComponent<Crucible>() != null)
-                {
-                    // TYGIEL: Przewracamy go o 90 stopni na X (żeby lanie było wygodne)
-                    heldItem.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
                 }
                 else
                 {
-                    // To jest sztabka lub drewno! Używamy standardowej rotacji
+                    // Failsafe, gdyby coś poszło nie tak
+                    heldItem.transform.localPosition = Vector3.zero;
                     heldItem.transform.localRotation = Quaternion.Euler(holdRotation);
                 }
-
-                targetObj.GetComponent<IPickable>()?.OnPickUp();
-                return true;
             }
+            else if (heldItem.GetComponent<Crucible>() != null)
+            {
+                // TYGIEL: Przewracamy go o 90 stopni na X
+                heldItem.transform.localPosition = Vector3.zero;
+                heldItem.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            }
+            else
+            {
+                // To są wszystkie inne przedmioty: surowe części, drewno, sztabki
+                heldItem.transform.localPosition = Vector3.zero;
+                heldItem.transform.localRotation = Quaternion.Euler(holdRotation); 
+            }
+
+            targetObj.GetComponent<IPickable>()?.OnPickUp();
+            return true;
         }
-        return false;
     }
+    return false;
+}
 
     void TryPlaceOnTableOrDrop()
     {
