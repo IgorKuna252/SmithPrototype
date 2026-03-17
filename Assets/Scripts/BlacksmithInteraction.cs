@@ -157,6 +157,29 @@ public class BlacksmithInteraction : MonoBehaviour
             else if (wood != null) targetObj = wood.gameObject;
             else if (finished != null) targetObj = finished.gameObject;
 
+            // stojaczki kodzik
+            if (targetObj != null)
+            {
+                // Przypadek 1: Gracz celownikiem trafił idealnie w sam miecz.
+                // Sprawdzamy, czy miecz leży na stojaku. Jeśli tak, zwalniamy z niego miejsce.
+                WeaponRack rack = targetObj.GetComponentInParent<WeaponRack>();
+                if (rack != null) rack.TakeWeapon();
+            }
+            else
+            {
+                // Przypadek 2: Gracz nie trafił w miecz, ale trafił w duży, niewidzialny hitbox stojaka.
+                WeaponRack rack = hit.collider.GetComponent<WeaponRack>();
+                if (rack != null && !rack.IsEmpty())
+                {
+                    // "Wyciągamy" broń ze stojaka i ustawiamy ją jako nasz cel do podniesienia
+                    FinishedObject weaponFromRack = rack.TakeWeapon();
+                    if (weaponFromRack != null)
+                    {
+                        targetObj = weaponFromRack.gameObject;
+                    }
+                }
+            }
+
             if (targetObj != null)
             {
                 // Odpinamy od stołu/kowadła przed podniesieniem

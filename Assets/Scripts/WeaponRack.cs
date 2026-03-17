@@ -19,31 +19,41 @@ public class WeaponRack : MonoBehaviour
         storedWeapon = weapon;
         weapon.transform.SetParent(weaponSlot);
 
-        // Jeśli broń ma ustawiony swój uniwersalny punkt zawieszenia:
-        if (weapon.hangPoint != null)
-        {
-            // 1. Wyrównujemy kąty (Rotację)
-            Quaternion rotDiff = weaponSlot.rotation * Quaternion.Inverse(weapon.hangPoint.rotation);
-            weapon.transform.rotation = rotDiff * weapon.transform.rotation;
-
-            // 2. Wyrównujemy pozycję (przemieszczamy broń tak, by hangPoint trafił w Anchor)
-            Vector3 posDiff = weaponSlot.position - weapon.hangPoint.position;
-            weapon.transform.position += posDiff;
-        }
-        else
-        {
-            // Stary kod zapasowy (gdybyś zapomniał dodać punktu do jakiejś broni)
-            weapon.transform.localPosition = Vector3.zero;
-            weapon.transform.localRotation = Quaternion.identity;
-        }
-
-        weapon.transform.localScale = Vector3.one;
-
+        // 1. Wyłączamy grawitację
         Rigidbody rb = weapon.GetComponent<Rigidbody>();
         if (rb != null)
         {
             rb.isKinematic = true;
             rb.useGravity = false;
+        }
+
+        // 2. Kopiujemy idealny obrót z Twojego Anchora na stojaku (to Twoje X: 90)
+        weapon.transform.rotation = weaponSlot.rotation;
+
+        // 3. SZUKAMY RĄCZKI (Twój pomysł!)
+        // Skrypt sam przeszukuje całą wykutą broń w poszukiwaniu punktu o nazwie "HangPoint"
+        Transform targetHangPoint = null;
+        Transform[] allChildren = weapon.GetComponentsInChildren<Transform>();
+        foreach (Transform child in allChildren)
+        {
+            if (child.name == "HangPoint") // Pamiętaj: wielkość liter ma znaczenie!
+            {
+                targetHangPoint = child;
+                break;
+            }
+        }
+
+        // 4. Ostateczne pozycjonowanie
+        if (targetHangPoint != null)
+        {
+            // Jeśli znaleźliśmy HangPoint w rączce, obliczamy różnicę i dociągamy go do stojaka
+            Vector3 offset = weaponSlot.position - targetHangPoint.position;
+            weapon.transform.position += offset;
+        }
+        else
+        {
+            // Zapasowe wyjście, jeśli jakaś broń nie ma dodanego HangPointa
+            weapon.transform.localPosition = Vector3.zero;
         }
     }
 
