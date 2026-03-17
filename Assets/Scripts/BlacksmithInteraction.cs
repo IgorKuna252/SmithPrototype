@@ -199,6 +199,20 @@ public class BlacksmithInteraction : MonoBehaviour
         Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
         if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
         {
+            // Stojaki
+            WeaponRack rack = hit.collider.GetComponent<WeaponRack>();
+            if (rack != null && rack.IsEmpty())
+            {
+                // Upewniamy się, że trzymamy w ręku gotowy miecz (FinishedObject), a nie deskę czy sztabkę
+                FinishedObject heldFinishedWeapon = heldItem.GetComponent<FinishedObject>();
+                if (heldFinishedWeapon != null)
+                {
+                    rack.PlaceWeapon(heldFinishedWeapon);
+                    ClearHand();
+                    return; // Przerywamy funkcję, żeby kod nie zrzucił miecza na ziemię!
+                }
+            }
+
             MergingTable table = hit.collider.GetComponent<MergingTable>();
             if (table != null)
             {
