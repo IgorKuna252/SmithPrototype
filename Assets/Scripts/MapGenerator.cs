@@ -31,10 +31,8 @@ public class MapGenerator : MonoBehaviour
                 Tile tileComponent = newTile.GetComponent<Tile>();
                 if (tileComponent != null)
                 {
-                    // 1. Ustawiamy stan
                     tileComponent.isOwned = (x == 0 && y == 0);
-                
-                    // 2. Delegujemy odpowiedzialność za kolor do samej klasy Tile
+                    tileComponent.difficulty = Random.Range(100, 801); // Losujemy trudność
                     tileComponent.UpdateVisuals(); 
                 }
             }
