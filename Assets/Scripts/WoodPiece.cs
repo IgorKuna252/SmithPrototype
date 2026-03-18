@@ -1,6 +1,6 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class WoodPiece : MonoBehaviour
 {
-    // Tutaj w przysz³oœci mo¿esz dodaæ zmienne, np. rodzaj drewna
+    // Tutaj w przyszÂ³oÅ“ci moÂ¿esz dodaÃ¦ zmienne, np. rodzaj drewna
 }
