@@ -20,7 +20,6 @@ public class NPCInteractionUI : MonoBehaviour
     private npcPathFinding currentNPC;
     private BlacksmithInteraction blacksmith;
     private prefabSpawning queue;
-    private gameManager manager;
     private WheelController wheel;
 
     void Awake()
@@ -30,7 +29,6 @@ public class NPCInteractionUI : MonoBehaviour
         blacksmith = Object.FindFirstObjectByType<BlacksmithInteraction>();
         queue = Object.FindFirstObjectByType<prefabSpawning>();
         wheel = GetComponent<WheelController>();
-        manager = gameManager.Instance;
     }
 
     public void Show(npcPathFinding npc)
@@ -53,7 +51,7 @@ public class NPCInteractionUI : MonoBehaviour
             acceptButton.gameObject.SetActive(true);
             rejectButton.gameObject.SetActive(true);
 
-            bool teamFull = manager.team.Count >= gameManager.teamSize;
+            bool teamFull = gameManager.Instance.team.Count >= gameManager.teamSize;
             acceptButton.interactable = !teamFull;
 
             acceptButton.onClick.RemoveAllListeners();
