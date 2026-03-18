@@ -4,7 +4,7 @@ using UnityEngine.SceneManagement;
 public class SceneNavigator : MonoBehaviour
 {
     // Nazwa sceny 3D (wpisz dokładnie taką, jaka jest w Build Settings)
-    [SerializeField] private string mainGameSceneName = "MainScene"; 
+    [SerializeField] private string mainGameSceneName = "MainSceneUpdated"; 
 
     public void BackToGame()
     {

@@ -412,7 +412,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 53e6fa58f20f4f94aa4270d4c810bdbc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  mainGameSceneName: MainScene
+  mainGameSceneName: MainSceneUpdated
 --- !u!4 &309169757
 Transform:
   m_ObjectHideFlags: 0

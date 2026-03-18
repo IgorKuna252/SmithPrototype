@@ -39,6 +39,12 @@ public class WeaponHitbox : MonoBehaviour
         if (other.gameObject == owner) return;
         if (other.transform.IsChildOf(owner.transform)) return;
 
+        bool ownerIsTeam = owner.GetComponent<npcPathFinding>() != null;
+        bool targetIsTeam = other.GetComponentInParent<npcPathFinding>() != null;
+
+        // Nie bij swoich
+        if (ownerIsTeam && targetIsTeam) return;
+
         Enemy enemy = other.GetComponentInParent<Enemy>();
         if (enemy != null) enemy.TakeDamage(currentDamage);
 
