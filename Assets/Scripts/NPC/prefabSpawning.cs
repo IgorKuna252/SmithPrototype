@@ -23,13 +23,27 @@ public class prefabSpawning : MonoBehaviour
 
             GameObject obj = Instantiate(prefabObject, queuePositions[i], Quaternion.identity);
 
+            // 1. Pobieramy komponenty RAZ
+            ExiledCitizen citizen = obj.GetComponent<ExiledCitizen>();
             npcPathFinding npc = obj.GetComponent<npcPathFinding>();
+            WeaponSocket socket = obj.GetComponentInChildren<WeaponSocket>();
+
+            // 2. Logika danych
+            citizen.GenerateRandomStats();
+            CitizenData tempData = new CitizenData(obj.name, citizen);
+
+            // 3. Przypisanie danych do socketa
+            if (socket != null)
+            {
+                socket.ownerData = tempData;
+                socket.ownerName = obj.name;
+            }
+            
+            // 4. Konfiguracja NPC
             npc.rejectObject = targetNPCReject;
             npc.acceptObject = targetNPCAccept;
 
-            ExiledCitizen citizen = obj.GetComponent<ExiledCitizen>();
-            citizen.GenerateRandomStats();
-
+            // 5. Dodanie do kolejki
             npcQueue.Enqueue(obj);
         }
     }
@@ -44,7 +58,8 @@ public class prefabSpawning : MonoBehaviour
         foreach (GameObject npcObj in npcQueue)
         {
             npcPathFinding npc = npcObj.GetComponent<npcPathFinding>();
-            if (npc.isInTeam) continue;
+            // Uwaga: upewnij się, że isInTeam jest poprawnie aktualizowane
+            if (npc.isInTeam) continue; 
             npc.MoveToQueuePosition(queuePositions[index]);
             index++;
         }

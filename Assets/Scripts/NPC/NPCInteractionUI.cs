@@ -66,7 +66,6 @@ public class NPCInteractionUI : MonoBehaviour
     {
         currentNPC.Accept();
         queue.OnNPCProcessed();
-        OnNPCInteractionFinished?.Invoke();
         blacksmith.CloseNPCInteraction();
     }
 

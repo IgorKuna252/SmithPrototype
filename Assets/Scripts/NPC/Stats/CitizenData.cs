@@ -7,6 +7,8 @@ public class CitizenData
     public float strength;
     public float intelligence;
     public float speed;
+    public string equippedWeaponName; // Dodajemy to!
+
 
     public CitizenData(string name, ExiledCitizen citizen)
     {
@@ -16,10 +18,11 @@ public class CitizenData
         strength = citizen.strength;
         intelligence = citizen.intelligence;
         speed = citizen.speed;
+        this.equippedWeaponName = "Brak"; // Domyślnie brak broni
     }
 
     public string GetStats()
     {
-        return $"{name}\nHP: {health:F0}/{maxHealth:F0}\nSTR: {strength:F0}\nINT: {intelligence:F0}\nSPD: {speed:F0}";
+        return $"{name} | Broń: {equippedWeaponName}\nHP: {health:F0}/{maxHealth:F0}\nSTR: {strength:F0}\nINT: {intelligence:F0}\nSPD: {speed:F0}";
     }
 }

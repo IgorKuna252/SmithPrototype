@@ -1,12 +1,26 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[System.Serializable]
+public class WeaponData
+{
+    public string name;
+    public string weaponType; // "Axe" lub "Sword"
+    
+    public WeaponData(string name, string weaponType)
+    {
+        this.name = name;
+        this.weaponType = weaponType;
+    }
+}
+
 public class gameManager : MonoBehaviour
 {
     // Singleton
     public static gameManager Instance { get; private set; }
 
     public List<CitizenData> team = new List<CitizenData>();
+    public List<WeaponData> inventoryWeapons = new List<WeaponData>();
     public const int teamSize = 4;
     public bool updated = false;
     public Dictionary<string, int> inventory = new Dictionary<string, int>();
@@ -42,6 +56,12 @@ public class gameManager : MonoBehaviour
             inventory[name] = amount;
         
         Debug.Log($"Dodano {amount} {name}. Stan: {inventory[name]}");
+    }
+    
+    public void AddWeapon(string name, string type)
+    {
+        inventoryWeapons.Add(new WeaponData(name, type));
+        Debug.Log($"Dodano broń do inwentarza: {name} ({type})");
     }
     
     public bool addTeamMember(GameObject npc)

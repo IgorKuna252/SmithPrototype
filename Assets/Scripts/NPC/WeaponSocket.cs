@@ -8,6 +8,8 @@ public class WeaponSocket : MonoBehaviour
     Transform socketBone;
     GameObject equippedWeapon;
     Transform gripPoint;
+    public string ownerName; // Ustaw to w Inspektorze lub przy Equip
+    public CitizenData ownerData; // Przypisz to przy spawnowaniu NPC!
 
     void Awake()
     {
@@ -49,6 +51,12 @@ public class WeaponSocket : MonoBehaviour
         {
             weapon.transform.localPosition = Vector3.zero;
             weapon.transform.localRotation = Quaternion.identity;
+        }
+        
+        if (ownerData != null)
+        {
+            ownerData.equippedWeaponName = weapon.name;
+            Debug.Log($"Przypisano {weapon.name} do {ownerData.name}");
         }
     }
 

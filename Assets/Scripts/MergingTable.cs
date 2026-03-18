@@ -196,6 +196,9 @@ private void FinalizeCrafting(GameObject weapon, bool isAxe)
     FinishedObject finishedObj = weapon.AddComponent<FinishedObject>();
     finishedObj.weaponType = isAxe ? FinishedObject.WeaponType.Axe : FinishedObject.WeaponType.Sword;
 
+    string weaponTypeString = isAxe ? "Axe" : "Sword";
+    gameManager.Instance.AddWeapon(weapon.name, weaponTypeString);
+    
     placedMetal = null;
     placedWood = null;
     
