@@ -20,6 +20,21 @@ public class ExiledCitizen : MonoBehaviour
         this.equippedWeaponName = "Brak";
     }
 
+    public float GetStrength()
+    {
+        return strength;
+    }
+
+    public float GetIntelligence()
+    {
+        return intelligence;
+    }
+
+    public float GetSpeed()
+    {
+        return speed;
+    }
+
     public void GenerateRandomStats()
     {
         maxHealth = Random.Range(60f, 120f);

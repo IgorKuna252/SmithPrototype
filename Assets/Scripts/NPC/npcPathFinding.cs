@@ -111,6 +111,21 @@ public class npcPathFinding : MonoBehaviour
         return citizenStats.GetStats();
     }
 
+    public float GetSpeed()
+    {
+        return citizenStats.GetSpeed();
+    }
+
+    public float GetIntelligence()
+    {
+        return citizenStats.GetIntelligence();
+    }
+
+    public float GetStrengh()
+    {
+        return citizenStats.GetStrength();
+    }
+
     public void MoveToQueuePosition(Vector3 position)
     {
         agentNPC.updateRotation = true;

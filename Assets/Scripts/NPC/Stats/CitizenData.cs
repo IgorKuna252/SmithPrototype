@@ -26,7 +26,20 @@ public class CitizenData
         this.equippedWeaponName = "Brak";
         this.equippedWeaponType = "None";
     }
+    public float GetStrength()
+    {
+        return strength;
+    }
 
+    public float GetIntelligence()
+    {
+        return intelligence;
+    }
+
+    public float GetSpeed()
+    {
+        return speed;
+    }
     public string GetStats()
     {
         return $"{name} | Broń: {equippedWeaponName}\nHP: {health:F0}/{maxHealth:F0}\nSTR: {strength:F0}\nINT: {intelligence:F0}\nSPD: {speed:F0}";

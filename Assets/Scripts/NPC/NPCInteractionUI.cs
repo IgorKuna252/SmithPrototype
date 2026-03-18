@@ -21,6 +21,7 @@ public class NPCInteractionUI : MonoBehaviour
     private BlacksmithInteraction blacksmith;
     private prefabSpawning queue;
     private gameManager manager;
+    private WheelController wheel;
 
     void Awake()
     {
@@ -28,6 +29,7 @@ public class NPCInteractionUI : MonoBehaviour
         panel.SetActive(false);
         blacksmith = Object.FindFirstObjectByType<BlacksmithInteraction>();
         queue = Object.FindFirstObjectByType<prefabSpawning>();
+        wheel = GetComponent<WheelController>();
         manager = gameManager.Instance;
     }
 
@@ -37,6 +39,7 @@ public class NPCInteractionUI : MonoBehaviour
         panel.SetActive(true);
 
         npcStatsText.text = npc.ShowStats();
+        wheel.UpdateWheel(npc.GetStrengh(), npc.GetSpeed(), npc.GetIntelligence());
 
         if (npc.isInTeam)
         {
