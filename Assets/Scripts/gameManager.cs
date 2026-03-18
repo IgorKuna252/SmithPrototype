@@ -22,7 +22,15 @@ public class gameManager : MonoBehaviour
     public List<CitizenData> team = new List<CitizenData>();
     public List<WeaponData> inventoryWeapons = new List<WeaponData>();
     public const int teamSize = 4;
-    public bool updated = false;
+
+    // Event wywoływany gdy drużyna się zmieni (dodanie/usunięcie/equip broni)
+    public event System.Action OnTeamChanged;
+
+    // Dane aktualnej bitwy (ustawiane przez TileManager przed przejściem do BattleScene)
+    [HideInInspector] public List<int> selectedFighters = new List<int>();
+    [HideInInspector] public int currentBattleDifficulty = 0;
+    [HideInInspector] public Tile currentBattleTile;
+
     public Dictionary<string, int> inventory = new Dictionary<string, int>();
 
     private void Awake()
@@ -46,6 +54,15 @@ public class gameManager : MonoBehaviour
         inventory["Platinum"] = 1;
         inventory["BlueSteel"] = 1;
         inventory["Vibranium"] = 1;
+    }
+
+    /// <summary>
+    /// Wywołaj to po każdej zmianie w drużynie (dodanie, usunięcie, equip broni).
+    /// Powiadomi wszystkie podpięte systemy UI.
+    /// </summary>
+    public void NotifyTeamChanged()
+    {
+        OnTeamChanged?.Invoke();
     }
     
     public void AddResource(string name, int amount)
@@ -80,7 +97,7 @@ public class gameManager : MonoBehaviour
         }
 
         team.Add(new CitizenData(npc.name, citizen));
-        updated = true;
+        NotifyTeamChanged();
         return true;
     }
 
@@ -89,7 +106,7 @@ public class gameManager : MonoBehaviour
         if (index >= 0 && index < team.Count)
         {
             team.RemoveAt(index);
-            updated = true;
+            NotifyTeamChanged();
             return true;
         }
 

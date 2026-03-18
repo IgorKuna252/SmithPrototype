@@ -8,17 +8,15 @@ public class updaterBoardUI : MonoBehaviour
 
     void Start()
     {
-        manager = FindObjectOfType<gameManager>();
+        manager = gameManager.Instance;
+        manager.OnTeamChanged += updateBoard;
         updateBoard();
     }
 
-    void Update()
+    void OnDestroy()
     {
-        if (manager.updated)
-        {
-            updateBoard();
-            manager.updated = false;
-        }
+        if (manager != null)
+            manager.OnTeamChanged -= updateBoard;
     }
 
     void updateBoard()

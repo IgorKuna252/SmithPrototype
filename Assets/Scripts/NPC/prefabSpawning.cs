@@ -10,7 +10,7 @@ public class prefabSpawning : MonoBehaviour
     [SerializeField] Transform targetNPCAccept;
     [SerializeField] float queueSpacing = 1.5f;
 
-    private Queue<GameObject> npcQueue = new Queue<GameObject>();
+    private List<GameObject> npcQueue = new List<GameObject>();
     private List<Vector3> queuePositions = new List<Vector3>();
 
     void Start()
@@ -44,7 +44,7 @@ public class prefabSpawning : MonoBehaviour
             npc.acceptObject = targetNPCAccept;
 
             // 5. Dodanie do kolejki
-            npcQueue.Enqueue(obj);
+            npcQueue.Add(obj);
         }
     }
 
@@ -52,22 +52,43 @@ public class prefabSpawning : MonoBehaviour
     {
         if (npcQueue.Count == 0) return;
 
-        npcQueue.Dequeue();
+        // Usuń pierwszego (przetworzonego) NPC z listy
+        npcQueue.RemoveAt(0);
 
+        // Przesuń pozostałych nie-drużynowych na nowe pozycje
+        RepositionQueue();
+    }
+
+    /// <summary>
+    /// Jawne usunięcie konkretnego NPC z kolejki (np. po zniszczeniu).
+    /// </summary>
+    public void RemoveNPC(GameObject npc)
+    {
+        npcQueue.Remove(npc);
+        RepositionQueue();
+    }
+
+    void RepositionQueue()
+    {
         int index = 0;
         foreach (GameObject npcObj in npcQueue)
         {
+            if (npcObj == null) continue;
+
             npcPathFinding npc = npcObj.GetComponent<npcPathFinding>();
-            // Uwaga: upewnij się, że isInTeam jest poprawnie aktualizowane
-            if (npc.isInTeam) continue; 
-            npc.MoveToQueuePosition(queuePositions[index]);
-            index++;
+            if (npc.isInTeam) continue;
+
+            if (index < queuePositions.Count)
+            {
+                npc.MoveToQueuePosition(queuePositions[index]);
+                index++;
+            }
         }
     }
 
     public GameObject GetFirstInQueue()
     {
         if (npcQueue.Count == 0) return null;
-        return npcQueue.Peek();
+        return npcQueue[0];
     }
-}
+}

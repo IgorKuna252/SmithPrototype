@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 using TMPro;
 using System.Collections.Generic;
 
@@ -16,6 +17,9 @@ public class TileManager : MonoBehaviour
     [Header("Team Selection")]
     [SerializeField] private Transform cardContainer;
     [SerializeField] private GameObject cardPrefab;
+
+    [Header("Battle Scene")]
+    [SerializeField] private string battleSceneName = "BattleScene";
 
     private List<GameObject> activeCards = new List<GameObject>();
     private List<Toggle> currentToggles = new List<Toggle>(); 
@@ -73,62 +77,43 @@ public class TileManager : MonoBehaviour
         {
             if (currentToggles[i].isOn)
             {
-                // Teraz poprawnie bierzemy dane z listy gameManagera używając indeksu 'i'
                 var member = gameManager.Instance.team[i];
                 totalStrength += (member.health + member.strength + member.intelligence + member.speed);
             }
         }
         teamStrengthText.text = $"Siła Drużyny: {totalStrength:F0}";
     }
-    
-    [Header("Result UI")]
-    [SerializeField] private GameObject resultPanel; // Nowy panel z wynikiem
-    [SerializeField] private TextMeshProUGUI resultTitleText;
-    [SerializeField] private TextMeshProUGUI resultDescriptionText;
 
     public void Fight()
     {
-        float totalStrength = 0;
-    
-        // Obliczamy sumę statystyk
+        var gm = gameManager.Instance;
+
+        // 1. Zbierz indeksy zaznaczonych wojowników
+        gm.selectedFighters.Clear();
         for (int i = 0; i < currentToggles.Count; i++)
         {
             if (currentToggles[i].isOn)
             {
-                var member = gameManager.Instance.team[i];
-                // Tu zsumuj dokładnie to, co chcesz:
-                totalStrength += (member.health + member.strength + member.intelligence + member.speed);
+                gm.selectedFighters.Add(i);
             }
         }
 
-        // DEBUG: Wypiszmy to na ekranie/w konsoli przed porównaniem
-        Debug.Log($"WALKA: Siła drużyny: {totalStrength} | Trudność kafelka: {selectedTile.difficulty}");
+        // 2. Sprawdź czy wybrano kogokolwiek
+        if (gm.selectedFighters.Count == 0)
+        {
+            Debug.LogWarning("Musisz wybrać przynajmniej jednego wojownika!");
+            return;
+        }
 
+        // 3. Zapisz trudność i referencję kafelka
+        gm.currentBattleDifficulty = selectedTile.difficulty;
+        gm.currentBattleTile = selectedTile;
+
+        Debug.Log($"[TileManager] Wyruszam na bitwę! Wybrani: {gm.selectedFighters.Count}, Trudność: {selectedTile.difficulty}");
+
+        // 4. Zamknij UI i przejdź do sceny walki
         CloseUI();
-        resultPanel.SetActive(true);
-
-        if (totalStrength >= selectedTile.difficulty)
-        {
-            // WYGRANA
-            int randomAmount = Random.Range(1, 6); // 1 do 5
-            string[] resources = { "Copper", "Bronze", "Iron", "Steel", "Gold", "Platinum", "BlueSteel", "Vibranium" };
-            string randomResource = resources[Random.Range(0, resources.Length)];
-
-            gameManager.Instance.AddResource(randomResource, randomAmount);
-            
-            resultTitleText.text = "Wygrałeś!";
-            resultDescriptionText.text = $"Otrzymujesz {randomAmount} jednostek surowca: {randomResource}";
-        
-            // Oznaczamy kafelek jako wygrany
-            selectedTile.isOwned = true;
-            selectedTile.UpdateVisuals();
-        }
-        else
-        {
-            // PRZEGRANA
-            resultTitleText.text = "Przegrałeś!";
-            resultDescriptionText.text = "Nie wystarczyło sił, aby zdobyć ten teren.";
-        }
+        SceneManager.LoadScene(battleSceneName);
     }
 
     public void CloseUI() => uiPanel.SetActive(false);

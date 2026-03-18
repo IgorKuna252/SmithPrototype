@@ -8,16 +8,15 @@ public class updaterMainUI : MonoBehaviour
 
     void Start()
     {
-        manager = FindObjectOfType<gameManager>();
+        manager = gameManager.Instance;
+        manager.OnTeamChanged += updateCounter;
         updateCounter();
     }
 
-    void Update()
+    void OnDestroy()
     {
-        if (manager.updated)
-        {
-            updateCounter();
-        }
+        if (manager != null)
+            manager.OnTeamChanged -= updateCounter;
     }
 
     void updateCounter()

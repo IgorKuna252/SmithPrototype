@@ -7,6 +7,8 @@ public class ExiledCitizen : MonoBehaviour
     public float strength;
     public float intelligence;
     public float speed;
+    public string equippedWeaponName;
+
 
     public void Initialize(float maxHealth, float strength, float intelligence, float speed)
     {
@@ -15,6 +17,7 @@ public class ExiledCitizen : MonoBehaviour
         this.strength = strength;
         this.intelligence = intelligence;
         this.speed = speed;
+        this.equippedWeaponName = "Brak";
     }
 
     public void GenerateRandomStats()
@@ -27,8 +30,40 @@ public class ExiledCitizen : MonoBehaviour
         speed = Random.Range(5f, 20f);
     }
 
+    public void TakeDamage(float damage)
+    {
+        health -= damage;
+        Debug.Log($"[Citizen] {name} otrzymał {damage:F1} obrażeń | HP: {health:F1}/{maxHealth:F1}");
+
+        if (health <= 0f)
+        {
+            Die();
+        }
+    }
+
+    void Die()
+    {
+        Debug.Log($"[Citizen] {name} zginął!");
+
+        // Usuń z drużyny w gameManager
+        var manager = gameManager.Instance;
+        if (manager != null)
+        {
+            for (int i = 0; i < manager.team.Count; i++)
+            {
+                if (manager.team[i].name == name)
+                {
+                    manager.removeTeamMember(i);
+                    break;
+                }
+            }
+        }
+
+        Destroy(gameObject);
+    }
+
     public string GetStats()
     {
-        return $"Health: {health:F2}/{maxHealth:F2}\nStrength: {strength:F2}\nIntelligence: {intelligence:F2}\nSpeed: {speed:F2}";
+        return $"{name} | Broń: {equippedWeaponName}\nHP: {health:F0}/{maxHealth:F0}\nSTR: {strength:F0}\nINT: {intelligence:F0}\nSPD: {speed:F0}";
     }
 }

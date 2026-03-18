@@ -43,6 +43,6 @@ public class WeaponHitbox : MonoBehaviour
         if (enemy != null) enemy.TakeDamage(currentDamage);
 
         ExiledCitizen citizen = other.GetComponentInParent<ExiledCitizen>();
-        if (citizen != null) citizen.health -= currentDamage;
+        if (citizen != null) citizen.TakeDamage(currentDamage);
     }
 }

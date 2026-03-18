@@ -6,7 +6,7 @@ public class WeaponSocket : MonoBehaviour
     public string socketBoneName = "jointItemR";
 
     Transform socketBone;
-    GameObject equippedWeapon;
+    [SerializeField] GameObject equippedWeapon;
     Transform gripPoint;
     public string ownerName; // Ustaw to w Inspektorze lub przy Equip
     public CitizenData ownerData; // Przypisz to przy spawnowaniu NPC!
@@ -53,7 +53,26 @@ public class WeaponSocket : MonoBehaviour
         if (ownerData != null)
         {
             ownerData.equippedWeaponName = weapon.name;
-            Debug.Log($"Przypisano {weapon.name} do {ownerData.name}");
+
+            // Zapisz typ broni (potrzebne do odtworzenia w scenie walki)
+            FinishedObject finished = weapon.GetComponent<FinishedObject>();
+            if (finished != null)
+                ownerData.equippedWeaponType = finished.weaponType.ToString();
+
+            Debug.Log($"[Socket] Zapisano {weapon.name} ({ownerData.equippedWeaponType}) w: {ownerData.name}");
+
+            // Bug 6 fix: Synchronizuj też ExiledCitizen, żeby panel interakcji pokazywał broń
+            ExiledCitizen citizen = GetComponent<ExiledCitizen>();
+            if (citizen != null)
+                citizen.equippedWeaponName = weapon.name;
+
+            // Odśwież tablicę statystyk
+            if (gameManager.Instance != null)
+                gameManager.Instance.NotifyTeamChanged();
+        }
+        else
+        {
+            Debug.LogError("WeaponSocket nie ma przypisanego ownerData!");
         }
     }
 

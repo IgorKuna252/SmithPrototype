@@ -2,33 +2,96 @@ using UnityEngine;
 
 /// <summary>
 /// Spawnuje członków drużyny z gameManager.team w scenie walki.
-/// Przypisuje im zapisane statsy i oznacza jako isInTeam.
+/// Przypisuje im zapisane statsy, broń i oznacza jako isInTeam.
 /// </summary>
 public class TeamSpawner : MonoBehaviour
 {
     [SerializeField] GameObject npcPrefab;
     [SerializeField] float spacing = 1.5f;
 
+    [Header("Prefaby broni (przypisz w inspektorze)")]
+    [SerializeField] GameObject swordPrefab;
+    [SerializeField] GameObject axePrefab;
+
     void Start()
     {
-        var team = gameManager.Instance.team;
+        var gm = gameManager.Instance;
+        var team = gm.team;
+        var selected = gm.selectedFighters;
 
-        for (int i = 0; i < team.Count; i++)
+        // Jeśli nie wybrano nikogo (np. debug), spawnuj całą drużynę
+        if (selected.Count == 0)
         {
-            CitizenData data = team[i];
-            Vector3 pos = transform.position + transform.right * (i * spacing);
+            for (int i = 0; i < team.Count; i++)
+                selected.Add(i);
+        }
+
+        for (int s = 0; s < selected.Count; s++)
+        {
+            int teamIndex = selected[s];
+            if (teamIndex < 0 || teamIndex >= team.Count) continue;
+
+            CitizenData data = team[teamIndex];
+            Vector3 pos = transform.position + transform.right * (s * spacing);
 
             GameObject obj = Instantiate(npcPrefab, pos, transform.rotation);
+            obj.name = data.name;
 
+            // 1. Odtwórz statystyki
             ExiledCitizen citizen = obj.GetComponent<ExiledCitizen>();
-            citizen.health      = data.health;
-            citizen.maxHealth   = data.maxHealth;
-            citizen.strength    = data.strength;
+            citizen.health       = data.health;
+            citizen.maxHealth    = data.maxHealth;
+            citizen.strength     = data.strength;
             citizen.intelligence = data.intelligence;
-            citizen.speed       = data.speed;
+            citizen.speed        = data.speed;
+            citizen.equippedWeaponName = data.equippedWeaponName;
 
+            // 2. Oznacz jako członka drużyny
             npcPathFinding npc = obj.GetComponent<npcPathFinding>();
             npc.isInTeam = true;
+
+            // 3. Przypisz ownerData do WeaponSocket
+            WeaponSocket socket = obj.GetComponentInChildren<WeaponSocket>();
+            if (socket != null)
+            {
+                socket.ownerData = data;
+                socket.ownerName = data.name;
+
+                // 4. Odtwórz broń jeśli NPC miał przypisaną
+                if (data.equippedWeaponName != "Brak" && !string.IsNullOrEmpty(data.equippedWeaponName))
+                {
+                    GameObject weaponPrefab = GetWeaponPrefab(data.equippedWeaponType);
+                    if (weaponPrefab != null)
+                    {
+                        GameObject weapon = Instantiate(weaponPrefab);
+                        weapon.name = data.equippedWeaponName;
+                        socket.EquipWeapon(weapon);
+
+                        // 5. Ustaw tryb walki
+                        NPCCombat combat = obj.GetComponent<NPCCombat>();
+                        if (combat != null)
+                            combat.SetMode(NPCCombatMode.ArmedIdle);
+
+                        Debug.Log($"[TeamSpawner] Odtworzono broń '{data.equippedWeaponName}' dla {data.name}");
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[TeamSpawner] Brak prefabu broni typu '{data.equippedWeaponType}' — przypisz go w inspektorze!");
+                    }
+                }
+            }
+        }
+    }
+
+    GameObject GetWeaponPrefab(string weaponType)
+    {
+        switch (weaponType)
+        {
+            case "Sword": return swordPrefab;
+            case "Axe":   return axePrefab;
+            default:
+                Debug.LogWarning($"[TeamSpawner] Nieznany typ broni: {weaponType}");
+                return swordPrefab; // fallback
         }
     }
 }
