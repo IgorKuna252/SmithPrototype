@@ -98,6 +98,7 @@ public class prefabSpawning : MonoBehaviour
                     GameObject weapon = Instantiate(data.savedWeaponTemplate);
                     weapon.SetActive(true);
                     weapon.name = data.equippedWeaponName;
+                    SavedMeshData.RestoreTo(weapon, data.weaponMeshes);
                     socket.EquipWeapon(weapon);
                 }
             }
@@ -147,4 +148,4 @@ public class prefabSpawning : MonoBehaviour
         if (npcQueue.Count == 0) return null;
         return npcQueue[0];
     }
-}
+}

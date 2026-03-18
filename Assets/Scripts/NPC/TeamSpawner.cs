@@ -59,6 +59,7 @@ public class TeamSpawner : MonoBehaviour
                     GameObject weapon = Instantiate(data.savedWeaponTemplate);
                     weapon.SetActive(true);
                     weapon.name = data.equippedWeaponName;
+                    SavedMeshData.RestoreTo(weapon, data.weaponMeshes);
                     socket.EquipWeapon(weapon);
 
                     // 5. Ustaw tryb walki

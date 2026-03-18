@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.AI;
+using Object = UnityEngine.Object;
 
 [RequireComponent(typeof(npcPathFinding))]
 [RequireComponent(typeof(NPCCombat))]
@@ -14,22 +15,26 @@ public class NPCFightBehavior : MonoBehaviour
     NPCCombat combat;
     npcPathFinding pathFinding;
     WeaponSocket weaponSocket;
+    Animator animator;
 
     Transform currentTarget;
     float checkTimer;
     float defaultStoppingDistance;
+    Vector3 prevPosition;
 
     void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
         combat = GetComponent<NPCCombat>();
         pathFinding = GetComponent<npcPathFinding>();
-        weaponSocket = GetComponent<WeaponSocket>();
+        weaponSocket = GetComponentInChildren<WeaponSocket>();
+        animator = GetComponentInChildren<Animator>();
     }
 
     void Start()
     {
         defaultStoppingDistance = agent != null ? agent.stoppingDistance : 0.5f;
+        prevPosition = transform.position;
 
         // Wymuszamy minimalny zasięg — Unity serializacja może trzymać stare wartości z prefaba
         if (detectionRadius < 50f)
@@ -40,8 +45,6 @@ public class NPCFightBehavior : MonoBehaviour
     {
         if (!pathFinding.isInTeam) return;
         if (agent == null || !agent.isOnNavMesh) return;
-
-        pathFinding.isManagedByCombat = true;
 
         bool isArmed = weaponSocket != null && weaponSocket.GetEquippedWeapon() != null;
 
@@ -54,9 +57,12 @@ public class NPCFightBehavior : MonoBehaviour
 
         if (currentTarget == null)
         {
+            pathFinding.isManagedByCombat = false;
             LoseTarget();
             return;
         }
+
+        pathFinding.isManagedByCombat = true;
 
         float dist = Vector3.Distance(transform.position, currentTarget.position);
 
@@ -71,11 +77,21 @@ public class NPCFightBehavior : MonoBehaviour
         }
         else
         {
-            agent.SetDestination(currentTarget.position);
+            if (Vector3.Distance(agent.destination, currentTarget.position) > 0.5f)
+                agent.SetDestination(currentTarget.position);
 
             if (isArmed && combat.CurrentMode != NPCCombatMode.ArmedIdle)
                 combat.SetMode(NPCCombatMode.ArmedIdle);
         }
+
+        // Animacja biegu — liczymy z faktycznej zmiany pozycji, bo agent.velocity może być 0
+        if (animator != null && Time.deltaTime > 0f)
+        {
+            float spd = Vector3.Distance(transform.position, prevPosition) / Time.deltaTime;
+            if (spd < 0.15f) spd = 0f;
+            animator.SetFloat("Speed", spd);
+        }
+        prevPosition = transform.position;
     }
 
     void FindNearestEnemy()
@@ -99,9 +115,7 @@ public class NPCFightBehavior : MonoBehaviour
 
         currentTarget = found;
 
-        if (currentTarget == null)
-            LoseTarget();
-        else
+        if (currentTarget != null)
             agent.stoppingDistance = 0f;
     }
 

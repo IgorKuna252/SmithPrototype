@@ -12,8 +12,10 @@ public class CitizenData
     public string equippedWeaponName;
     public string equippedWeaponType; // "None", "Sword", "Axe"
 
-    // Klon broni przechowywany w DontDestroyOnLoad — przetrwa zmianę sceny
-    [System.NonSerialized] public GameObject savedWeaponTemplate;
+    
+    public GameObject savedWeaponTemplate;
+
+    public SavedMeshData[] weaponMeshes;
 
     public CitizenData(string name, ExiledCitizen citizen)
     {

@@ -28,7 +28,7 @@ public class NPCCombat : MonoBehaviour
 
     void Awake()
     {
-        weaponSocket = GetComponent<WeaponSocket>();
+        weaponSocket = GetComponentInChildren<WeaponSocket>();
         citizenStats = GetComponent<ExiledCitizen>();
         animator = GetComponentInChildren<Animator>();
     }

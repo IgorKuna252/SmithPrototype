@@ -50,12 +50,15 @@ public class npcPathFinding : MonoBehaviour
                 agentNPC.velocity = Vector3.zero;
         }
 
-        // Animacja prędkości — zawsze aktualna
-        float speed = agentNPC.velocity.magnitude;
-        if (speed < 0.15f) speed = 0f;
+        // Animacja prędkości — tylko gdy walka nie zarządza NPC
+        if (!isManagedByCombat)
+        {
+            float speed = agentNPC.velocity.magnitude;
+            if (speed < 0.15f) speed = 0f;
 
-        if (animator != null)
-            animator.SetFloat("Speed", speed);
+            if (animator != null)
+                animator.SetFloat("Speed", speed);
+        }
     }
 
     void SetDestination(Transform target)
@@ -78,8 +81,10 @@ public class npcPathFinding : MonoBehaviour
             if (socket != null)
             {
                 CitizenData officialData = manager.team[manager.team.Count - 1];
+                socket.ownerData = officialData;
+                socket.ownerName = officialData.name;
 
-                // Bug 2 fix: jeśli NPC ma już broń PRZED akceptacją, przenieś info
+                // Jeśli NPC miał broń przed akceptacją — zapisz ją
                 GameObject currentWeapon = socket.GetEquippedWeapon();
                 if (currentWeapon != null)
                 {
@@ -88,10 +93,15 @@ public class npcPathFinding : MonoBehaviour
                     FinishedObject finished = currentWeapon.GetComponent<FinishedObject>();
                     if (finished != null)
                         officialData.equippedWeaponType = finished.weaponType.ToString();
+
+                    officialData.weaponMeshes = SavedMeshData.SaveFrom(currentWeapon);
+
+                    GameObject clone = Object.Instantiate(currentWeapon);
+                    clone.name = currentWeapon.name + "_template";
+                    clone.SetActive(false);
+                    Object.DontDestroyOnLoad(clone);
+                    officialData.savedWeaponTemplate = clone;
                 }
-                
-                socket.ownerData = officialData; 
-                socket.ownerName = officialData.name;
                 
                 Debug.Log($"[Socket] Zaktualizowano na oficjalne dane: {officialData.name}");
             }

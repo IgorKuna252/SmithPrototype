@@ -63,6 +63,9 @@ public class WeaponSocket : MonoBehaviour
             if (ownerData.savedWeaponTemplate != null)
                 Object.Destroy(ownerData.savedWeaponTemplate);
 
+            // Zapisz siatki broni (odkształcone ostrze + kolor)
+            ownerData.weaponMeshes = SavedMeshData.SaveFrom(weapon);
+
             // Klonuj broń i schowaj w DontDestroyOnLoad
             GameObject weaponClone = Object.Instantiate(weapon);
             weaponClone.name = weapon.name + "_template";
