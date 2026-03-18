@@ -136,6 +136,8 @@ public void CombineItems()
         if (!validRecipe)
         {
             Debug.LogWarning("Te części do siebie nie pasują!");
+            placedMetal = null;
+            placedWood = null;
             return;
         }
 
@@ -215,5 +217,6 @@ public void CombineItems()
         placedMetal = null;
         placedWood = null;
     }
+
 }
 }
