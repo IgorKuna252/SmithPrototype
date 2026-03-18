@@ -157,6 +157,14 @@ public class BlacksmithInteraction : MonoBehaviour
                 }
                 return;
             }
+
+            // 6. Fallback — dowolny IInteractable (np. MoldManager)
+            IInteractable interactable = hit.collider.GetComponentInParent<IInteractable>();
+            if (interactable != null)
+            {
+                interactable.Interact();
+                return;
+            }
         }
     }
 

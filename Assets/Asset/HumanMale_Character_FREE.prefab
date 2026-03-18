@@ -2675,6 +2675,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSocket
   socketBoneName: jointItemR
+  swordLocalPosition: {x: 0, y: 0, z: 0}
+  swordLocalRotation: {x: 0, y: 0, z: -90}
+  axeLocalPosition: {x: 0, y: 0, z: 0}
+  axeLocalRotation: {x: 0, y: 0, z: -90}
 --- !u!114 &7159525049598194826
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2688,8 +2692,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NPCCombat
   attackCooldown: 1.2
-  attackTrigger: Attack
-  combatBool: InCombat
   hitboxActiveDelay: 0.1
   hitboxActiveDuration: 0.3
 --- !u!114 &3458153959580206967
