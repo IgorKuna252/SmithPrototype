@@ -1,7 +1,6 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class WoodPiece : MonoBehaviour
 {
-    public enum HandleType { SwordHandle, AxeHandle }
-    public HandleType partType;
+    // Tutaj w przysz³oœci mo¿esz dodaæ zmienne, np. rodzaj drewna
 }
