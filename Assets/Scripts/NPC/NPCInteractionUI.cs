@@ -5,7 +5,6 @@ using TMPro;
 public class NPCInteractionUI : MonoBehaviour
 {
     public static NPCInteractionUI Instance;
-    public static event System.Action OnNPCInteractionFinished;
 
     [Header("Panel")]
     public GameObject panel;
@@ -27,8 +26,8 @@ public class NPCInteractionUI : MonoBehaviour
     {
         Instance = this;
         panel.SetActive(false);
-        blacksmith = FindObjectOfType<BlacksmithInteraction>();
-        queue = FindObjectOfType<prefabSpawning>();
+        blacksmith = Object.FindFirstObjectByType<BlacksmithInteraction>();
+        queue = Object.FindFirstObjectByType<prefabSpawning>();
         manager = gameManager.Instance;
     }
 

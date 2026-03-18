@@ -9,7 +9,6 @@ public class npcPathFinding : MonoBehaviour
     Animator animator;
     public Transform rejectObject;
     public Transform acceptObject;
-    [SerializeField] float teamSpacing = 1.5f;
     [HideInInspector] public bool isInTeam = false;
     [HideInInspector] public bool isManagedByCombat = false; // NPCFightBehavior ustawia to na true
 
