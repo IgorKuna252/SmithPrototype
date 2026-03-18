@@ -29,7 +29,11 @@ public class gameManager : MonoBehaviour
     // Dane aktualnej bitwy (ustawiane przez TileManager przed przejściem do BattleScene)
     [HideInInspector] public List<int> selectedFighters = new List<int>();
     [HideInInspector] public int currentBattleDifficulty = 0;
-    [HideInInspector] public Tile currentBattleTile;
+    [HideInInspector] public string currentBattleTileName; // nazwa kafelka, np. "Tile (2, -1)"
+
+    // Trwała pamięć mapy — przetrwa zmiany scen
+    public HashSet<string> ownedTiles = new HashSet<string>();
+    public Dictionary<string, int> tileDifficulties = new Dictionary<string, int>();
 
     public Dictionary<string, int> inventory = new Dictionary<string, int>();
 
@@ -73,6 +77,19 @@ public class gameManager : MonoBehaviour
             inventory[name] = amount;
         
         Debug.Log($"Dodano {amount} {name}. Stan: {inventory[name]}");
+    }
+
+    public bool RemoveResource(string name, int amount)
+    {
+        if (!inventory.ContainsKey(name) || inventory[name] < amount)
+        {
+            Debug.LogWarning($"Brak wystarczającej ilości {name}! (masz: {(inventory.ContainsKey(name) ? inventory[name] : 0)}, potrzeba: {amount})");
+            return false;
+        }
+
+        inventory[name] -= amount;
+        Debug.Log($"Zużyto {amount} {name}. Pozostało: {inventory[name]}");
+        return true;
     }
     
     public void AddWeapon(string name, string type)

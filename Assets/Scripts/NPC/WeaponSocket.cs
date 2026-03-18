@@ -54,19 +54,28 @@ public class WeaponSocket : MonoBehaviour
         {
             ownerData.equippedWeaponName = weapon.name;
 
-            // Zapisz typ broni (potrzebne do odtworzenia w scenie walki)
+            // Zapisz typ broni
             FinishedObject finished = weapon.GetComponent<FinishedObject>();
             if (finished != null)
                 ownerData.equippedWeaponType = finished.weaponType.ToString();
 
-            Debug.Log($"[Socket] Zapisano {weapon.name} ({ownerData.equippedWeaponType}) w: {ownerData.name}");
+            // Zniszcz stary klon jeśli istnieje
+            if (ownerData.savedWeaponTemplate != null)
+                Object.Destroy(ownerData.savedWeaponTemplate);
 
-            // Bug 6 fix: Synchronizuj też ExiledCitizen, żeby panel interakcji pokazywał broń
+            // Klonuj broń i schowaj w DontDestroyOnLoad
+            GameObject weaponClone = Object.Instantiate(weapon);
+            weaponClone.name = weapon.name + "_template";
+            weaponClone.SetActive(false);
+            Object.DontDestroyOnLoad(weaponClone);
+            ownerData.savedWeaponTemplate = weaponClone;
+
+            // Synchronizuj ExiledCitizen
             ExiledCitizen citizen = GetComponent<ExiledCitizen>();
             if (citizen != null)
                 citizen.equippedWeaponName = weapon.name;
 
-            // Odśwież tablicę statystyk
+            // Odśwież UI
             if (gameManager.Instance != null)
                 gameManager.Instance.NotifyTeamChanged();
         }

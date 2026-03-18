@@ -85,13 +85,10 @@ public class BattleManager : MonoBehaviour
 
             gameManager.Instance.AddResource(randomResource, randomAmount);
 
-            // Oznacz kafelek jako zdobyty
-            Tile tile = gameManager.Instance.currentBattleTile;
-            if (tile != null)
-            {
-                tile.isOwned = true;
-                // Wizualizacja zaktualizuje się po powrocie do mapy
-            }
+            // Oznacz kafelek jako zdobyty (po nazwie — przetrwa zmianę scen)
+            string tileName = gameManager.Instance.currentBattleTileName;
+            if (!string.IsNullOrEmpty(tileName))
+                gameManager.Instance.ownedTiles.Add(tileName);
 
             if (resultTitleText != null)
                 resultTitleText.text = "Zwycięstwo!";
@@ -145,7 +142,7 @@ public class BattleManager : MonoBehaviour
     {
         // Wyczyść dane bitwy
         gameManager.Instance.selectedFighters.Clear();
-        gameManager.Instance.currentBattleTile = null;
+        gameManager.Instance.currentBattleTileName = null;
 
         SceneManager.LoadScene(mapSceneName);
     }

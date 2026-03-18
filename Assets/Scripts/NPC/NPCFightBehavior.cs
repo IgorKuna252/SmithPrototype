@@ -19,10 +19,6 @@ public class NPCFightBehavior : MonoBehaviour
     float checkTimer;
     float defaultStoppingDistance;
 
-    // Debug — logujemy co sekundę żeby nie spamować
-    float debugTimer = 0f;
-    const float DEBUG_INTERVAL = 1f;
-
     void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
@@ -38,51 +34,12 @@ public class NPCFightBehavior : MonoBehaviour
         // Wymuszamy minimalny zasięg — Unity serializacja może trzymać stare wartości z prefaba
         if (detectionRadius < 50f)
             detectionRadius = 100f;
-
-        string status = $"[FightBehavior] {gameObject.name}: ";
-        status += agent == null ? "❌ BRAK NavMeshAgent | " : "✅ NavMeshAgent | ";
-        status += (agent != null && agent.isOnNavMesh) ? "✅ Na NavMesh | " : "❌ NIE na NavMesh | ";
-        status += pathFinding.isInTeam ? "✅ isInTeam | " : "❌ NIE w drużynie | ";
-        
-        bool armed = weaponSocket != null && weaponSocket.GetEquippedWeapon() != null;
-        status += armed ? "✅ Uzbrojony | " : "⚠️ Bez broni | ";
-        
-        Enemy[] enemies = Object.FindObjectsByType<Enemy>(FindObjectsSortMode.None);
-        status += $"Wrogów na scenie: {enemies.Length}";
-        
-        Debug.Log(status);
-    }
-
-    bool ShouldLog()
-    {
-        debugTimer -= Time.deltaTime;
-        if (debugTimer <= 0f)
-        {
-            debugTimer = DEBUG_INTERVAL;
-            return true;
-        }
-        return false;
     }
 
     void Update()
     {
-        bool log = ShouldLog();
-
-        if (!pathFinding.isInTeam)
-        {
-            if (log) Debug.Log($"[FB] {gameObject.name}: STOP — nie w drużynie");
-            return;
-        }
-        if (agent == null)
-        {
-            if (log) Debug.Log($"[FB] {gameObject.name}: STOP — agent == null");
-            return;
-        }
-        if (!agent.isOnNavMesh)
-        {
-            if (log) Debug.Log($"[FB] {gameObject.name}: STOP — agent NIE na NavMesh");
-            return;
-        }
+        if (!pathFinding.isInTeam) return;
+        if (agent == null || !agent.isOnNavMesh) return;
 
         pathFinding.isManagedByCombat = true;
 
@@ -92,22 +49,16 @@ public class NPCFightBehavior : MonoBehaviour
         if (checkTimer <= 0f)
         {
             checkTimer = checkInterval;
-            FindNearestEnemy(log);
+            FindNearestEnemy();
         }
 
         if (currentTarget == null)
         {
-            if (log) Debug.Log($"[FB] {gameObject.name}: currentTarget == null → LoseTarget");
             LoseTarget();
             return;
         }
 
         float dist = Vector3.Distance(transform.position, currentTarget.position);
-
-        if (log)
-        {
-            Debug.Log($"[FB] {gameObject.name}: target={currentTarget.name}, dist={dist:F1}, attackRange={attackRange}, armed={isArmed}, agentSpeed={agent.speed}, agentVelocity={agent.velocity.magnitude:F2}, hasPath={agent.hasPath}, pathPending={agent.pathPending}");
-        }
 
         if (dist <= attackRange)
         {
@@ -116,26 +67,20 @@ public class NPCFightBehavior : MonoBehaviour
             FaceTarget(currentTarget.position);
 
             if (isArmed && combat.CurrentMode != NPCCombatMode.Attacking)
-            {
-                if (log) Debug.Log($"[FB] {gameObject.name}: W zasięgu! Ustawiam ATTACK");
                 combat.SetMode(NPCCombatMode.Attacking);
-            }
         }
         else
         {
-            bool setDest = agent.SetDestination(currentTarget.position);
-            if (log) Debug.Log($"[FB] {gameObject.name}: Za daleko, SetDestination → {setDest}");
+            agent.SetDestination(currentTarget.position);
 
             if (isArmed && combat.CurrentMode != NPCCombatMode.ArmedIdle)
                 combat.SetMode(NPCCombatMode.ArmedIdle);
         }
     }
 
-    void FindNearestEnemy(bool log)
+    void FindNearestEnemy()
     {
         Enemy[] enemies = Object.FindObjectsByType<Enemy>(FindObjectsSortMode.None);
-
-        if (log) Debug.Log($"[FB] {gameObject.name}: FindNearestEnemy — znaleziono {enemies.Length} wrogów");
 
         float nearest = float.MaxValue;
         Transform found = null;
@@ -143,16 +88,12 @@ public class NPCFightBehavior : MonoBehaviour
         foreach (Enemy e in enemies)
         {
             float d = Vector3.Distance(transform.position, e.transform.position);
-            if (log) Debug.Log($"[FB]   → {e.name} dystans: {d:F1} (max: {detectionRadius})");
-
             if (d < nearest && d <= detectionRadius)
             {
                 nearest = d;
                 found = e.transform;
             }
         }
-
-        if (log) Debug.Log($"[FB]   Wynik: found={found?.name ?? "NULL"}, currentTarget={currentTarget?.name ?? "NULL"}");
 
         if (found == currentTarget) return;
 
@@ -161,10 +102,7 @@ public class NPCFightBehavior : MonoBehaviour
         if (currentTarget == null)
             LoseTarget();
         else
-        {
             agent.stoppingDistance = 0f;
-            if (log) Debug.Log($"[FB]   Nowy cel: {currentTarget.name}!");
-        }
     }
 
     void LoseTarget()
@@ -192,4 +130,3 @@ public class NPCFightBehavior : MonoBehaviour
         Gizmos.DrawWireSphere(transform.position, attackRange);
     }
 }
-

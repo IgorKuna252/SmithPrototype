@@ -105,9 +105,9 @@ public class TileManager : MonoBehaviour
             return;
         }
 
-        // 3. Zapisz trudność i referencję kafelka
+        // 3. Zapisz trudność i nazwę kafelka (referencja Tile jest niszczona przy LoadScene)
         gm.currentBattleDifficulty = selectedTile.difficulty;
-        gm.currentBattleTile = selectedTile;
+        gm.currentBattleTileName = selectedTile.gameObject.name;
 
         Debug.Log($"[TileManager] Wyruszam na bitwę! Wybrani: {gm.selectedFighters.Count}, Trudność: {selectedTile.difficulty}");
 

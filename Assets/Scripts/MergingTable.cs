@@ -182,8 +182,9 @@ public void CombineItems()
         // --- FINALIZACJA ---
         placedMetal.ForceCoolDown();
 
-        // Zapamiętaj pozycję rączki PRZED zniszczeniem komponentów
+        // Zapamiętaj dane PRZED zniszczeniem komponentów
         Vector3 gripLocalPos = placedWood.transform.localPosition;
+        string metalName = placedMetal.metalTier.ToString();
 
         // Usuwamy fizykę części, by nie gryzła się z fizyką całej broni
         Destroy(placedMetal.GetComponent<Rigidbody>());
@@ -207,6 +208,9 @@ public void CombineItems()
         grip.transform.SetParent(craftedWeapon.transform);
         grip.transform.localPosition = gripLocalPos;
         grip.transform.localRotation = Quaternion.Euler(isAxe ? axeGripRotation : swordGripRotation);
+
+        // Odejmij surowiec z ekwipunku
+        gameManager.Instance.RemoveResource(metalName, 1);
 
         placedMetal = null;
         placedWood = null;

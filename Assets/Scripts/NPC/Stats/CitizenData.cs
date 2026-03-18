@@ -1,3 +1,5 @@
+using UnityEngine;
+
 [System.Serializable]
 public class CitizenData
 {
@@ -10,6 +12,8 @@ public class CitizenData
     public string equippedWeaponName;
     public string equippedWeaponType; // "None", "Sword", "Axe"
 
+    // Klon broni przechowywany w DontDestroyOnLoad — przetrwa zmianę sceny
+    [System.NonSerialized] public GameObject savedWeaponTemplate;
 
     public CitizenData(string name, ExiledCitizen citizen)
     {
@@ -28,3 +32,4 @@ public class CitizenData
         return $"{name} | Broń: {equippedWeaponName}\nHP: {health:F0}/{maxHealth:F0}\nSTR: {strength:F0}\nINT: {intelligence:F0}\nSPD: {speed:F0}";
     }
 }
+

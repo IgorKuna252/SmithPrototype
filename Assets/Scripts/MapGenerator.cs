@@ -7,9 +7,6 @@ public class MapGenerator : MonoBehaviour
     [SerializeField] private int layers = 3;
     [SerializeField] private float spacing = 1.1f;
 
-    private static readonly int ColorPropertyId = Shader.PropertyToID("_Color");
-    private static readonly int BaseColorPropertyId = Shader.PropertyToID("_BaseColor");
-
     void Start()
     {
         GenerateGrid();
@@ -18,6 +15,7 @@ public class MapGenerator : MonoBehaviour
     private void GenerateGrid()
     {
         GameObject mapHolder = new GameObject("GeneratedMap");
+        var gm = gameManager.Instance;
 
         for (int x = -layers; x <= layers; x++)
         {
@@ -26,16 +24,37 @@ public class MapGenerator : MonoBehaviour
                 Vector3 spawnPosition = new Vector3(x * spacing, y * spacing, 0f);
                 GameObject newTile = Instantiate(tilePrefab, spawnPosition, Quaternion.identity);
                 newTile.transform.SetParent(mapHolder.transform);
-                newTile.name = $"Tile ({x}, {y})";
+                string tileName = $"Tile ({x}, {y})";
+                newTile.name = tileName;
 
                 Tile tileComponent = newTile.GetComponent<Tile>();
                 if (tileComponent != null)
                 {
-                    tileComponent.isOwned = (x == 0 && y == 0);
-                    tileComponent.difficulty = Random.Range(100, 801); // Losujemy trudność
-                    tileComponent.UpdateVisuals(); 
+                    // Środkowy kafelek zawsze owned
+                    if (x == 0 && y == 0)
+                    {
+                        tileComponent.isOwned = true;
+                    }
+                    // Sprawdź czy ten kafelek był wygrany w przeszłości
+                    else if (gm.ownedTiles.Contains(tileName))
+                    {
+                        tileComponent.isOwned = true;
+                    }
+
+                    // Przywróć trudność lub wygeneruj nową (tylko raz)
+                    if (gm.tileDifficulties.ContainsKey(tileName))
+                    {
+                        tileComponent.difficulty = gm.tileDifficulties[tileName];
+                    }
+                    else
+                    {
+                        tileComponent.difficulty = Random.Range(100, 801);
+                        gm.tileDifficulties[tileName] = tileComponent.difficulty;
+                    }
+
+                    tileComponent.UpdateVisuals();
                 }
             }
         }
     }
-}
+}

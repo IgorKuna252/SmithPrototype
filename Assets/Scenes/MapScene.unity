@@ -2336,9 +2336,7 @@ MonoBehaviour:
   teamStrengthText: {fileID: 573857602}
   cardContainer: {fileID: 743062575}
   cardPrefab: {fileID: 6422524676288753556, guid: 29d7e99ffa4bff04e918b80ccee1507d, type: 3}
-  resultPanel: {fileID: 2118335352}
-  resultTitleText: {fileID: 617311177}
-  resultDescriptionText: {fileID: 107380124}
+  battleSceneName: BattleScene
 --- !u!4 &1758714789
 Transform:
   m_ObjectHideFlags: 0

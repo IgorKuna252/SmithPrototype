@@ -2,16 +2,12 @@ using UnityEngine;
 
 /// <summary>
 /// Spawnuje członków drużyny z gameManager.team w scenie walki.
-/// Przypisuje im zapisane statsy, broń i oznacza jako isInTeam.
+/// Przypisuje im zapisane statsy, broń (z klonu) i oznacza jako isInTeam.
 /// </summary>
 public class TeamSpawner : MonoBehaviour
 {
     [SerializeField] GameObject npcPrefab;
     [SerializeField] float spacing = 1.5f;
-
-    [Header("Prefaby broni (przypisz w inspektorze)")]
-    [SerializeField] GameObject swordPrefab;
-    [SerializeField] GameObject axePrefab;
 
     void Start()
     {
@@ -57,41 +53,20 @@ public class TeamSpawner : MonoBehaviour
                 socket.ownerData = data;
                 socket.ownerName = data.name;
 
-                // 4. Odtwórz broń jeśli NPC miał przypisaną
-                if (data.equippedWeaponName != "Brak" && !string.IsNullOrEmpty(data.equippedWeaponName))
+                // 4. Odtwórz broń z zapisanego klonu (customowa broń gracza)
+                if (data.savedWeaponTemplate != null)
                 {
-                    GameObject weaponPrefab = GetWeaponPrefab(data.equippedWeaponType);
-                    if (weaponPrefab != null)
-                    {
-                        GameObject weapon = Instantiate(weaponPrefab);
-                        weapon.name = data.equippedWeaponName;
-                        socket.EquipWeapon(weapon);
+                    GameObject weapon = Instantiate(data.savedWeaponTemplate);
+                    weapon.SetActive(true);
+                    weapon.name = data.equippedWeaponName;
+                    socket.EquipWeapon(weapon);
 
-                        // 5. Ustaw tryb walki
-                        NPCCombat combat = obj.GetComponent<NPCCombat>();
-                        if (combat != null)
-                            combat.SetMode(NPCCombatMode.ArmedIdle);
-
-                        Debug.Log($"[TeamSpawner] Odtworzono broń '{data.equippedWeaponName}' dla {data.name}");
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"[TeamSpawner] Brak prefabu broni typu '{data.equippedWeaponType}' — przypisz go w inspektorze!");
-                    }
+                    // 5. Ustaw tryb walki
+                    NPCCombat combat = obj.GetComponent<NPCCombat>();
+                    if (combat != null)
+                        combat.SetMode(NPCCombatMode.ArmedIdle);
                 }
             }
-        }
-    }
-
-    GameObject GetWeaponPrefab(string weaponType)
-    {
-        switch (weaponType)
-        {
-            case "Sword": return swordPrefab;
-            case "Axe":   return axePrefab;
-            default:
-                Debug.LogWarning($"[TeamSpawner] Nieznany typ broni: {weaponType}");
-                return swordPrefab; // fallback
         }
     }
 }
