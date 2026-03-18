@@ -1,5 +1,5 @@
 using UnityEngine;
-using System.Collections; // Wymagane dla IEnumerator (Korutyny animacji)
+using System.Collections;
 
 public class AnvilStation : MonoBehaviour
 {
@@ -8,12 +8,19 @@ public class AnvilStation : MonoBehaviour
     public Transform cameraSocket;
     public GameObject playerObject;
 
-    [Header("M�otek (Nowo��!)")]
-    public GameObject hammerPrefab; // Mój model młotka
+    [Header("Młotek")]
+    public GameObject hammerPrefab;
     private GameObject hammerObject;
-    public Vector3 hammerHoverOffset = new Vector3(0, 0.4f, 0); // Jak wysoko nad kowad�em wisi m�ot
-    public Vector3 hammerStrikeRotation = new Vector3(60f, 0, 0); // O ile stopni obraca si� przy uderzeniu
-    private bool isSwinging = false; // Czy m�otek aktualnie uderza?
+    public Vector3 hammerHoverOffset = new Vector3(0, 0.4f, 0);
+    public Vector3 hammerStrikeRotation = new Vector3(60f, 0, 0);
+
+    [Header("Obrót i Korekta Pozycji (Pivot)")]
+    public float sidewaysTwistAngle = 90f;
+    public Vector3 normalStrikeOffset = Vector3.zero;           // Przesunięcie wizualne gdy prosto
+    public Vector3 sidewaysStrikeOffset = new Vector3(0.2f, 0, 0); // Przesunięcie wizualne gdy bokiem (Zmień to w Inspektorze!)
+
+    private bool isHammerSideways = false;
+    private bool isSwinging = false;
 
     private MetalPiece currentMetal;
     private bool isForgingMode = false;
@@ -27,7 +34,6 @@ public class AnvilStation : MonoBehaviour
     private Quaternion originalCameraLocalRot;
 
     private float forgeStartTime = 0f;
-
     private float lastHitTime = 0f;
     public float hammerCooldown = 0.2f;
 
@@ -38,13 +44,13 @@ public class AnvilStation : MonoBehaviour
     {
         if (hammerPrefab != null)
             hammerObject = Instantiate(hammerPrefab);
+
         if (Camera.main != null)
         {
             mainCamera = Camera.main.transform;
             camComponent = Camera.main;
         }
 
-        // Ukrywamy m�otek na starcie gry
         if (hammerObject != null) hammerObject.SetActive(false);
     }
 
@@ -67,11 +73,11 @@ public class AnvilStation : MonoBehaviour
         isForgingMode = true;
         forgeStartTime = Time.time;
 
-        if (playerObject == null)
-            playerObject = GameObject.FindGameObjectWithTag("Player");
+        if (playerObject == null) playerObject = GameObject.FindGameObjectWithTag("Player");
 
         slidePosition = 0f;
         rotationStep = 0;
+        isHammerSideways = false;
 
         Rigidbody rb = currentMetal.GetComponent<Rigidbody>();
         if (rb != null)
@@ -93,13 +99,11 @@ public class AnvilStation : MonoBehaviour
             mainCamera.SetParent(null);
         }
 
-        if (playerObject != null)
-            playerObject.SetActive(false);
+        if (playerObject != null) playerObject.SetActive(false);
 
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
-        // POKAZUJEMY M�OTEK
         if (hammerObject != null)
         {
             hammerObject.SetActive(true);
@@ -116,12 +120,11 @@ public class AnvilStation : MonoBehaviour
         }
 
         float targetRotationZ = rotationStep * 90f;
-        currentMetal.transform.localRotation =
-            Quaternion.Lerp(
-                currentMetal.transform.localRotation,
-                Quaternion.Euler(0, 0, targetRotationZ),
-                Time.deltaTime * 15f
-            );
+        currentMetal.transform.localRotation = Quaternion.Lerp(
+            currentMetal.transform.localRotation,
+            Quaternion.Euler(0, 0, targetRotationZ),
+            Time.deltaTime * 15f
+        );
 
         float scroll = Input.mouseScrollDelta.y;
         slidePosition += scroll * 0.05f;
@@ -132,7 +135,6 @@ public class AnvilStation : MonoBehaviour
         slidePosition = Mathf.Clamp(slidePosition, -maxSlide, maxSlide);
         currentMetal.transform.localPosition = new Vector3(0, 0, slidePosition);
 
-        // --- SYSTEM LASERA (Przeniesiony wy�ej, by m�otek �ledzi� kursor co klatk�!) ---
         Ray ray = camComponent.ScreenPointToRay(Input.mousePosition);
         Plane metalPlane = new Plane(currentMetal.transform.up, currentMetal.transform.position);
 
@@ -140,73 +142,82 @@ public class AnvilStation : MonoBehaviour
         {
             Vector3 cursorPoint = ray.GetPoint(enter);
 
-            // 1. �ledzenie kursora przez m�otek (Hover)
+            // Wybieramy odpowiedni offset w zależności od tego, czy młot jest obrócony
+            Vector3 currentVisualOffset = isHammerSideways ? sidewaysStrikeOffset : normalStrikeOffset;
+
+            // 1. ŚLEDZENIE I OBRÓT (HOVER)
             if (hammerObject != null && !isSwinging)
             {
-                // M�otek wisi nad punktem kursora
-                Vector3 targetHoverPosition = cursorPoint + hammerHoverOffset;
+                // Dodajemy nasz offset korygujący!
+                Vector3 targetHoverPosition = cursorPoint + currentVisualOffset + hammerHoverOffset;
                 hammerObject.transform.position = Vector3.Lerp(hammerObject.transform.position, targetHoverPosition, Time.deltaTime * 15f);
 
-                // M�otek wraca do prostej rotacji po uderzeniu
-                hammerObject.transform.rotation = Quaternion.Lerp(hammerObject.transform.rotation, Quaternion.identity, Time.deltaTime * 15f);
+                float currentTwist = isHammerSideways ? sidewaysTwistAngle : 0f;
+                Quaternion targetHoverRotation = Quaternion.Euler(0, currentTwist, 0);
+                hammerObject.transform.rotation = Quaternion.Lerp(hammerObject.transform.rotation, targetHoverRotation, Time.deltaTime * 15f);
             }
 
-            // 2. Klikni�cie = Animacja uderzenia
+            // 2. PRZEŁĄCZANIE TRYBU MŁOTKA (PPM)
+            if (Input.GetMouseButtonDown(1))
+            {
+                isHammerSideways = !isHammerSideways;
+            }
+
+            // 3. UDERZENIE MŁOTEM (LPM)
             if (Input.GetMouseButtonDown(0) && Time.time > lastHitTime + hammerCooldown && !isSwinging)
             {
                 lastHitTime = Time.time;
 
-                // Odpalamy asynchroniczn� animacj� (Korutyn�)
+                HitType hitType = isHammerSideways ? HitType.Widen : HitType.Lengthen;
+
                 if (hammerObject != null)
                 {
-                    StartCoroutine(SwingHammerAnim(cursorPoint));
+                    // Przekazujemy wizualny offset do animacji
+                    StartCoroutine(SwingHammerAnim(cursorPoint, hitType, currentVisualOffset));
                 }
                 else
                 {
-                    // Fallback, je�li nie przypisa�e� modelu m�otka w Inspektorze
-                    PerformHitEffects(cursorPoint);
+                    PerformHitEffects(cursorPoint, hitType);
                 }
             }
         }
     }
 
-    // --- PROCEDURALNA ANIMACJA M�OTKA ---
-    private IEnumerator SwingHammerAnim(Vector3 hitPoint)
+    private IEnumerator SwingHammerAnim(Vector3 hitPoint, HitType hitType, Vector3 visualOffset)
     {
         isSwinging = true;
 
         Vector3 startPos = hammerObject.transform.position;
         Quaternion startRot = hammerObject.transform.rotation;
 
-        // Obliczamy rotacj� uderzeniow� (pochylenie)
         Quaternion strikeRot = startRot * Quaternion.Euler(hammerStrikeRotation);
 
-        // FAZA 1: B�yskawiczny zamach w d�
-        float swingDownTime = 0.05f; // Uderzenie trwa u�amek sekundy
+        // Punkt, w który uderzy WIZUALNIE model młotka
+        Vector3 visualStrikePos = hitPoint + visualOffset;
+
+        float swingDownTime = 0.05f;
         float elapsed = 0f;
 
         while (elapsed < swingDownTime)
         {
-            hammerObject.transform.position = Vector3.Lerp(startPos, hitPoint, elapsed / swingDownTime);
+            hammerObject.transform.position = Vector3.Lerp(startPos, visualStrikePos, elapsed / swingDownTime);
             hammerObject.transform.rotation = Quaternion.Lerp(startRot, strikeRot, elapsed / swingDownTime);
             elapsed += Time.deltaTime;
-            yield return null; // Czekamy do nast�pnej klatki
+            yield return null;
         }
 
-        // FAZA 2: IMPACT (Kontakt z metalem)
-        hammerObject.transform.position = hitPoint;
+        hammerObject.transform.position = visualStrikePos;
         hammerObject.transform.rotation = strikeRot;
 
-        PerformHitEffects(hitPoint); // Wgniatamy siatk� i puszczamy iskry!
+        // Ale gra WIE, że uderzyłeś dokładnie tam, gdzie myszką!
+        PerformHitEffects(hitPoint, hitType);
 
-        // FAZA 3: Odskoczenie do g�ry (Odrzut)
         float swingUpTime = 0.1f;
         elapsed = 0f;
 
         while (elapsed < swingUpTime)
         {
-            // M�otek naturalnie wraca do punktu startowego
-            hammerObject.transform.position = Vector3.Lerp(hitPoint, startPos, elapsed / swingUpTime);
+            hammerObject.transform.position = Vector3.Lerp(visualStrikePos, startPos, elapsed / swingUpTime);
             hammerObject.transform.rotation = Quaternion.Lerp(strikeRot, startRot, elapsed / swingUpTime);
             elapsed += Time.deltaTime;
             yield return null;
@@ -215,12 +226,10 @@ public class AnvilStation : MonoBehaviour
         isSwinging = false;
     }
 
-    private void PerformHitEffects(Vector3 hitPoint)
+    private void PerformHitEffects(Vector3 hitPoint, HitType hitType)
     {
-        // Sprawdzamy, czy uderzenie faktycznie trafi�o i odkszta�ci�o stal
-        bool validHit = currentMetal.HitMetal(hitPoint, currentMetal.transform.up);
+        bool validHit = currentMetal.HitMetal(hitPoint, currentMetal.transform.up, hitType);
 
-        // Odpalamy iskry TYLKO, je�li trafili�my w metal (a nie w puste kowad�o)
         if (validHit && hitSparks != null)
         {
             hitSparks.transform.position = hitPoint;
@@ -232,7 +241,6 @@ public class AnvilStation : MonoBehaviour
     {
         isForgingMode = false;
 
-        // CHOWAMY M�OTEK
         if (hammerObject != null) hammerObject.SetActive(false);
 
         currentMetal.transform.SetParent(null);
@@ -247,8 +255,7 @@ public class AnvilStation : MonoBehaviour
 
         currentMetal = null;
 
-        if (playerObject != null)
-            playerObject.SetActive(true);
+        if (playerObject != null) playerObject.SetActive(true);
 
         if (mainCamera != null)
         {

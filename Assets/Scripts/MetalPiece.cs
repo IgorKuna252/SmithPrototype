@@ -13,7 +13,11 @@ public enum MetalType
     Vibranium    // Wibranium
 }
 
-
+public enum HitType
+{
+    Lengthen, // Wydłużanie (na osi Z)
+    Widen     // Poszerzanie (na osi X)
+}
 
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(MeshCollider))]
@@ -52,6 +56,8 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
     private bool isInForge = false;
     private Color baseColdColor; // Zmienna na nasz kolor
 
+   
+
     void Start()
     {
         meshRenderer = GetComponentInChildren<MeshRenderer>();
@@ -64,6 +70,8 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
 
         SetBaseColor(); // Ustawiamy startowy kolor
     }
+
+
 
     void OnValidate()
     {
@@ -111,21 +119,16 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
     }
 
     // Zmieniamy void na bool!
-    public bool HitMetal(Vector3 hitPoint, Vector3 hitNormal)
+    public bool HitMetal(Vector3 hitPoint, Vector3 hitNormal, HitType hitType = HitType.Lengthen)
     {
         if (currentTemperature >= forgingTemperature)
         {
-            Debug.Log("Kucie! Deformacja siatki...");
+            Debug.Log($"Kucie! Typ: {hitType}");
 
-            // Zapisujemy wynik uderzenia
-            bool success = DeformMesh(hitPoint, hitNormal);
+            // Przekazujemy typ uderzenia dalej
+            bool success = DeformMesh(hitPoint, hitNormal, hitType);
 
-            // Jeśli faktycznie odkształciliśmy metal (nie było pudła), oznaczamy go jako wykuty!
-            if (success)
-            {
-                isFinished = true;
-            }
-
+            if (success) isFinished = true;
             return success;
         }
         else
@@ -136,26 +139,10 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
     }
 
     // Zmieniamy void na bool!
-    private bool DeformMesh(Vector3 hitPoint, Vector3 hitNormal)
+    private bool DeformMesh(Vector3 hitPoint, Vector3 hitNormal, HitType hitType)
     {
-        Vector3 localHitPoint = meshFilter.transform.InverseTransformPoint(hitPoint);
+        Vector3 localHitPoint = transform.InverseTransformPoint(hitPoint);
 
-        // --- NOWOŚĆ: TWARDA WERYFIKACJA PUDŁA ---
-        // Sprawdzamy odległość kursora od najbliższego wierzchołka metalu (ignorujemy oś Y, bo blacha jest płaska)
-        float closestDistance = float.MaxValue;
-        for (int i = 0; i < vertices.Length; i++)
-        {
-            float dist = Vector2.Distance(new Vector2(localHitPoint.x, localHitPoint.z), new Vector2(vertices[i].x, vertices[i].z));
-            if (dist < closestDistance) closestDistance = dist;
-        }
-
-        // Jeśli najbliższy punkt metalu jest dalej niż 3 cm od uderzenia - pudło! Ignorujemy.
-        if (closestDistance > 0.05f)
-        {
-            return false;
-        }
-
-        // 1. OBLICZAMY OPÓR DLA CAŁEGO UDERZENIA
         float currentThickness = Mathf.Abs(localHitPoint.y) * 2f;
         if (currentThickness < 0.005f) currentThickness = minThickness + 0.05f;
 
@@ -163,6 +150,10 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
         if (resistanceFactor <= 0.01f) return false;
 
         bool wasDeformed = false;
+
+        // --- USTALAMY SIŁĘ ROZLEWANIA W ZALEŻNOŚCI OD MŁOTA ---
+        float spreadZ = (hitType == HitType.Lengthen) ? 0.08f : 0.01f;
+        float spreadX = (hitType == HitType.Widen) ? 0.08f : 0.01f;
 
         for (int i = 0; i < vertices.Length; i++)
         {
@@ -177,11 +168,13 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
                 float dirZ = vertices[i].z > 0.001f ? 1f : (vertices[i].z < -0.001f ? -1f : 0f);
                 float dirX = vertices[i].x > 0.001f ? 1f : (vertices[i].x < -0.001f ? -1f : 0f);
 
+                // Zawsze spłaszczamy tak samo
                 float targetY = dirY * (minThickness / 2f);
                 vertices[i].y = Mathf.Lerp(vertices[i].y, targetY, finalForce);
 
-                vertices[i].z += dirZ * (finalForce * 0.08f);
-                vertices[i].x += dirX * (finalForce * 0.01f);
+                // Zmieniamy kształt kierunkowo!
+                vertices[i].z += dirZ * (finalForce * spreadZ);
+                vertices[i].x += dirX * (finalForce * spreadX);
 
                 wasDeformed = true;
             }
@@ -196,7 +189,6 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
             meshCollider.sharedMesh = mesh;
         }
 
-        // Zwracamy informację, czy cokolwiek zostało zniekształcone
         return wasDeformed;
     }
 
