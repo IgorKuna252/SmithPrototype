@@ -8,19 +8,23 @@ public class BlacksmithInteraction : MonoBehaviour
     public Vector3 holdRotation = new Vector3(90f, 0f, 0f);
 
     [Header("Pozycje trzymania w ręku - Typy")]
-        public Vector3 swordHoldPosition = Vector3.zero;
-        public Vector3 swordHoldRotation = Vector3.zero;
-        public Vector3 axeHoldPosition = new Vector3(1f, 1f, 1f); 
-        public Vector3 axeHoldRotation = new Vector3(270, 270, 180);
+    public Vector3 swordHoldPosition = Vector3.zero;
+    public Vector3 swordHoldRotation = Vector3.zero;
+    public Vector3 axeHoldPosition = new Vector3(1f, 1f, 1f);
+    public Vector3 axeHoldRotation = new Vector3(270, 270, 180);
 
     private Camera playerCamera;
     private GameObject heldItem;
     private Rigidbody heldItemRb;
     private PlayerMovement playerMovement;
+
     private bool isInteractingWithNPC = false;
     private bool isInteractingWithTable = false;
     private MergingTable activeTable = null;
+
     public static BlacksmithInteraction Instance;
+
+    void Awake() { Instance = this; }
 
     void Start()
     {
@@ -30,68 +34,54 @@ public class BlacksmithInteraction : MonoBehaviour
 
     void Update()
     {
+        // 1. BLOKADA NPC
         if (isInteractingWithNPC)
         {
             if (Input.GetKeyDown(KeyCode.Escape)) CloseNPCInteraction();
             return;
         }
 
+        // 2. BLOKADA KAMERY STOŁU 
         if (isInteractingWithTable)
         {
-            // Wychodzenie ze stołu (E lub ESC)
-            if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.E))
+            // ŁĄCZENIE: Jeśli wciśniesz E (lub Spację) i stół ma obie części -> Łączymy!
+            if ((Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Space)) && activeTable != null && activeTable.HasMetal() && activeTable.HasWood())
+            {
+                activeTable.CombineItems();
+                CloseTableInteraction();
+            }
+            // WYJŚCIE: Jeśli wciśniesz ESC (albo E, gdy brakuje części) -> Po prostu wychodzisz
+            else if (Input.GetKeyDown(KeyCode.Escape) || (Input.GetKeyDown(KeyCode.E) && (!activeTable.HasMetal() || !activeTable.HasWood())))
             {
                 CloseTableInteraction();
             }
-            
-            // Łączenie przedmiotów spacją
-            if (Input.GetKeyDown(KeyCode.Space) && activeTable != null)
-            {
-                activeTable.CombineItems();
-            }
-            return; // Blokujemy resztę Update, żeby gracz nie rzucał promieniami w tle!
+            return; // Blokujemy resztę, żeby gracz nie machał rękami pod stołem
         }
 
-        if (Input.GetKeyDown(KeyCode.E)) TryInteractWithEnvironmentE();
-
-        if (Input.GetMouseButtonDown(0))
+        // ==========================================
+        // GŁÓWNY KLAWISZ 'E' - ROBI WSZYSTKO W ŚWIECIE
+        // ==========================================
+        if (Input.GetKeyDown(KeyCode.E))
         {
-            TryPickUp(); // Najpierw próbujemy podnieść, jeśli trzymamy coś - to nic się nie stanie
+            TryInteractWithEnvironmentE();
         }
 
+        // Zapasowe sterowanie MYSZĄ (dla wygody i starych nawyków)
+        if (Input.GetMouseButtonDown(0)) TryPickUp();
         if (Input.GetMouseButtonDown(1))
         {
             if (heldItem != null) TryPlaceOnTableOrDrop();
             else TryPickUp();
         }
-        
     }
 
-    void Awake() { Instance = this; }
-
-    public bool IsHoldingItem()
-    {
-        // Zwraca true, jeśli w ręku gracza znajduje się jakikolwiek obiekt
-        return heldItem != null; 
-    }
-
-    public void CloseTableInteraction()
-    {
-        if (activeTable != null)
-        {
-            activeTable.ExitAssemblyMode();
-        }
-        isInteractingWithTable = false;
-        activeTable = null;
-        playerMovement.enabled = true; // Oddajemy chodzenie
-    }
-
+    // --- CENTRUM ZARZĄDZANIA KLAWISZEM 'E' ---
     void TryInteractWithEnvironmentE()
     {
         Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
         if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
         {
-            // Gracz trzyma broń — spróbuj dać NPC z WeaponSocket
+            // 1. ZDAWANIE BRONI DLA NPC
             if (heldItem != null && heldItem.GetComponent<FinishedObject>() != null)
             {
                 WeaponSocket socket = hit.collider.GetComponent<WeaponSocket>();
@@ -104,16 +94,13 @@ public class BlacksmithInteraction : MonoBehaviour
                     ClearHand();
 
                     NPCCombat combat = socket.GetComponent<NPCCombat>();
-                    if (combat != null)
-                        combat.SetMode(NPCCombatMode.ArmedIdle);
-
-                    Debug.Log($"Dano broń dla {socket.gameObject.name}!");
+                    if (combat != null) combat.SetMode(NPCCombatMode.ArmedIdle);
                     return;
                 }
             }
 
-            npcPathFinding npc = hit.collider.GetComponent<npcPathFinding>();
-            if (npc == null) npc = hit.collider.GetComponentInParent<npcPathFinding>();
+            // 2. ROZMOWA Z NPC
+            npcPathFinding npc = hit.collider.GetComponent<npcPathFinding>() ?? hit.collider.GetComponentInParent<npcPathFinding>();
             if (npc != null)
             {
                 isInteractingWithNPC = true;
@@ -124,48 +111,105 @@ public class BlacksmithInteraction : MonoBehaviour
                 return;
             }
 
+            // 3. ZMIANA SCENY
             SceneTransition sceneTransition = hit.collider.GetComponent<SceneTransition>();
             if (sceneTransition != null) { sceneTransition.ChangeScene(); return; }
 
+            // 4. STOJAK NA BROŃ (Kładzenie gotowej broni)
+            WeaponRack rack = hit.collider.GetComponent<WeaponRack>();
+            if (rack != null && rack.IsEmpty() && heldItem != null && heldItem.GetComponent<FinishedObject>())
+            {
+                rack.PlaceWeapon(heldItem.GetComponent<FinishedObject>());
+                ClearHand();
+                return;
+            }
+
+            // 5. STÓŁ MONTAŻOWY (Kładzenie lub Wejście w Kamerę)
             MergingTable table = hit.collider.GetComponent<MergingTable>();
-            if (table != null) 
-            { 
-                activeTable = table;
-                isInteractingWithTable = true;
-                playerMovement.enabled = false; // Zabieramy chodzenie
-                table.ToggleAssemblyCamera(playerCamera.gameObject); 
-                return; 
-            }
-
-            GrindstoneStation station = hit.collider.GetComponent<GrindstoneStation>();
-            if (station != null && heldItem != null)
+            if (table != null)
             {
-                MetalPiece metal = heldItem.GetComponent<MetalPiece>();
-                if (metal != null) { station.EnterGrindingMode(metal); ClearHand(); }
-                return;
-            }
-
-            //5. Sprawdzenie, czy to Kowadło
-            AnvilStation anvil = hit.collider.GetComponentInParent<AnvilStation>();
-            if (anvil != null && heldItem != null)
-            {
-                MetalPiece metal = heldItem.GetComponent<MetalPiece>();
-                if (metal != null)
+                if (heldItem != null)
                 {
-                    anvil.EnterForgingMode(metal);
-                    ClearHand();
+                    // Jeśli trzymasz rzecz -> Połóż na stół pod klawiszem E
+                    MetalPiece metal = heldItem.GetComponent<MetalPiece>();
+                    WoodPiece wood = heldItem.GetComponent<WoodPiece>();
+                    if (metal != null && !table.HasMetal()) { table.PlaceMetal(metal); ClearHand(); return; }
+                    if (wood != null && !table.HasWood()) { table.PlaceWood(wood); ClearHand(); return; }
                 }
+                else
+                {
+                    // Ręce puste -> ZAWSZE wchodzimy w kamerę stołu
+                    activeTable = table;
+                    isInteractingWithTable = true;
+                    playerMovement.enabled = false;
+                    table.ToggleAssemblyCamera(playerCamera.gameObject);
+                    return;
+                }
+            }
+
+            // 6. SZLIFIERKA
+            GrindstoneStation station = hit.collider.GetComponent<GrindstoneStation>();
+            if (station != null && heldItem != null && heldItem.GetComponent<MetalPiece>())
+            {
+                station.EnterGrindingMode(heldItem.GetComponent<MetalPiece>());
+                ClearHand();
                 return;
             }
 
-            // 6. Fallback — dowolny IInteractable (np. MoldManager)
+            // 7. KOWADŁO
+            AnvilStation anvil = hit.collider.GetComponentInParent<AnvilStation>();
+            if (anvil != null && heldItem != null && heldItem.GetComponent<MetalPiece>())
+            {
+                anvil.EnterForgingMode(heldItem.GetComponent<MetalPiece>());
+                ClearHand();
+                return;
+            }
+
+            // 8. PODNOSZENIE Z ZIEMI (Zawsze najwyższy priorytet, gdy mamy puste ręce!)
+            if (heldItem == null)
+            {
+                // TryPickUp automatycznie radzi sobie z wyciąganiem z form, stojaków i podnoszeniem z ziemi
+                if (TryPickUp()) return;
+            }
+
             IInteractable interactable = hit.collider.GetComponentInParent<IInteractable>();
             if (interactable != null)
             {
                 interactable.Interact();
                 return;
             }
+
+            // ==========================================
+            // 10. UPUSZCZANIE NA ZIEMIĘ (Zwykła podłoga/ściana)
+            // ==========================================
+            // Jeśli dotarliśmy aż tutaj, trzymamy przedmiot, ale nie trafiliśmy w żaden stół roboczy
+            if (heldItem != null)
+            {
+                DropItem();
+                return;
+            }
+            }
+            else
+            {
+            // ==========================================
+            // 11. UPUSZCZANIE W POWIETRZE (Patrzymy w niebo)
+            // ==========================================
+            // Jeśli laser w nic nie trafił (brak kolizji), ale mamy coś w rękach
+            if (heldItem != null)
+            {
+                DropItem();
+            }
         }
+    }
+
+    public bool IsHoldingItem() { return heldItem != null; }
+
+    public void CloseTableInteraction()
+    {
+        if (activeTable != null) activeTable.ExitAssemblyMode();
+        isInteractingWithTable = false;
+        activeTable = null;
+        playerMovement.enabled = true;
     }
 
     public void CloseNPCInteraction()
@@ -177,150 +221,109 @@ public class BlacksmithInteraction : MonoBehaviour
         NPCInteractionUI.Instance.Hide();
     }
 
-    //bool TryHitOrInteract()
-    //{
-    //    Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
-    //    if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
-    //    {
-    //        // Ten log powie nam DOKŁADNIE w co celujesz
-    //        Debug.Log($"Raycast trafił w: {hit.collider.gameObject.name} na warstwie: {hit.collider.gameObject.layer}");
-
-    //        MetalPiece metal = hit.collider.GetComponentInParent<MetalPiece>();
-    //        if (metal != null)
-    //        {
-    //            Debug.Log("Znalazłem skrypt MetalPiece! Wysyłam uderzenie...");
-    //            metal.HitMetal(hit.point, hit.normal);
-    //            return true;
-    //        }
-    //    }
-    //    else
-    //    {
-    //        Debug.Log("Raycast w nic nie trafił. Może reachDistance jest za mały?");
-    //    }
-    //    return false;
-    //}
-
-bool TryPickUp()
-{
-    if (heldItem != null) return false;
-
-    Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
-    if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
+    bool TryPickUp()
     {
-        GameObject targetObj = null;
-        MetalPiece metal = hit.collider.GetComponentInParent<MetalPiece>();
-        WoodPiece wood = hit.collider.GetComponentInParent<WoodPiece>();
-        FinishedObject finished = hit.collider.GetComponentInParent<FinishedObject>();
-        Crucible crucible = hit.collider.GetComponentInParent<Crucible>();
-        MoldManager mold = hit.collider.GetComponentInParent<MoldManager>();
+        if (heldItem != null) return false;
 
-        if (metal != null) targetObj = metal.gameObject;
-        else if (wood != null) targetObj = wood.gameObject;
-        else if (finished != null) targetObj = finished.gameObject;
-        else if (crucible != null) targetObj = crucible.gameObject;
-
-        if (mold != null && mold.IsReadyToExtract()) 
+        Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
+        if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
         {
-            targetObj = mold.ExtractItem();
-        }
+            GameObject targetObj = null;
+            MetalPiece metal = hit.collider.GetComponentInParent<MetalPiece>();
+            WoodPiece wood = hit.collider.GetComponentInParent<WoodPiece>();
+            FinishedObject finished = hit.collider.GetComponentInParent<FinishedObject>();
+            Crucible crucible = hit.collider.GetComponentInParent<Crucible>();
+            MoldManager mold = hit.collider.GetComponentInParent<MoldManager>();
 
-        // stojaczki kodzik
-        if (targetObj != null)
-        {
-            // Przypadek 1: Gracz celownikiem trafił idealnie w sam miecz.
-            WeaponRack rack = targetObj.GetComponentInParent<WeaponRack>();
-            if (rack != null) rack.TakeWeapon();
-        }
-        else
-        {
-            // Przypadek 2: Gracz nie trafił w miecz, ale trafił w duży hitbox stojaka.
-            WeaponRack rack = hit.collider.GetComponent<WeaponRack>();
-            if (rack != null && !rack.IsEmpty())
+            if (metal != null) targetObj = metal.gameObject;
+            else if (wood != null) targetObj = wood.gameObject;
+            else if (finished != null) targetObj = finished.gameObject;
+            else if (crucible != null) targetObj = crucible.gameObject;
+
+            if (mold != null && mold.IsReadyToExtract()) targetObj = mold.ExtractItem();
+
+            // Zdejmowanie ze stojaka
+            if (targetObj != null)
             {
-                FinishedObject weaponFromRack = rack.TakeWeapon();
-                if (weaponFromRack != null)
-                {
-                    targetObj = weaponFromRack.gameObject;
-                }
-            }
-        }
-
-        if (targetObj != null)
-        {
-            // Odpinamy od stołu/kowadła przed podniesieniem
-            targetObj.transform.SetParent(null);
-
-            heldItem = targetObj;
-            heldItemRb = heldItem.GetComponent<Rigidbody>();
-
-            if (heldItemRb != null)
-            {
-                heldItemRb.useGravity = false;
-                heldItemRb.isKinematic = true;
-                heldItemRb.detectCollisions = false;
-            }
-
-            heldItem.transform.SetParent(holdPosition);
-            // --- MAGIA: Różna pozycja i rotacja TYLKO dla gotowych broni ---
-            
-            FinishedObject heldFinished = heldItem.GetComponentInParent<FinishedObject>();
-
-            if (heldFinished != null)
-            {
-                // To jest gotowa broń zmontowana na stole, sprawdzamy jej TYP:
-                if (heldFinished.weaponType == FinishedObject.WeaponType.Axe)
-                {
-                    heldItem.transform.localPosition = axeHoldPosition;
-                    heldItem.transform.localRotation = Quaternion.Euler(axeHoldRotation);
-                }
-                else if (heldFinished.weaponType == FinishedObject.WeaponType.Sword)
-                {
-                    heldItem.transform.localPosition = swordHoldPosition;
-                    heldItem.transform.localRotation = Quaternion.Euler(swordHoldRotation);
-                }
-                else
-                {
-                    // Failsafe, gdyby coś poszło nie tak
-                    heldItem.transform.localPosition = Vector3.zero;
-                    heldItem.transform.localRotation = Quaternion.Euler(holdRotation);
-                }
-            }
-            else if (heldItem.GetComponent<Crucible>() != null)
-            {
-                // TYGIEL: Przewracamy go o 90 stopni na X
-                heldItem.transform.localPosition = Vector3.zero;
-                heldItem.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+                WeaponRack rack = targetObj.GetComponentInParent<WeaponRack>();
+                if (rack != null) rack.TakeWeapon();
             }
             else
             {
-                // To są wszystkie inne przedmioty: surowe części, drewno, sztabki
-                heldItem.transform.localPosition = Vector3.zero;
-                heldItem.transform.localRotation = Quaternion.Euler(holdRotation); 
+                WeaponRack rack = hit.collider.GetComponent<WeaponRack>();
+                if (rack != null && !rack.IsEmpty())
+                {
+                    FinishedObject weaponFromRack = rack.TakeWeapon();
+                    if (weaponFromRack != null) targetObj = weaponFromRack.gameObject;
+                }
             }
 
-            targetObj.GetComponent<IPickable>()?.OnPickUp();
-            return true;
+            if (targetObj != null)
+            {
+                targetObj.transform.SetParent(null);
+                heldItem = targetObj;
+                heldItemRb = heldItem.GetComponent<Rigidbody>();
+
+                if (heldItemRb != null)
+                {
+                    heldItemRb.useGravity = false;
+                    heldItemRb.isKinematic = true;
+                    heldItemRb.detectCollisions = false;
+                }
+
+                heldItem.transform.SetParent(holdPosition);
+
+                FinishedObject heldFinished = heldItem.GetComponentInParent<FinishedObject>();
+                if (heldFinished != null)
+                {
+                    if (heldFinished.weaponType == FinishedObject.WeaponType.Axe)
+                    {
+                        heldItem.transform.localPosition = axeHoldPosition;
+                        heldItem.transform.localRotation = Quaternion.Euler(axeHoldRotation);
+                    }
+                    else if (heldFinished.weaponType == FinishedObject.WeaponType.Sword)
+                    {
+                        heldItem.transform.localPosition = swordHoldPosition;
+                        heldItem.transform.localRotation = Quaternion.Euler(swordHoldRotation);
+                    }
+                    else
+                    {
+                        heldItem.transform.localPosition = Vector3.zero;
+                        heldItem.transform.localRotation = Quaternion.Euler(holdRotation);
+                    }
+                }
+                else if (heldItem.GetComponent<Crucible>() != null)
+                {
+                    heldItem.transform.localPosition = Vector3.zero;
+                    heldItem.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+                }
+                else
+                {
+                    heldItem.transform.localPosition = Vector3.zero;
+                    heldItem.transform.localRotation = Quaternion.Euler(holdRotation);
+                }
+
+                targetObj.GetComponent<IPickable>()?.OnPickUp();
+                return true;
+            }
         }
+        return false;
     }
-    return false;
-}
 
     void TryPlaceOnTableOrDrop()
     {
         Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
         if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
         {
-            // Stojaki
             WeaponRack rack = hit.collider.GetComponent<WeaponRack>();
             if (rack != null && rack.IsEmpty())
             {
-                // Upewniamy się, że trzymamy w ręku gotowy miecz (FinishedObject), a nie deskę czy sztabkę
                 FinishedObject heldFinishedWeapon = heldItem.GetComponent<FinishedObject>();
                 if (heldFinishedWeapon != null)
                 {
                     rack.PlaceWeapon(heldFinishedWeapon);
                     ClearHand();
-                    return; // Przerywamy funkcję, żeby kod nie zrzucił miecza na ziemię!
+                    return;
                 }
             }
 
@@ -338,27 +341,24 @@ bool TryPickUp()
     }
 
     void DropItem()
-{
-    if (heldItem == null) return;
-    
-    heldItem.transform.SetParent(null);
-    
-    if (heldItemRb != null) 
-    { 
-        heldItemRb.isKinematic = false; 
-        heldItemRb.useGravity = true; 
-        heldItemRb.detectCollisions = true;
-        
-        // WYMUSZONE WYBUDZENIE:
-        heldItemRb.WakeUp(); 
-        
-        // Nadaj mu minimalny pęd, żeby "poczuł", że się rusza
-        heldItemRb.AddForce(Vector3.down * 0.1f, ForceMode.Impulse);
+    {
+        if (heldItem == null) return;
+
+        heldItem.transform.SetParent(null);
+
+        if (heldItemRb != null)
+        {
+            heldItemRb.isKinematic = false;
+            heldItemRb.useGravity = true;
+            heldItemRb.detectCollisions = true;
+
+            heldItemRb.WakeUp();
+            heldItemRb.AddForce(Vector3.down * 0.1f, ForceMode.Impulse);
+        }
+
+        heldItem.GetComponent<IPickable>()?.OnDrop();
+        ClearHand();
     }
-    
-    heldItem.GetComponent<IPickable>()?.OnDrop();
-    ClearHand();
-}
 
     void ClearHand() { heldItem = null; heldItemRb = null; }
 }

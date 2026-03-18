@@ -103,8 +103,12 @@ public class GrindstoneStation : MonoBehaviour
         bladeSlidePosition += scroll * 0.05f;
 
         Mesh mesh = currentMetal.GetComponent<MeshFilter>().mesh;
-        float maxSlide = mesh.bounds.extents.z + 0.05f;
-        bladeSlidePosition = Mathf.Clamp(bladeSlidePosition, -maxSlide, maxSlide);
+
+        // Zczytujemy prawdziwy, asymetryczny początek i koniec wykutego metalu
+        float minLimit = -mesh.bounds.max.z - 0.05f;
+        float maxLimit = -mesh.bounds.min.z + 0.05f;
+
+        bladeSlidePosition = Mathf.Clamp(bladeSlidePosition, minLimit, maxLimit);
 
         if (Input.GetMouseButton(0))
         {
