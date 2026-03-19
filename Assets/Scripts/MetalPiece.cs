@@ -118,6 +118,70 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
         UpdateVisuals();
     }
 
+    // --- NOWA FUNKCJA: Skanuje szerokość metalu w danym punkcie ---
+    // --- NOWA FUNKCJA: Gładko interpoluje szerokość metalu między wierzchołkami ---
+    public float GetEdgeWidthAt(float localZPosition, bool isFlipped)
+    {
+        float prevZ = float.MinValue;
+        float nextZ = float.MaxValue;
+
+        float prevX = 0.005f; // Domyślna bezpieczna grubość
+        float nextX = 0.005f;
+
+        bool foundPrev = false;
+        bool foundNext = false;
+
+        // Szukamy dwóch punktów brzegowych, między którymi aktualnie znajduje się kursor/kamień
+        for (int i = 0; i < vertices.Length; i++)
+        {
+            // Filtrujemy tylko wierzchołki zewnętrzne (prawą lub lewą krawędź)
+            bool isEdgeVertex = (!isFlipped && vertices[i].x > 0.001f) || (isFlipped && vertices[i].x < -0.001f);
+
+            if (isEdgeVertex)
+            {
+                float currentX = Mathf.Abs(vertices[i].x); // Zawsze chcemy wartość dodatnią jako grubość
+
+                // 1. Najbliższy wierzchołek ZA kamieniem (mniejsze Z)
+                if (vertices[i].z <= localZPosition && vertices[i].z > prevZ)
+                {
+                    prevZ = vertices[i].z;
+                    prevX = currentX;
+                    foundPrev = true;
+                }
+                // 2. Najbliższy wierzchołek PRZED kamieniem (większe Z)
+                else if (vertices[i].z > localZPosition && vertices[i].z < nextZ)
+                {
+                    nextZ = vertices[i].z;
+                    nextX = currentX;
+                    foundNext = true;
+                }
+            }
+        }
+
+        float exactWidth = 0.005f;
+
+        // --- MATEMATYCZNA LINIA (INTERPOLACJA) ---
+        if (foundPrev && foundNext)
+        {
+            // Obliczamy w jakim procencie drogi (0.0 do 1.0) między wierzchołkami jest kamień
+            float t = (localZPosition - prevZ) / (nextZ - prevZ);
+
+            // Tworzymy linię prostą między grubościami i pobieramy z niej punkt
+            exactWidth = Mathf.Lerp(prevX, nextX, t);
+        }
+        else if (foundPrev)
+        {
+            exactWidth = prevX; // Jesteśmy na samej górze miecza (brak punktów przed nami)
+        }
+        else if (foundNext)
+        {
+            exactWidth = nextX; // Jesteśmy na samym dole (brak punktów za nami)
+        }
+
+        // Zwracamy idealnie gładką szerokość, z uwzględnieniem skali
+        return exactWidth * transform.localScale.x;
+    }
+
     // Zmieniamy void na bool!
     public bool HitMetal(Vector3 hitPoint, Vector3 hitNormal, HitType hitType = HitType.Lengthen)
     {

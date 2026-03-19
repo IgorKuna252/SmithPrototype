@@ -7,7 +7,12 @@ public class GrindstoneStation : MonoBehaviour
     public Transform cameraSocket;
     public GameObject playerObject;
 
-    // ZMIANA: Z IronPiece na MetalPiece
+    [Header("Ustawienia Kamienia (Tuning)")]
+    [Tooltip("Gdzie fizycznie znajduje się powierzchnia kamienia? (Zwiększaj/Zmniejszaj aż miecz idealnie dotknie tarczy)")]
+    public float distanceToStone = 0.1f;
+    [Tooltip("Jak głęboko wcinamy się w kamień podczas kliknięcia (szlifowania)")]
+    public float grindBiteDepth = 0.015f;
+
     private MetalPiece currentMetal;
     private bool isGrindingMode = false;
     private float bladeSlidePosition = 0f;
@@ -22,7 +27,6 @@ public class GrindstoneStation : MonoBehaviour
     [Header("Efekty")]
     public ParticleSystem sparksEffect;
 
-    // ZABEZPIECZENIE: Czas wejścia do stacji, by uniknąć podwójnego kliknięcia
     private float grindStartTime = 0f;
 
     void Start()
@@ -36,7 +40,6 @@ public class GrindstoneStation : MonoBehaviour
         {
             HandleGrindingMinigame();
 
-            // NOWOŚĆ: Wyjść można dopiero po upływie pół sekundy od wejścia!
             if (Input.GetKeyDown(KeyCode.E) && Time.time > grindStartTime + 0.5f)
             {
                 ExitGrindingMode();
@@ -48,15 +51,11 @@ public class GrindstoneStation : MonoBehaviour
     {
         currentMetal = metal;
         isGrindingMode = true;
-        grindStartTime = Time.time; // Zapisujemy, o której weszliśmy
+        grindStartTime = Time.time;
 
-        if (playerObject == null)
-        {
-            playerObject = GameObject.FindGameObjectWithTag("Player");
-        }
+        if (playerObject == null) playerObject = GameObject.FindGameObjectWithTag("Player");
 
         bladeSlidePosition = 0f;
-        currentDip = 0f;
         isFlipped = false;
 
         Rigidbody rb = currentMetal.GetComponent<Rigidbody>();
@@ -71,6 +70,9 @@ public class GrindstoneStation : MonoBehaviour
         currentMetal.transform.localPosition = Vector3.zero;
         currentMetal.transform.localRotation = Quaternion.identity;
 
+        // Resetujemy startową pozycję X, by uniknąć skoku animacji
+        currentDip = distanceToStone - currentMetal.GetEdgeWidthAt(0, false);
+
         if (mainCamera != null)
         {
             originalCameraParent = mainCamera.parent;
@@ -79,16 +81,11 @@ public class GrindstoneStation : MonoBehaviour
             mainCamera.SetParent(null);
         }
 
-        // TWARDE WYŁĄCZENIE GRACZA
-        if (playerObject != null)
-        {
-            playerObject.SetActive(false);
-        }
+        if (playerObject != null) playerObject.SetActive(false);
     }
 
     private void HandleGrindingMinigame()
     {
-        // WYMUSZENIE: Kamera jest zamrożona w sockecie co klatkę (uniemożliwia to rozglądanie się, nawet jeśli gracz by działał)
         if (mainCamera != null && cameraSocket != null)
         {
             mainCamera.position = cameraSocket.position;
@@ -103,33 +100,33 @@ public class GrindstoneStation : MonoBehaviour
         bladeSlidePosition += scroll * 0.05f;
 
         Mesh mesh = currentMetal.GetComponent<MeshFilter>().mesh;
-
-        // Zczytujemy prawdziwy, asymetryczny początek i koniec wykutego metalu
         float minLimit = -mesh.bounds.max.z - 0.05f;
         float maxLimit = -mesh.bounds.min.z + 0.05f;
-
         bladeSlidePosition = Mathf.Clamp(bladeSlidePosition, minLimit, maxLimit);
+
+        // --- PROCEDURALNE DOPASOWANIE (MAGIA!) ---
+        // Skanujemy, jak szeroki jest metal w miejscu, które aktualnie jest pod kamieniem
+        float currentEdgeWidth = currentMetal.GetEdgeWidthAt(-bladeSlidePosition, isFlipped);
+
+        // Obliczamy idealną pozycję: Powierzchnia kamienia minus szerokość naszego metalu
+        // Dzięki temu krawędź metalu ZAWSZE ląduje idealnie na wartości "distanceToStone"
+        float hoverX = distanceToStone - currentEdgeWidth;
 
         if (Input.GetMouseButton(0))
         {
             currentMetal.GrindPerfectEdge(-bladeSlidePosition, isFlipped);
-            currentDip = Mathf.Lerp(currentDip, 0.04f, Time.deltaTime * 10f);
 
-            // NOWE: Włączamy iskry, jeśli jeszcze nie lecą
-            if (sparksEffect != null && !sparksEffect.isPlaying)
-            {
-                sparksEffect.Play();
-            }
+            // Kiedy klikamy, wciskamy metal odrobinę GŁĘBIEJ w kamień (o wartość grindBiteDepth)
+            currentDip = Mathf.Lerp(currentDip, hoverX + grindBiteDepth, Time.deltaTime * 15f);
+
+            if (sparksEffect != null && !sparksEffect.isPlaying) sparksEffect.Play();
         }
         else
         {
-            currentDip = Mathf.Lerp(currentDip, 0f, Time.deltaTime * 10f);
+            // Kiedy puszczamy, metal "cofa się" do idealnego muskania powierzchni
+            currentDip = Mathf.Lerp(currentDip, hoverX, Time.deltaTime * 15f);
 
-            // NOWE: Wyłączamy iskry, gdy puszczasz przycisk
-            if (sparksEffect != null && sparksEffect.isPlaying)
-            {
-                sparksEffect.Stop();
-            }
+            if (sparksEffect != null && sparksEffect.isPlaying) sparksEffect.Stop();
         }
 
         currentMetal.transform.localPosition = new Vector3(currentDip, 0, bladeSlidePosition);
@@ -144,17 +141,13 @@ public class GrindstoneStation : MonoBehaviour
         if (rb != null)
         {
             rb.isKinematic = false;
-            rb.useGravity = true; // Zawsze warto upewnić się, że grawitacja wraca
-            // --- KLUCZOWA ZMIANA: Włączamy kolizje! Bez tego nie podniesiesz przedmiotu! ---
+            rb.useGravity = true;
             rb.detectCollisions = true;
         }
 
         currentMetal = null;
 
-        if (playerObject != null)
-        {
-            playerObject.SetActive(true);
-        }
+        if (playerObject != null) playerObject.SetActive(true);
 
         if (mainCamera != null)
         {
@@ -162,5 +155,7 @@ public class GrindstoneStation : MonoBehaviour
             mainCamera.localPosition = originalCameraLocalPos;
             mainCamera.localRotation = originalCameraLocalRot;
         }
+
+        if (sparksEffect != null && sparksEffect.isPlaying) sparksEffect.Stop();
     }
 }
