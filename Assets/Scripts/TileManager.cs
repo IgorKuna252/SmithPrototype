@@ -13,7 +13,8 @@ public class TileManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI statusText;
     [SerializeField] private GameObject fightButton;
     [SerializeField] private TextMeshProUGUI teamStrengthText;
-    
+    [SerializeField] private GameObject backButton;
+
     [Header("Team Selection")]
     [SerializeField] private Transform cardContainer;
     [SerializeField] private GameObject cardPrefab;
@@ -31,6 +32,9 @@ public class TileManager : MonoBehaviour
     {
         selectedTile = tile;
         uiPanel.SetActive(true);
+
+        // chowanie przycisku wroc
+        if (backButton != null) backButton.SetActive(false);
 
         // Czyścimy poprzednie karty i listy
         foreach (var card in activeCards) Destroy(card);
@@ -116,5 +120,10 @@ public class TileManager : MonoBehaviour
         SceneManager.LoadScene(battleSceneName);
     }
 
-    public void CloseUI() => uiPanel.SetActive(false);
+    // przywrócenie przycisku wróć po zamknięciu panelu
+    public void CloseUI()
+    {
+        uiPanel.SetActive(false);
+        if (backButton != null) backButton.SetActive(true);
+    }
 }
