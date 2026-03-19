@@ -47,7 +47,13 @@ public class npcPathFinding : MonoBehaviour
 
             // Brak ścieżki = stój
             if (!agentNPC.hasPath)
+            {
                 agentNPC.velocity = Vector3.zero;
+
+                // Członek drużyny patrzy w kierunku acceptObject
+                if (isInTeam && acceptObject != null)
+                    transform.rotation = Quaternion.Slerp(transform.rotation, acceptObject.rotation, Time.deltaTime * 5f);
+            }
         }
 
         // Animacja prędkości — tylko gdy walka nie zarządza NPC
@@ -106,7 +112,10 @@ public class npcPathFinding : MonoBehaviour
                 Debug.Log($"[Socket] Zaktualizowano na oficjalne dane: {officialData.name}");
             }
             
-            SetDestination(acceptObject);
+            // Rozstaw członków drużyny w linii obok acceptObject
+            int teamIndex = manager.team.Count - 1;
+            Vector3 targetPos = acceptObject.position + acceptObject.right * (teamIndex * 1.5f);
+            agentNPC.SetDestination(targetPos);
         }
     }
 
