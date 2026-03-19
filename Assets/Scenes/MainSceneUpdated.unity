@@ -9481,6 +9481,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2300000, guid: 1f1ebc40320b24c4188eb1dc3aacd446, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: fd36426b99ad60545abf9c7c687c3413, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -18761,7 +18765,7 @@ MonoBehaviour:
   hammerStrikeRotation: {x: -60, y: 0, z: 0}
   sidewaysTwistAngle: 90
   normalStrikeOffset: {x: 0, y: 0, z: 0}
-  sidewaysStrikeOffset: {x: 0.2, y: 0, z: 0}
+  sidewaysStrikeOffset: {x: 0.45, y: 0, z: -0.4}
   hammerCooldown: 0.2
   hitSparks: {fileID: 1722123260}
 --- !u!1 &2071571658
