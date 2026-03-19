@@ -197,40 +197,52 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
         bool wasDeformed = false;
         float stoneWidth = 0.05f;
 
-        float actualBladeLength = mesh.bounds.max.z;
-        float tipStartPoint = actualBladeLength - tipLength;
+        // Zmniejszona prędkość zjadania metalu, żeby dać graczowi czas na reakcję
+        float eatSpeed = grindSpeed * 0.01f;
+
+        // Grubość (oś Y), przy której ostrze uznajemy za "naostrzone" i zaczyna się psuć
+        float perfectThickness = 0.015f;
 
         for (int i = 0; i < vertices.Length; i++)
         {
+            // Sprawdzamy, czy wierzchołek jest pod kamieniem
             if (Mathf.Abs(vertices[i].z - localZPosition) < stoneWidth)
             {
-                if ((!isFlipped && vertices[i].x > 0.001f) || (isFlipped && vertices[i].x < -0.001f))
+                // Sprawdzamy, czy to prawa krawędź (nieodwrócony) lub lewa (odwrócony)
+                bool isRightEdge = !isFlipped && vertices[i].x > 0.001f;
+                bool isLeftEdge = isFlipped && vertices[i].x < -0.001f;
+
+                if (isRightEdge || isLeftEdge)
                 {
+                    // ==========================================
+                    // FAZA 1: OSTRZENIE (Spłaszczanie osi Y)
+                    // ==========================================
                     float edgeFactor = Mathf.Abs(vertices[i].x) / maxHalfWidth;
                     edgeFactor = Mathf.Clamp01(edgeFactor);
-                    vertices[i].y = Mathf.Lerp(vertices[i].y, 0.01f, edgeFactor * grindSpeed);
-                    wasDeformed = true;
-                }
 
-                if (vertices[i].z > tipStartPoint)
-                {
-                    float tipFactor = (vertices[i].z - tipStartPoint) / tipLength;
-                    tipFactor = Mathf.Clamp01(tipFactor);
-                    float targetWidth = Mathf.Lerp(maxHalfWidth, 0f, tipFactor);
-
-                    if (!isFlipped && vertices[i].x > 0.001f)
+                    // Płynnie schodzimy do docelowej grubości (0.01f)
+                    if (vertices[i].y > 0.01f)
                     {
-                        if (vertices[i].x > targetWidth)
+                        vertices[i].y = Mathf.Lerp(vertices[i].y, 0.01f, edgeFactor * grindSpeed);
+                        wasDeformed = true;
+                    }
+
+                    // ==========================================
+                    // FAZA 2: ZJADANIE METALU (Zmniejszanie osi X)
+                    // ==========================================
+                    // Odpala się TYLKO wtedy, gdy krawędź jest już cienka!
+                    if (vertices[i].y <= perfectThickness)
+                    {
+                        if (isRightEdge)
                         {
-                            vertices[i].x = Mathf.Lerp(vertices[i].x, targetWidth, grindSpeed * 0.1f);
+                            vertices[i].x -= eatSpeed;
+                            if (vertices[i].x < 0f) vertices[i].x = 0f; // Blokada przed przejściem na drugą stronę
                             wasDeformed = true;
                         }
-                    }
-                    else if (isFlipped && vertices[i].x < -0.001f)
-                    {
-                        if (vertices[i].x < -targetWidth)
+                        else if (isLeftEdge)
                         {
-                            vertices[i].x = Mathf.Lerp(vertices[i].x, -targetWidth, grindSpeed * 0.1f);
+                            vertices[i].x += eatSpeed;
+                            if (vertices[i].x > 0f) vertices[i].x = 0f; // Blokada przed przejściem na drugą stronę
                             wasDeformed = true;
                         }
                     }
