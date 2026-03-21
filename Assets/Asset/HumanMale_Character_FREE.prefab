@@ -2660,8 +2660,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::npcPathFinding
   rejectObject: {fileID: 0}
   acceptObject: {fileID: 0}
-  teamSpacing: 1.5
   isInTeam: 0
+  isManagedByCombat: 0
 --- !u!114 &3195324698991328936
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2675,10 +2675,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSocket
   socketBoneName: jointItemR
-  swordLocalPosition: {x: 0, y: 0, z: 0}
-  swordLocalRotation: {x: 0, y: 0, z: -90}
-  axeLocalPosition: {x: 0, y: 0, z: 0}
-  axeLocalRotation: {x: 0, y: 0, z: -90}
+  equippedWeapon: {fileID: 0}
+  ownerName: 
+  ownerData:
+    name: 
+    health: 0
+    maxHealth: 0
+    strength: 0
+    intelligence: 0
+    speed: 0
+    equippedWeapon:
+      weaponName: 
+      type: 0
+      metalTier: 0
+      baseDamage: 0
+      attackSpeed: 0
+      range: 0
+    savedWeaponTemplate: {fileID: 0}
+    weaponMeshes: []
 --- !u!114 &7159525049598194826
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2706,7 +2720,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 781d0b405aa3c6e40ad29ce2fb7dba39, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NPCFightBehavior
-  detectionRadius: 8
+  detectionRadius: 100
   attackRange: 2
   checkInterval: 0.25
 --- !u!1 &4505246088591205311

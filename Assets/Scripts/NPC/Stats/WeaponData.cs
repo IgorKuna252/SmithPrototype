@@ -104,8 +104,8 @@ public class WeaponData
     {
         switch (type)
         {
-            case WeaponType.Sword: return 2.5f;
-            case WeaponType.Axe:   return 2.0f;
+            case WeaponType.Sword: return 2.0f;
+            case WeaponType.Axe:   return 1.8f;
             default:               return 1.5f;
         }
     }
