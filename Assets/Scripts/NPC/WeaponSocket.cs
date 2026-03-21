@@ -55,7 +55,7 @@ public class WeaponSocket : MonoBehaviour
             // Stwórz WeaponData ze statystykami
             FinishedObject finished = weapon.GetComponent<FinishedObject>();
             if (finished != null)
-                ownerData.equippedWeapon = new WeaponData(weapon.name, finished.weaponType, finished.metalTier, finished.bladeLength);
+                ownerData.equippedWeapon = new WeaponData(weapon.name, finished.weaponType, finished.metalTier, finished.bladeLength, finished.flatness);
 
             // Zniszcz stary klon jeśli istnieje
             if (ownerData.savedWeaponTemplate != null)

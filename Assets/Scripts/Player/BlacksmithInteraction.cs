@@ -298,7 +298,7 @@ public class BlacksmithInteraction : MonoBehaviour
                         heldItem.transform.localRotation = Quaternion.Euler(holdRotation);
                     }
 
-                    WeaponData tempWeapon = new WeaponData(heldFinished.itemName, heldFinished.weaponType, heldFinished.metalTier, heldFinished.bladeLength);
+                    WeaponData tempWeapon = new WeaponData(heldFinished.itemName, heldFinished.weaponType, heldFinished.metalTier, heldFinished.bladeLength, heldFinished.flatness);
                     wheel.SetWheel(true);
                     wheel.UpdateWheel(tempWeapon.GetNormalizedDamage(), tempWeapon.GetNormalizedSpeed(), tempWeapon.GetNormalizedAoE());
                 }

@@ -96,7 +96,7 @@ public class npcPathFinding : MonoBehaviour
                 {
                     FinishedObject finished = currentWeapon.GetComponent<FinishedObject>();
                     if (finished != null)
-                        officialData.equippedWeapon = new WeaponData(currentWeapon.name, finished.weaponType, finished.metalTier, finished.bladeLength);
+                        officialData.equippedWeapon = new WeaponData(currentWeapon.name, finished.weaponType, finished.metalTier, finished.bladeLength, finished.flatness);
 
                     officialData.weaponMeshes = SavedMeshData.SaveFrom(currentWeapon);
 
