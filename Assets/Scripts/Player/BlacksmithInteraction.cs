@@ -21,13 +21,18 @@ public class BlacksmithInteraction : MonoBehaviour
     private bool isInteractingWithNPC = false;
     private bool isInteractingWithTable = false;
     private MergingTable activeTable = null;
+    private WheelController wheel;
 
+
+    public Canvas playerUI;
+    
     public static BlacksmithInteraction Instance;
 
     void Awake() { Instance = this; }
 
     void Start()
     {
+        wheel = playerUI.GetComponent<WheelController>();
         playerCamera = GetComponentInChildren<Camera>();
         playerMovement = GetComponent<PlayerMovement>();
     }
@@ -91,6 +96,7 @@ public class BlacksmithInteraction : MonoBehaviour
                     heldItem.GetComponent<IPickable>()?.OnDrop();
                     heldItem.transform.SetParent(null);
                     socket.EquipWeapon(heldItem);
+                    wheel.SetWheel(false);
                     ClearHand();
 
                     NPCCombat combat = socket.GetComponent<NPCCombat>();
@@ -291,6 +297,10 @@ public class BlacksmithInteraction : MonoBehaviour
                         heldItem.transform.localPosition = Vector3.zero;
                         heldItem.transform.localRotation = Quaternion.Euler(holdRotation);
                     }
+
+                    WeaponData tempWeapon = new WeaponData(heldFinished.itemName, heldFinished.weaponType, heldFinished.metalTier);
+                    wheel.SetWheel(true);
+                    wheel.UpdateWheel(tempWeapon.baseDamage, tempWeapon.attackSpeed, tempWeapon.range);
                 }
                 else if (heldItem.GetComponent<Crucible>() != null)
                 {
@@ -357,6 +367,7 @@ public class BlacksmithInteraction : MonoBehaviour
         }
 
         heldItem.GetComponent<IPickable>()?.OnDrop();
+        wheel.SetWheel(false);
         ClearHand();
     }
 

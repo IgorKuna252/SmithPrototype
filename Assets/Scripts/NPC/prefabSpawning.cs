@@ -51,9 +51,6 @@ public class prefabSpawning : MonoBehaviour
         RespawnTeamMembers();
     }
 
-    /// <summary>
-    /// Odtwarza NPC drużynowe z gameManager.team przy powrocie do MainScene.
-    /// </summary>
     void RespawnTeamMembers()
     {
         var gm = gameManager.Instance;
@@ -114,10 +111,7 @@ public class prefabSpawning : MonoBehaviour
         // Przesuń pozostałych nie-drużynowych na nowe pozycje
         RepositionQueue();
     }
-
-    /// <summary>
-    /// Jawne usunięcie konkretnego NPC z kolejki (np. po zniszczeniu).
-    /// </summary>
+    
     public void RemoveNPC(GameObject npc)
     {
         npcQueue.Remove(npc);

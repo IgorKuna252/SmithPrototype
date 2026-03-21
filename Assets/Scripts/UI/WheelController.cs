@@ -13,10 +13,18 @@ public class WheelController : MonoBehaviour
     public Image speedIcon;
     public Image aoeIcon;
 
+    public GameObject wheelContainer;
+    
     [Header("Ustawienia Ikon")]
     public float iconRadius = 120f; // Odległość ikon od środka koła (zmień w Inspektorze)
 
     // Tę metodę możesz wywołać z dowolnego miejsca, podając wartości w procentach (np. 30, 50, 20)
+
+    public void SetWheel(bool isOn)
+    {
+        wheelContainer.SetActive(isOn);
+    }
+    
     public void UpdateWheel(float damagePct, float speedPct, float aoePct)
     {
         // 1. Zabezpieczenie i normalizacja
