@@ -9,10 +9,8 @@ public class CitizenData
     public float strength;
     public float intelligence;
     public float speed;
-    public string equippedWeaponName;
-    public string equippedWeaponType; // "None", "Sword", "Axe"
+    public WeaponData equippedWeapon;
 
-    
     public GameObject savedWeaponTemplate;
 
     public SavedMeshData[] weaponMeshes;
@@ -25,8 +23,6 @@ public class CitizenData
         strength = citizen.strength;
         intelligence = citizen.intelligence;
         speed = citizen.speed;
-        this.equippedWeaponName = "Brak";
-        this.equippedWeaponType = "None";
     }
     public float GetStrength()
     {
@@ -44,7 +40,7 @@ public class CitizenData
     }
     public string GetStats()
     {
-        return $"{name} | Broń: {equippedWeaponName}\nHP: {health:F0}/{maxHealth:F0}\nSTR: {strength:F0}\nINT: {intelligence:F0}\nSPD: {speed:F0}";
+        string weaponInfo = equippedWeapon != null ? equippedWeapon.GetStats() : "Brak broni";
+        return $"{name} | {weaponInfo}\nHP: {health:F0}/{maxHealth:F0}\nSTR: {strength:F0}\nINT: {intelligence:F0}\nSPD: {speed:F0}";
     }
 }
-

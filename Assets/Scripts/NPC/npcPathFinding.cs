@@ -94,11 +94,9 @@ public class npcPathFinding : MonoBehaviour
                 GameObject currentWeapon = socket.GetEquippedWeapon();
                 if (currentWeapon != null)
                 {
-                    officialData.equippedWeaponName = currentWeapon.name;
-
                     FinishedObject finished = currentWeapon.GetComponent<FinishedObject>();
                     if (finished != null)
-                        officialData.equippedWeaponType = finished.weaponType.ToString();
+                        officialData.equippedWeapon = new WeaponData(currentWeapon.name, finished.weaponType, finished.metalTier);
 
                     officialData.weaponMeshes = SavedMeshData.SaveFrom(currentWeapon);
 

@@ -40,7 +40,6 @@ public class TeamSpawner : MonoBehaviour
             citizen.strength     = data.strength;
             citizen.intelligence = data.intelligence;
             citizen.speed        = data.speed;
-            citizen.equippedWeaponName = data.equippedWeaponName;
 
             // 2. Oznacz jako członka drużyny
             npcPathFinding npc = obj.GetComponent<npcPathFinding>();
@@ -58,7 +57,7 @@ public class TeamSpawner : MonoBehaviour
                 {
                     GameObject weapon = Instantiate(data.savedWeaponTemplate);
                     weapon.SetActive(true);
-                    weapon.name = data.equippedWeaponName;
+                    weapon.name = data.equippedWeapon != null ? data.equippedWeapon.weaponName : data.name;
                     SavedMeshData.RestoreTo(weapon, data.weaponMeshes);
                     socket.EquipWeapon(weapon);
 

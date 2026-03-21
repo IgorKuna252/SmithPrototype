@@ -41,7 +41,7 @@ public class NPCCombat : MonoBehaviour
         if (mode != NPCCombatMode.Attacking)
             DeactivateHitbox();
         else
-            cooldownTimer = attackCooldown;
+            cooldownTimer = GetCurrentCooldown();
     }
 
     public void TriggerAttack()
@@ -82,15 +82,31 @@ public class NPCCombat : MonoBehaviour
         if (cooldownTimer <= 0f)
         {
             TriggerAttack();
-            cooldownTimer = attackCooldown;
+            cooldownTimer = GetCurrentCooldown();
         }
+    }
+
+    float GetCurrentCooldown()
+    {
+        WeaponData weapon = weaponSocket.ownerData?.equippedWeapon;
+        if (weapon != null && weapon.type != WeaponType.None)
+            return weapon.GetAttackCooldown();
+        return attackCooldown;
+    }
+
+    float GetCurrentDamage()
+    {
+        WeaponData weapon = weaponSocket.ownerData?.equippedWeapon;
+        if (weapon != null && weapon.type != WeaponType.None)
+            return weapon.GetDamage(citizenStats.strength);
+        return citizenStats.strength;
     }
 
     void ActivateHitbox()
     {
         activeHitbox = weaponSocket.GetEquippedWeapon()?.GetComponent<WeaponHitbox>();
         if (activeHitbox != null)
-            activeHitbox.Activate(citizenStats.strength, gameObject);
+            activeHitbox.Activate(GetCurrentDamage(), gameObject);
     }
 
     void DeactivateHitbox()

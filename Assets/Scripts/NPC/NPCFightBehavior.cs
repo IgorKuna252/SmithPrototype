@@ -65,8 +65,9 @@ public class NPCFightBehavior : MonoBehaviour
         pathFinding.isManagedByCombat = true;
 
         float dist = Vector3.Distance(transform.position, currentTarget.position);
+        float currentRange = GetCurrentAttackRange();
 
-        if (dist <= attackRange)
+        if (dist <= currentRange)
         {
             if (agent.hasPath) agent.ResetPath();
             agent.velocity = Vector3.zero;
@@ -128,6 +129,14 @@ public class NPCFightBehavior : MonoBehaviour
         combat.SetMode(hasWeapon ? NPCCombatMode.ArmedIdle : NPCCombatMode.Unarmed);
     }
 
+    float GetCurrentAttackRange()
+    {
+        WeaponData weapon = weaponSocket?.ownerData?.equippedWeapon;
+        if (weapon != null && weapon.type != WeaponType.None)
+            return weapon.GetRange();
+        return attackRange;
+    }
+
     void FaceTarget(Vector3 targetPos)
     {
         Vector3 dir = targetPos - transform.position;
@@ -141,6 +150,6 @@ public class NPCFightBehavior : MonoBehaviour
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, detectionRadius);
         Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, attackRange);
+        Gizmos.DrawWireSphere(transform.position, Application.isPlaying ? GetCurrentAttackRange() : attackRange);
     }
 }

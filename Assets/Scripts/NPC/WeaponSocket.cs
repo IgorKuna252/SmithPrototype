@@ -52,12 +52,10 @@ public class WeaponSocket : MonoBehaviour
         
         if (ownerData != null)
         {
-            ownerData.equippedWeaponName = weapon.name;
-
-            // Zapisz typ broni
+            // Stwórz WeaponData ze statystykami
             FinishedObject finished = weapon.GetComponent<FinishedObject>();
             if (finished != null)
-                ownerData.equippedWeaponType = finished.weaponType.ToString();
+                ownerData.equippedWeapon = new WeaponData(weapon.name, finished.weaponType, finished.metalTier);
 
             // Zniszcz stary klon jeśli istnieje
             if (ownerData.savedWeaponTemplate != null)
@@ -72,11 +70,6 @@ public class WeaponSocket : MonoBehaviour
             weaponClone.SetActive(false);
             Object.DontDestroyOnLoad(weaponClone);
             ownerData.savedWeaponTemplate = weaponClone;
-
-            // Synchronizuj ExiledCitizen
-            ExiledCitizen citizen = GetComponent<ExiledCitizen>();
-            if (citizen != null)
-                citizen.equippedWeaponName = weapon.name;
 
             // Odśwież UI
             if (gameManager.Instance != null)

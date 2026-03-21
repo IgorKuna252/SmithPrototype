@@ -7,7 +7,6 @@ public class ExiledCitizen : MonoBehaviour
     public float strength;
     public float intelligence;
     public float speed;
-    public string equippedWeaponName;
 
 
     public void Initialize(float maxHealth, float strength, float intelligence, float speed)
@@ -17,7 +16,6 @@ public class ExiledCitizen : MonoBehaviour
         this.strength = strength;
         this.intelligence = intelligence;
         this.speed = speed;
-        this.equippedWeaponName = "Brak";
     }
 
     public float GetStrength()
@@ -79,6 +77,10 @@ public class ExiledCitizen : MonoBehaviour
 
     public string GetStats()
     {
-        return $"{name} | Broń: {equippedWeaponName}\nHP: {health:F0}/{maxHealth:F0}\nSTR: {strength:F0}\nINT: {intelligence:F0}\nSPD: {speed:F0}";
+        WeaponSocket socket = GetComponentInChildren<WeaponSocket>();
+        string weaponInfo = socket?.ownerData?.equippedWeapon != null
+            ? socket.ownerData.equippedWeapon.GetStats()
+            : "Brak broni";
+        return $"{name} | {weaponInfo}\nHP: {health:F0}/{maxHealth:F0}\nSTR: {strength:F0}\nINT: {intelligence:F0}\nSPD: {speed:F0}";
     }
 }

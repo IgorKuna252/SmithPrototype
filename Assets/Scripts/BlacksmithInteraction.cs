@@ -276,12 +276,12 @@ public class BlacksmithInteraction : MonoBehaviour
                 FinishedObject heldFinished = heldItem.GetComponentInParent<FinishedObject>();
                 if (heldFinished != null)
                 {
-                    if (heldFinished.weaponType == FinishedObject.WeaponType.Axe)
+                    if (heldFinished.weaponType == WeaponType.Axe)
                     {
                         heldItem.transform.localPosition = axeHoldPosition;
                         heldItem.transform.localRotation = Quaternion.Euler(axeHoldRotation);
                     }
-                    else if (heldFinished.weaponType == FinishedObject.WeaponType.Sword)
+                    else if (heldFinished.weaponType == WeaponType.Sword)
                     {
                         heldItem.transform.localPosition = swordHoldPosition;
                         heldItem.transform.localRotation = Quaternion.Euler(swordHoldRotation);

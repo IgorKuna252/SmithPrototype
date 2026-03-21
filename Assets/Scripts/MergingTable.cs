@@ -186,7 +186,8 @@ public void CombineItems()
 
         // Zapamiętaj dane PRZED zniszczeniem komponentów
         Vector3 gripLocalPos = placedWood.transform.localPosition;
-        string metalName = placedMetal.metalTier.ToString();
+        MetalType savedMetalTier = placedMetal.metalTier;
+        string metalName = savedMetalTier.ToString();
 
         // Usuwamy fizykę części, by nie gryzła się z fizyką całej broni
         Destroy(placedMetal.GetComponent<Rigidbody>());
@@ -198,7 +199,8 @@ public void CombineItems()
         weaponRb.mass = 2.5f;
 
         FinishedObject finishedObj = craftedWeapon.AddComponent<FinishedObject>();
-        finishedObj.weaponType = isAxe ? FinishedObject.WeaponType.Axe : FinishedObject.WeaponType.Sword;
+        finishedObj.weaponType = isAxe ? WeaponType.Axe : WeaponType.Sword;
+        finishedObj.metalTier = savedMetalTier;
 
         BoxCollider col = craftedWeapon.AddComponent<BoxCollider>();
         col.size = new Vector3(0.1f, 0.1f, 1f);
