@@ -21,7 +21,7 @@ public class BlacksmithInteraction : MonoBehaviour
     private bool isInteractingWithNPC = false;
     private bool isInteractingWithTable = false;
     private MergingTable activeTable = null;
-    private WheelController wheel;
+    [HideInInspector] public WheelController wheel;
 
 
     public Canvas playerUI;
@@ -298,9 +298,9 @@ public class BlacksmithInteraction : MonoBehaviour
                         heldItem.transform.localRotation = Quaternion.Euler(holdRotation);
                     }
 
-                    WeaponData tempWeapon = new WeaponData(heldFinished.itemName, heldFinished.weaponType, heldFinished.metalTier);
+                    WeaponData tempWeapon = new WeaponData(heldFinished.itemName, heldFinished.weaponType, heldFinished.metalTier, heldFinished.bladeLength);
                     wheel.SetWheel(true);
-                    wheel.UpdateWheel(tempWeapon.baseDamage, tempWeapon.attackSpeed, tempWeapon.range);
+                    wheel.UpdateWheel(tempWeapon.GetNormalizedDamage(), tempWeapon.GetNormalizedSpeed(), tempWeapon.GetNormalizedAoE());
                 }
                 else if (heldItem.GetComponent<Crucible>() != null)
                 {

@@ -395,6 +395,24 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
         meshRenderer.SetPropertyBlock(block);
     }
 
+    public WeaponData GetPreviewStats()
+    {
+        WeaponType type = (partType == MetalPartType.SwordBlade) ? WeaponType.Sword : WeaponType.Axe;
+        return new WeaponData("Podgląd", type, metalTier, GetBladeLength());
+    }
+
+    public float GetBladeLength()
+    {
+        float minZ = float.MaxValue;
+        float maxZ = float.MinValue;
+        foreach (Vector3 v in vertices)
+        {
+            if (v.z < minZ) minZ = v.z;
+            if (v.z > maxZ) maxZ = v.z;
+        }
+        return (maxZ - minZ) * transform.localScale.z;
+    }
+
     public float GetActualBackOfBlade()
     {
         float minY = float.MaxValue;

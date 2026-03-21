@@ -82,6 +82,8 @@ public class GrindstoneStation : MonoBehaviour
         }
 
         if (playerObject != null) playerObject.SetActive(false);
+
+        RefreshStatsWheel();
     }
 
     private void HandleGrindingMinigame()
@@ -115,8 +117,8 @@ public class GrindstoneStation : MonoBehaviour
         if (Input.GetMouseButton(0))
         {
             currentMetal.GrindPerfectEdge(-bladeSlidePosition, isFlipped);
+            RefreshStatsWheel();
 
-            // Kiedy klikamy, wciskamy metal odrobinę GŁĘBIEJ w kamień (o wartość grindBiteDepth)
             currentDip = Mathf.Lerp(currentDip, hoverX + grindBiteDepth, Time.deltaTime * 15f);
 
             if (sparksEffect != null && !sparksEffect.isPlaying) sparksEffect.Play();
@@ -132,8 +134,20 @@ public class GrindstoneStation : MonoBehaviour
         currentMetal.transform.localPosition = new Vector3(currentDip, 0, bladeSlidePosition);
     }
 
+    private void RefreshStatsWheel()
+    {
+        if (currentMetal == null) return;
+        var wheel = BlacksmithInteraction.Instance?.wheel;
+        if (wheel == null) return;
+        WeaponData preview = currentMetal.GetPreviewStats();
+        wheel.SetWheel(true);
+        wheel.UpdateWheel(preview.GetNormalizedDamage(), preview.GetNormalizedSpeed(), preview.GetNormalizedAoE());
+    }
+
     private void ExitGrindingMode()
     {
+        var wheel = BlacksmithInteraction.Instance?.wheel;
+        if (wheel != null) wheel.SetWheel(false);
         isGrindingMode = false;
 
         currentMetal.transform.SetParent(null);

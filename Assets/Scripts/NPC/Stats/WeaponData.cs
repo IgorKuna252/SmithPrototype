@@ -12,15 +12,34 @@ public class WeaponData
     public float baseDamage;
     public float attackSpeed;   // ataki na sekunde
     public float range;
+    public float areaOfEffect;
+    public float bladeLength;
 
-    public WeaponData(string name, WeaponType type, MetalType metalTier)
+    // Domyslna dlugosc ostrza dla kazdego typu (bazowa przed kuciem)
+    static float GetDefaultBladeLength(WeaponType type)
+    {
+        switch (type)
+        {
+            case WeaponType.Sword: return 0.7f;
+            case WeaponType.Axe:   return 0.35f;
+            default:               return 0.3f;
+        }
+    }
+
+    public WeaponData(string name, WeaponType type, MetalType metalTier, float bladeLength = 0f)
     {
         this.weaponName = name;
         this.type = type;
         this.metalTier = metalTier;
+        this.bladeLength = bladeLength;
+
+        float defaultLength = GetDefaultBladeLength(type);
+        float lengthRatio = (bladeLength > 0f) ? bladeLength / defaultLength : 1f;
+
         this.baseDamage = CalculateBaseDamage(type, metalTier);
-        this.attackSpeed = GetBaseAttackSpeed(type);
+        this.attackSpeed = GetBaseAttackSpeed(type) / Mathf.Max(lengthRatio, 0.5f);
         this.range = GetBaseRange(type);
+        this.areaOfEffect = CalculateAoE(type, lengthRatio);
     }
 
     public static WeaponData Empty()
@@ -29,7 +48,8 @@ public class WeaponData
         {
             baseDamage = 0f,
             attackSpeed = 0.8f,
-            range = 1.5f
+            range = 1.5f,
+            areaOfEffect = 0f
         };
     }
 
@@ -58,8 +78,18 @@ public class WeaponData
         if (type == WeaponType.None)
             return "Brak broni";
 
-        return $"{weaponName} ({metalTier} {type})\nDMG: {baseDamage:F0} | SPD: {attackSpeed:F1} | RNG: {range:F1}";
+        return $"{weaponName} ({metalTier} {type})\nDMG: {baseDamage:F0} | SPD: {attackSpeed:F1} | AOE: {areaOfEffect:F1}";
     }
+
+    // Znormalizowane wartosci (0-100) do wyswietlania na kole
+    // Kazdy stat skalowany do swojego zakresu, zeby byly porownywalne
+    const float MAX_DAMAGE = 30f;       // Vibranium Axe = 12 * 2.5 = 30
+    const float MAX_ATTACK_SPEED = 1.2f;
+    const float MAX_AOE = 12f;
+
+    public float GetNormalizedDamage()  { return (baseDamage / MAX_DAMAGE) * 100f; }
+    public float GetNormalizedSpeed()   { return (attackSpeed / MAX_ATTACK_SPEED) * 100f; }
+    public float GetNormalizedAoE()     { return (areaOfEffect / MAX_AOE) * 100f; }
 
     // --- TABELE STATYSTYK ---
 
@@ -94,8 +124,8 @@ public class WeaponData
     {
         switch (type)
         {
-            case WeaponType.Sword: return 1.0f;  // szybki
-            case WeaponType.Axe:   return 0.7f;  // wolniejszy
+            case WeaponType.Sword: return 1.0f;
+            case WeaponType.Axe:   return 0.7f;
             default:               return 0.8f;
         }
     }
@@ -107,6 +137,18 @@ public class WeaponData
             case WeaponType.Sword: return 2.0f;
             case WeaponType.Axe:   return 1.8f;
             default:               return 1.5f;
+        }
+    }
+
+    static float CalculateAoE(WeaponType type, float lengthRatio)
+    {
+        switch (type)
+        {
+            // Miecz: dluzsze ostrze = wiekszy atak obszarowy
+            case WeaponType.Sword: return 5f * lengthRatio;
+            // Topor: rąbie w punkt, dlugosc niewiele zmienia
+            case WeaponType.Axe:   return 2f + (lengthRatio - 1f) * 0.5f;
+            default:               return 1f;
         }
     }
 }

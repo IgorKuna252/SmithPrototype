@@ -10,12 +10,14 @@ public class NPCInteractionUI : MonoBehaviour
     public GameObject panel;
 
     [Header("Statystyki NPC")]
-    public TextMeshProUGUI npcNameText;
     public TextMeshProUGUI npcStatsText;
 
     [Header("Przyciski")]
     public Button acceptButton;
     public Button rejectButton;
+
+    [Header("Koło broni NPC")]
+    public WheelController weaponWheel;
 
     private npcPathFinding currentNPC;
     private BlacksmithInteraction blacksmith;
@@ -37,17 +39,30 @@ public class NPCInteractionUI : MonoBehaviour
         panel.SetActive(true);
 
         npcStatsText.text = npc.ShowStats();
-        wheel.UpdateWheel(npc.GetStrengh(), npc.GetSpeed(), npc.GetIntelligence());
+        wheel.UpdateWheel(npc.GetNormalizedStrength(), npc.GetNormalizedSpeed(), npc.GetNormalizedIntelligence());
+
+        // Koło broni — pokaż tylko jeśli NPC ma broń
+        if (weaponWheel != null)
+        {
+            WeaponData wpn = npc.GetWeaponData();
+            if (wpn != null && wpn.type != WeaponType.None)
+            {
+                weaponWheel.SetWheel(true);
+                weaponWheel.UpdateWheel(wpn.GetNormalizedDamage(), wpn.GetNormalizedSpeed(), wpn.GetNormalizedAoE());
+            }
+            else
+            {
+                weaponWheel.SetWheel(false);
+            }
+        }
 
         if (npc.isInTeam)
         {
-            npcNameText.text = "Członek drużyny";
             acceptButton.gameObject.SetActive(false);
             rejectButton.gameObject.SetActive(false);
         }
         else
         {
-            npcNameText.text = "Wędrowiec";
             acceptButton.gameObject.SetActive(true);
             rejectButton.gameObject.SetActive(true);
 
@@ -79,6 +94,7 @@ public class NPCInteractionUI : MonoBehaviour
     public void Hide()
     {
         panel.SetActive(false);
+        if (weaponWheel != null) weaponWheel.SetWheel(false);
         currentNPC = null;
     }
 }

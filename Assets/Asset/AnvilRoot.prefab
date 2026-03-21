@@ -4979,8 +4979,12 @@ MonoBehaviour:
   hammerPrefab: {fileID: 100000, guid: 8010c8bda8f3c62409d805b17923338f, type: 3}
   hammerHoverOffset: {x: 0, y: 0.3, z: 0.4}
   hammerStrikeRotation: {x: -60, y: 0, z: 0}
+  sidewaysTwistAngle: 90
+  normalStrikeOffset: {x: 0, y: 0, z: 0}
+  sidewaysStrikeOffset: {x: 0.2, y: 0, z: 0}
   hammerCooldown: 0.2
   hitSparks: {fileID: 2270260821553111164}
+  statsWheel: {fileID: 0}
 --- !u!1 &7046285877703725272
 GameObject:
   m_ObjectHideFlags: 0

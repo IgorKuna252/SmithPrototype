@@ -96,7 +96,7 @@ public class npcPathFinding : MonoBehaviour
                 {
                     FinishedObject finished = currentWeapon.GetComponent<FinishedObject>();
                     if (finished != null)
-                        officialData.equippedWeapon = new WeaponData(currentWeapon.name, finished.weaponType, finished.metalTier);
+                        officialData.equippedWeapon = new WeaponData(currentWeapon.name, finished.weaponType, finished.metalTier, finished.bladeLength);
 
                     officialData.weaponMeshes = SavedMeshData.SaveFrom(currentWeapon);
 
@@ -128,19 +128,18 @@ public class npcPathFinding : MonoBehaviour
         return citizenStats.GetStats();
     }
 
-    public float GetSpeed()
-    {
-        return citizenStats.GetSpeed();
-    }
+    public float GetSpeed()             { return citizenStats.GetSpeed(); }
+    public float GetIntelligence()      { return citizenStats.GetIntelligence(); }
+    public float GetStrengh()           { return citizenStats.GetStrength(); }
 
-    public float GetIntelligence()
-    {
-        return citizenStats.GetIntelligence();
-    }
+    public float GetNormalizedStrength()     { return citizenStats.GetNormalizedStrength(); }
+    public float GetNormalizedSpeed()        { return citizenStats.GetNormalizedSpeed(); }
+    public float GetNormalizedIntelligence() { return citizenStats.GetNormalizedIntelligence(); }
 
-    public float GetStrengh()
+    public WeaponData GetWeaponData()
     {
-        return citizenStats.GetStrength();
+        WeaponSocket socket = GetComponentInChildren<WeaponSocket>();
+        return socket?.ownerData?.equippedWeapon;
     }
 
     public void MoveToQueuePosition(Vector3 position)

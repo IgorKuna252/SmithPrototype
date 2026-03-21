@@ -22,6 +22,7 @@ public class prefabSpawning : MonoBehaviour
             queuePositions.Add(origin + spawnObject.right * (i * queueSpacing));
 
             GameObject obj = Instantiate(prefabObject, queuePositions[i], Quaternion.identity);
+            obj.name = $"Stranger_{i + 1}";
 
             // 1. Pobieramy komponenty RAZ
             ExiledCitizen citizen = obj.GetComponent<ExiledCitizen>();

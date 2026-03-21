@@ -18,20 +18,15 @@ public class ExiledCitizen : MonoBehaviour
         this.speed = speed;
     }
 
-    public float GetStrength()
-    {
-        return strength;
-    }
+    const float MAX_STAT = 20f;
 
-    public float GetIntelligence()
-    {
-        return intelligence;
-    }
+    public float GetStrength()      { return strength; }
+    public float GetIntelligence()  { return intelligence; }
+    public float GetSpeed()         { return speed; }
 
-    public float GetSpeed()
-    {
-        return speed;
-    }
+    public float GetNormalizedStrength()     { return (strength / MAX_STAT) * 100f; }
+    public float GetNormalizedIntelligence() { return (intelligence / MAX_STAT) * 100f; }
+    public float GetNormalizedSpeed()        { return (speed / MAX_STAT) * 100f; }
 
     public void GenerateRandomStats()
     {

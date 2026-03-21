@@ -40,6 +40,7 @@ public class AnvilStation : MonoBehaviour
     [Header("Efekty")]
     public ParticleSystem hitSparks;
 
+
     void Start()
     {
         if (hammerPrefab != null)
@@ -109,6 +110,8 @@ public class AnvilStation : MonoBehaviour
             hammerObject.SetActive(true);
             isSwinging = false;
         }
+
+        RefreshStatsWheel();
     }
 
     private void HandleForgingMinigame()
@@ -230,17 +233,33 @@ public class AnvilStation : MonoBehaviour
     {
         bool validHit = currentMetal.HitMetal(hitPoint, currentMetal.transform.up, hitType);
 
-        if (validHit && hitSparks != null)
+        if (validHit)
         {
-            hitSparks.transform.position = hitPoint;
-            hitSparks.Play();
+            if (hitSparks != null)
+            {
+                hitSparks.transform.position = hitPoint;
+                hitSparks.Play();
+            }
+            RefreshStatsWheel();
         }
+    }
+
+    private void RefreshStatsWheel()
+    {
+        if (currentMetal == null) return;
+        var wheel = BlacksmithInteraction.Instance?.wheel;
+        if (wheel == null) return;
+        WeaponData preview = currentMetal.GetPreviewStats();
+        wheel.SetWheel(true);
+        wheel.UpdateWheel(preview.GetNormalizedDamage(), preview.GetNormalizedSpeed(), preview.GetNormalizedAoE());
     }
 
     private void ExitForgingMode()
     {
         isForgingMode = false;
 
+        var wheel = BlacksmithInteraction.Instance?.wheel;
+        if (wheel != null) wheel.SetWheel(false);
         if (hammerObject != null) hammerObject.SetActive(false);
 
         currentMetal.transform.SetParent(null);
