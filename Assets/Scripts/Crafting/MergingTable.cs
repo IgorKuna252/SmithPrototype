@@ -76,6 +76,9 @@ public void ToggleAssemblyCamera(GameObject playerCam)
     public bool HasMetal() => placedMetal != null;
     public bool HasWood() => placedWood != null;
 
+    public void ClearMetal() { placedMetal = null; }
+    public void ClearWood() { placedWood = null; }
+
     public void PlaceMetal(MetalPiece metal)
     {
         metal.transform.SetParent(ingotPreview.parent, true);

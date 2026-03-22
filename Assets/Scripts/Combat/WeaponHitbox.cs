@@ -36,6 +36,7 @@ public class WeaponHitbox : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
+        if (owner == null) return;
         if (other.gameObject == owner) return;
         if (other.transform.IsChildOf(owner.transform)) return;
 

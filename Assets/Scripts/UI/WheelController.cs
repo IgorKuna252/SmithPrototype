@@ -27,18 +27,13 @@ public class WheelController : MonoBehaviour
     
     public void UpdateWheel(float damagePct, float speedPct, float aoePct)
     {
-        // 1. Zabezpieczenie i normalizacja
+        // 1. Proporcjonalny podzial kola — pelne kolo zawsze, staty zabieraja sobie miejsce
         float total = damagePct + speedPct + aoePct;
-
-        if (total <= 0)
-        {
-            Debug.LogWarning("Suma procentów musi być większa od zera!");
-            return;
-        }
+        if (total <= 0f) total = 1f;
 
         float damageFill = damagePct / total;
-        float speedFill = speedPct / total;
-        float aoeFill = aoePct / total;
+        float speedFill  = speedPct  / total;
+        float aoeFill    = aoePct    / total;
 
         // 2. Ustawienie wielkości kawałków koła
         damageImage.fillAmount = damageFill;

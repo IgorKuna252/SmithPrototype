@@ -248,11 +248,18 @@ public class BlacksmithInteraction : MonoBehaviour
 
             if (mold != null && mold.IsReadyToExtract()) targetObj = mold.ExtractItem();
 
-            // Zdejmowanie ze stojaka
+            // Zdejmowanie ze stojaka / stołu
             if (targetObj != null)
             {
                 WeaponRack rack = targetObj.GetComponentInParent<WeaponRack>();
                 if (rack != null) rack.TakeWeapon();
+
+                MergingTable mt = targetObj.GetComponentInParent<MergingTable>();
+                if (mt != null)
+                {
+                    if (metal != null) mt.ClearMetal();
+                    if (wood != null) mt.ClearWood();
+                }
             }
             else
             {

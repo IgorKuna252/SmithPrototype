@@ -83,41 +83,25 @@ public class WeaponData
 
     // Znormalizowane wartosci (0-100) do wyswietlania na kole
     // Kazdy stat skalowany do swojego zakresu, zeby byly porownywalne
-    const float MAX_DAMAGE = 30f;       // Vibranium Axe = 12 * 2.5 = 30
-    const float MAX_ATTACK_SPEED = 1.2f;
+    const float MAX_DAMAGE = 12f;        // Axe base = 12 (metal nie wplywa na razie)
+    const float MAX_ATTACK_SPEED = 2.0f; // Sword z minimalnym lengthRatio (0.5) = 1.0/0.5
     const float MAX_AOE = 12f;
 
-    public float GetNormalizedDamage()  { return (baseDamage / MAX_DAMAGE) * 100f; }
-    public float GetNormalizedSpeed()   { return (attackSpeed / MAX_ATTACK_SPEED) * 100f; }
-    public float GetNormalizedAoE()     { return (areaOfEffect / MAX_AOE) * 100f; }
+    public float GetNormalizedDamage()  { return Mathf.Clamp((baseDamage / MAX_DAMAGE) * 100f, 0f, 100f); }
+    public float GetNormalizedSpeed()   { return Mathf.Clamp((attackSpeed / MAX_ATTACK_SPEED) * 100f, 0f, 100f); }
+    public float GetNormalizedAoE()     { return Mathf.Clamp((areaOfEffect / MAX_AOE) * 100f, 0f, 100f); }
 
     // --- TABELE STATYSTYK ---
 
     static float CalculateBaseDamage(WeaponType type, MetalType metal)
     {
-        float typeDamage;
+        // Na razie damage zalezy tylko od typu broni (metal do dodania pozniej)
         switch (type)
         {
-            case WeaponType.Sword: typeDamage = 8f;  break;
-            case WeaponType.Axe:   typeDamage = 12f; break;
-            default:               typeDamage = 0f;  break;
+            case WeaponType.Sword: return 8f;
+            case WeaponType.Axe:   return 12f;
+            default:               return 0f;
         }
-
-        float metalMultiplier;
-        switch (metal)
-        {
-            case MetalType.Copper:    metalMultiplier = 0.6f; break;
-            case MetalType.Bronze:    metalMultiplier = 0.8f; break;
-            case MetalType.Iron:      metalMultiplier = 1.0f; break;
-            case MetalType.Steel:     metalMultiplier = 1.3f; break;
-            case MetalType.Gold:      metalMultiplier = 0.9f; break;
-            case MetalType.Platinum:  metalMultiplier = 1.5f; break;
-            case MetalType.BlueSteel: metalMultiplier = 1.8f; break;
-            case MetalType.Vibranium: metalMultiplier = 2.5f; break;
-            default:                  metalMultiplier = 1.0f; break;
-        }
-
-        return typeDamage * metalMultiplier;
     }
 
     static float GetBaseAttackSpeed(WeaponType type)
