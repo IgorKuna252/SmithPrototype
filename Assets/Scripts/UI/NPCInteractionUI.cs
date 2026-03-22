@@ -11,6 +11,7 @@ public class NPCInteractionUI : MonoBehaviour
 
     [Header("Statystyki NPC")]
     public TextMeshProUGUI npcStatsText;
+    public TextMeshProUGUI npcTaskText;
 
     [Header("Przyciski")]
     public Button acceptButton;
@@ -39,6 +40,10 @@ public class NPCInteractionUI : MonoBehaviour
         panel.SetActive(true);
 
         npcStatsText.text = npc.ShowStats();
+        npcTaskText.text = npc.GetAsssignedTask();
+        bool fulfilled = npc.IsTaskFulfilled();
+        npcTaskText.text += fulfilled ? "\nTAK" : "\nNIE";
+        Debug.Log($"[Task] {npc.GetAsssignedTask()} | {(fulfilled ? "TAK" : "NIE")}\n{npc.GetTaskComparison()}");
         wheel.UpdateWheel(npc.GetNormalizedStrength(), npc.GetNormalizedSpeed(), npc.GetNormalizedIntelligence());
 
         // Koło broni — pokaż tylko jeśli NPC ma broń

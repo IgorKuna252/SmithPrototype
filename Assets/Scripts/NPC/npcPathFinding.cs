@@ -136,6 +136,57 @@ public class npcPathFinding : MonoBehaviour
     public float GetNormalizedSpeed()        { return citizenStats.GetNormalizedSpeed(); }
     public float GetNormalizedIntelligence() { return citizenStats.GetNormalizedIntelligence(); }
 
+    public string GetAsssignedTask()
+    {
+        AssignedTask task = citizenStats.GetAssignedTask();
+        if (task == null) return "Brak danych";
+        return task.description;
+    }
+
+    public string GetTaskRequirements()
+    {
+        AssignedTask task = citizenStats.GetAssignedTask();
+        if (task == null) return "Brak wymagań";
+        return task.GetRequirementsText();
+    }
+
+    public string GetTaskComparison()
+    {
+        AssignedTask task = citizenStats.GetAssignedTask();
+        WeaponData wpn = GetWeaponData();
+        if (task == null) return "Brak tasku";
+        if (wpn == null || wpn.type == WeaponType.None) return "Brak broni";
+
+        var sb = new System.Text.StringBuilder();
+        if (task.requiredDamage >= 0f)
+        {
+            float has = wpn.GetNormalizedDamage();
+            bool ok = has >= task.requiredDamage;
+            sb.AppendLine($"DMG: {has:F0}% / {task.requiredDamage:F0}% {(ok ? "OK" : "X")}");
+        }
+        if (task.requiredSpeed >= 0f)
+        {
+            float has = wpn.GetNormalizedSpeed();
+            bool ok = has >= task.requiredSpeed;
+            sb.AppendLine($"SPD: {has:F0}% / {task.requiredSpeed:F0}% {(ok ? "OK" : "X")}");
+        }
+        if (task.requiredAoe >= 0f)
+        {
+            float has = wpn.GetNormalizedAoE();
+            bool ok = has >= task.requiredAoe;
+            sb.AppendLine($"AOE: {has:F0}% / {task.requiredAoe:F0}% {(ok ? "OK" : "X")}");
+        }
+        return sb.ToString().TrimEnd();
+    }
+
+    public bool IsTaskFulfilled()
+    {
+        AssignedTask task = citizenStats.GetAssignedTask();
+        WeaponData wpn = GetWeaponData();
+        if (task == null || wpn == null || wpn.type == WeaponType.None) return false;
+        return task.CheckWeapon(wpn);
+    }
+
     public WeaponData GetWeaponData()
     {
         WeaponSocket socket = GetComponentInChildren<WeaponSocket>();

@@ -1,0 +1,40 @@
+{
+    "Tasks": [
+        {
+            "Task": "Bardzo nie lubię długich mieczy, daj mi coś szybkiego!",
+            "Damage": {"Min": 0, "Max": 0},
+            "Speed": {"Min": 60, "Max": 100},
+            "Aoe": {"Min": 0, "Max": 0}
+        },
+        {
+            "Task": "Potrzebuję potężnej broni do walki z potworami",
+            "Damage": {"Min": 50, "Max": 100},
+            "Speed": {"Min": 0, "Max": 0},
+            "Aoe": {"Min": 0, "Max": 0}
+        },
+        {
+            "Task": "Chcę broń z szerokim zamachem, walczę z grupami wrogów",
+            "Damage": {"Min": 0, "Max": 0},
+            "Speed": {"Min": 0, "Max": 0},
+            "Aoe": {"Min": 50, "Max": 100}
+        },
+        {
+            "Task": "Potrzebuję czegoś mocnego i z dużym zasięgiem",
+            "Damage": {"Min": 40, "Max": 80},
+            "Speed": {"Min": 0, "Max": 0},
+            "Aoe": {"Min": 40, "Max": 80}
+        },
+        {
+            "Task": "Szybka i precyzyjna broń, żadnych toporów!",
+            "Damage": {"Min": 20, "Max": 50},
+            "Speed": {"Min": 70, "Max": 100},
+            "Aoe": {"Min": 0, "Max": 0}
+        },
+        {
+            "Task": "Daj mi cokolwiek, byleby było solidne",
+            "Damage": {"Min": 30, "Max": 60},
+            "Speed": {"Min": 20, "Max": 50},
+            "Aoe": {"Min": 20, "Max": 50}
+        }
+    ]
+}

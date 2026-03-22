@@ -10,6 +10,7 @@ public class CitizenData
     public float intelligence;
     public float speed;
     public WeaponData equippedWeapon;
+    public AssignedTask task;
 
     public GameObject savedWeaponTemplate;
 
@@ -23,6 +24,7 @@ public class CitizenData
         strength = citizen.strength;
         intelligence = citizen.intelligence;
         speed = citizen.speed;
+        task = citizen.task;
     }
     public float GetStrength()
     {

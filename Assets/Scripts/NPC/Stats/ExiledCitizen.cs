@@ -8,6 +8,7 @@ public class ExiledCitizen : MonoBehaviour
     public float intelligence;
     public float speed;
 
+    public AssignedTask task;
 
     public void Initialize(float maxHealth, float strength, float intelligence, float speed)
     {
@@ -27,6 +28,11 @@ public class ExiledCitizen : MonoBehaviour
     public float GetNormalizedStrength()     { return (strength / MAX_STAT) * 100f; }
     public float GetNormalizedIntelligence() { return (intelligence / MAX_STAT) * 100f; }
     public float GetNormalizedSpeed()        { return (speed / MAX_STAT) * 100f; }
+
+    public AssignedTask GetAssignedTask()
+    {
+        return task; 
+    }
 
     public void GenerateRandomStats()
     {

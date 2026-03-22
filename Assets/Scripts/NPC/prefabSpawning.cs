@@ -31,6 +31,8 @@ public class prefabSpawning : MonoBehaviour
 
             // 2. Logika danych
             citizen.GenerateRandomStats();
+            if (TaskManager.Instance != null)
+                citizen.task = TaskManager.Instance.GetRandomTask();
             CitizenData tempData = new CitizenData(obj.name, citizen);
 
             // 3. Przypisanie danych do socketa
@@ -75,6 +77,7 @@ public class prefabSpawning : MonoBehaviour
             citizen.strength     = data.strength;
             citizen.intelligence = data.intelligence;
             citizen.speed        = data.speed;
+            citizen.task         = data.task;
 
             // Oznacz jako członka drużyny
             npcPathFinding npc = obj.GetComponent<npcPathFinding>();
