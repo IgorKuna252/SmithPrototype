@@ -102,6 +102,10 @@ public class gameManager : MonoBehaviour
     {
         if (index >= 0 && index < team.Count)
         {
+            // Zniszcz klon broni z DontDestroyOnLoad, żeby nie wyciekł
+            if (team[index].savedWeaponTemplate != null)
+                Destroy(team[index].savedWeaponTemplate);
+
             team.RemoveAt(index);
             NotifyTeamChanged();
             return true;

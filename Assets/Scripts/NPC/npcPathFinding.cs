@@ -86,6 +86,11 @@ public class npcPathFinding : MonoBehaviour
             var socket = GetComponentInChildren<WeaponSocket>();
             if (socket != null)
             {
+                // Zniszcz tymczasowy klon broni, żeby nie wyciekł do DontDestroyOnLoad
+                CitizenData oldTemp = socket.ownerData;
+                if (oldTemp != null && oldTemp.savedWeaponTemplate != null)
+                    Object.Destroy(oldTemp.savedWeaponTemplate);
+
                 CitizenData officialData = manager.team[manager.team.Count - 1];
                 socket.ownerData = officialData;
                 socket.ownerName = officialData.name;

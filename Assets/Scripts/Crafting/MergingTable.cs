@@ -207,6 +207,7 @@ public void CombineItems()
         finishedObj.weaponType = isAxe ? WeaponType.Axe : WeaponType.Sword;
         finishedObj.metalTier = savedMetalTier;
         finishedObj.bladeLength = savedBladeLength;
+        finishedObj.itemName = weaponName + " " + metalName;
 
         BoxCollider col = craftedWeapon.AddComponent<BoxCollider>();
         col.size = new Vector3(0.1f, 0.1f, 1f);
