@@ -1942,10 +1942,10 @@ MonoBehaviour:
   axeConnectionOffsetX: 0.1
   handleOffset: {x: 0, y: 0, z: 0}
   bladeOffset: {x: 0, y: 0, z: 0}
-  swordGripPositionOffset: {x: 0, y: 0, z: 0}
-  axeGripPositionOffset: {x: -0.28, y: -0.9, z: 0.386}
+  swordGripPositionOffset: {x: 0.35, y: 0, z: -0.4}
+  axeGripPositionOffset: {x: -30, y: 120, z: -60}
   swordGripRotation: {x: 0, y: -90, z: -30}
-  axeGripRotation: {x: 10, y: 20, z: 30}
+  axeGripRotation: {x: 0, y: 0, z: 0}
 --- !u!65 &346435819
 BoxCollider:
   m_ObjectHideFlags: 0

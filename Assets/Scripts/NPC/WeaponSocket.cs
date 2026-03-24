@@ -6,11 +6,11 @@ public class WeaponSocket : MonoBehaviour
     public string socketBoneName = "jointItemR";
 
     [Header("Ustawienia pozycji i rotacji w dłoni NPC")]
-    public Vector3 swordHoldPosition = Vector3.zero; 
-    public Vector3 swordHoldRotation = Vector3.zero;
+    public Vector3 swordHoldPosition = Vector3.zero;
+    public Vector3 swordHoldRotation = new Vector3(-90f, 0f, 0f);
 
-    public Vector3 axeHoldPosition = new Vector3(0, 0, -0.2f);
-    public Vector3 axeHoldRotation = new Vector3(0, 90, 0);
+    public Vector3 axeHoldPosition = new Vector3(0.15f, 0.9f, -0.14f);
+    public Vector3 axeHoldRotation = new Vector3(-90f, 45f, 0f);
 
     Transform socketBone;
     [SerializeField] GameObject equippedWeapon;

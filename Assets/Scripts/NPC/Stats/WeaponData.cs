@@ -26,7 +26,7 @@ public class WeaponData
         }
     }
 
-    public WeaponData(string name, WeaponType type, MetalType metalTier, float bladeLength = 0f)
+    public WeaponData(string name, WeaponType type, MetalType metalTier, float bladeLength = -1f)
     {
         this.weaponName = name;
         this.type = type;
@@ -34,7 +34,7 @@ public class WeaponData
         this.bladeLength = bladeLength;
 
         float defaultLength = GetDefaultBladeLength(type);
-        float lengthRatio = (bladeLength > 0f) ? bladeLength / defaultLength : 1f;
+        float lengthRatio = (bladeLength >= 0f) ? bladeLength / defaultLength : 1f;
 
         this.baseDamage = CalculateBaseDamage(type, metalTier);
         this.attackSpeed = GetBaseAttackSpeed(type) / Mathf.Max(lengthRatio, 0.5f);
