@@ -32,22 +32,43 @@ public class WeaponSocket : MonoBehaviour
         {
             FinishedObject finishedObj = equippedWeapon.GetComponent<FinishedObject>();
             if (finishedObj != null)
-            {
-                if (finishedObj.weaponType == WeaponType.Axe)
-                {
-                    // Wymusza odświeżanie pozycji co klatkę!
-                    equippedWeapon.transform.localPosition = axeHoldPosition;
-                    equippedWeapon.transform.localRotation = Quaternion.Euler(axeHoldRotation);
-                }
-                else if (finishedObj.weaponType == WeaponType.Sword)
-                {
-                    equippedWeapon.transform.localPosition = swordHoldPosition;
-                    equippedWeapon.transform.localRotation = Quaternion.Euler(swordHoldRotation);
-                }
-            }
+                ApplyHoldTransform(equippedWeapon, finishedObj);
         }
     }
     // --------------------------------------------------
+
+    void ApplyHoldTransform(GameObject weapon, FinishedObject finishedObj)
+    {
+        Vector3 holdPos;
+        Quaternion holdRot;
+
+        if (finishedObj.weaponType == WeaponType.Axe)
+        {
+            holdPos = axeHoldPosition;
+            holdRot = Quaternion.Euler(axeHoldRotation);
+        }
+        else if (finishedObj.weaponType == WeaponType.Sword)
+        {
+            holdPos = swordHoldPosition;
+            holdRot = Quaternion.Euler(swordHoldRotation);
+        }
+        else
+        {
+            weapon.transform.localPosition = Vector3.zero;
+            weapon.transform.localRotation = Quaternion.identity;
+            return;
+        }
+
+        weapon.transform.localRotation = holdRot;
+
+        // Kompensacja dłuższego ostrza — rączka przesuwa się w tył,
+        // więc przesuwamy broń wzdłuż jej osi Z o nadmiar długości
+        float defaultLength = (finishedObj.weaponType == WeaponType.Sword) ? 0.7f : 0.35f;
+        float extra = finishedObj.bladeLength - defaultLength;
+        Vector3 handleShift = holdRot * new Vector3(0f, 0f, extra * 0.15f);
+
+        weapon.transform.localPosition = holdPos + handleShift;
+    }
 
     public void EquipWeapon(GameObject weapon)
     {
@@ -67,25 +88,9 @@ public class WeaponSocket : MonoBehaviour
         weapon.transform.localScale = Vector3.one;
 
         FinishedObject finishedObj = weapon.GetComponent<FinishedObject>();
-        
+
         if (finishedObj != null)
-        {
-            if (finishedObj.weaponType == WeaponType.Axe)
-            {
-                weapon.transform.localPosition = axeHoldPosition;
-                weapon.transform.localRotation = Quaternion.Euler(axeHoldRotation);
-            }
-            else if (finishedObj.weaponType == WeaponType.Sword)
-            {
-                weapon.transform.localPosition = swordHoldPosition;
-                weapon.transform.localRotation = Quaternion.Euler(swordHoldRotation);
-            }
-            else
-            {
-                weapon.transform.localPosition = Vector3.zero;
-                weapon.transform.localRotation = Quaternion.identity;
-            }
-        }
+            ApplyHoldTransform(weapon, finishedObj);
         else
         {
             weapon.transform.localPosition = Vector3.zero;

@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -161,5 +162,18 @@ public class npcPathFinding : MonoBehaviour
     {
         agentNPC.updateRotation = true;
         agentNPC.SetDestination(position);
+    }
+
+    public void WeaponAccepted(float waitTime = 2f)
+    {
+        StartCoroutine(WeaponAcceptedRoutine(waitTime));
+    }
+
+    IEnumerator WeaponAcceptedRoutine(float waitTime)
+    {
+        agentNPC.ResetPath();
+        agentNPC.velocity = Vector3.zero;
+        yield return new WaitForSeconds(waitTime);
+        SetDestination(rejectObject);
     }
 }
