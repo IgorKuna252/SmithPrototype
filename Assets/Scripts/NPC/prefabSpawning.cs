@@ -3,8 +3,15 @@ using UnityEngine;
 
 public class prefabSpawning : MonoBehaviour
 {
-    [SerializeField] GameObject prefabObject;
-    [SerializeField] int spawnedCount = 5;
+    [Header("Klienci (Noc)")]
+    [SerializeField] GameObject customerPrefab;
+    [SerializeField] int customerCount = 5;
+
+    [Header("Kupiec (Dzień)")]
+    [Tooltip("Póki co możesz dać tu prefab zwykłego klienta, później zrobimy mu Osobny Skrypt i GUI Kupca")]
+    [SerializeField] GameObject merchantPrefab;
+
+    [Header("Punkty Poruszania")]
     [SerializeField] Transform spawnObject;
     [SerializeField] Transform targetNPCReject;
     [SerializeField] Transform targetNPCAccept;
@@ -15,51 +22,124 @@ public class prefabSpawning : MonoBehaviour
 
     void Start()
     {
-        Vector3 origin = spawnObject.position;
+        // Sprawdzamy czy mamy cykl Dnia i Nocy, by nasłuchiwać zmian
+        if (DayNightManager.Instance != null)
+        {
+            DayNightManager.Instance.OnNightStarted += SpawnNightCustomers;
+            DayNightManager.Instance.OnDayStarted += SpawnDayMerchant;
+            
+            // Reakcja natychmiastowa na stan przy załadowaniu gry (żeby ktoś stał po kliknięciu Play)
+            if (DayNightManager.Instance.isDay)
+                SpawnDayMerchant();
+            else
+                SpawnNightCustomers();
+        }
+        else
+        {
+            CalculateQueuePositions(customerCount);
+            Debug.LogWarning("Brak DayNight Managera (TimeManager)! Pobieram stary system spawnu.");
+            SpawnNightCustomers();
+        }
+    }
 
-        for (int i = 0; i < spawnedCount; i++)
+    void OnDestroy()
+    {
+        // Usunięcie powiązań z pamięci na wypadek zamknięcia sceny
+        if (DayNightManager.Instance != null)
+        {
+            DayNightManager.Instance.OnNightStarted -= SpawnNightCustomers;
+            DayNightManager.Instance.OnDayStarted -= SpawnDayMerchant;
+        }
+    }
+
+    void CalculateQueuePositions(int maxCount)
+    {
+        queuePositions.Clear();
+        Vector3 origin = spawnObject.position;
+        for (int i = 0; i < maxCount; i++)
         {
             queuePositions.Add(origin + spawnObject.right * (i * queueSpacing));
+        }
+    }
 
-            GameObject obj = Instantiate(prefabObject, queuePositions[i], Quaternion.identity);
-            obj.name = $"Stranger_{i + 1}";
+    public void ClearCurrentQueue()
+    {
+        // Opcja twardego usunięcia zalegających ludzi ze sklepu 
+        foreach(var npc in npcQueue)
+        {
+            if (npc != null) Destroy(npc);
+        }
+        npcQueue.Clear();
+    }
 
-            // 1. Pobieramy komponenty RAZ
-            ExiledCitizen citizen = obj.GetComponent<ExiledCitizen>();
-            npcPathFinding npc = obj.GetComponent<npcPathFinding>();
-            WeaponSocket socket = obj.GetComponentInChildren<WeaponSocket>();
+    private void SpawnNightCustomers()
+    {
+        ClearCurrentQueue();
+        CalculateQueuePositions(customerCount);
 
-            // 2. Logika danych
+        for (int i = 0; i < customerCount; i++)
+        {
+            if (customerPrefab == null) break;
+
+            GameObject obj = Instantiate(customerPrefab, queuePositions[i], Quaternion.identity);
+            obj.name = $"Klient_Nocny_{i + 1}";
+
+            SetupCitizenData(obj);
+            npcQueue.Add(obj);
+        }
+    }
+
+    private void SpawnDayMerchant()
+    {
+        ClearCurrentQueue();
+        // Dla kupca wystarczy jedna pozycja
+        CalculateQueuePositions(1); 
+
+        if (merchantPrefab != null)
+        {
+            GameObject obj = Instantiate(merchantPrefab, queuePositions[0], Quaternion.identity);
+            obj.name = "Kupiec_Poranny_1";
+
+            // Tutaj później wyłapiesz go, i podepniesz jego GUI/Skrypt
+            // Obecnie zachowuje się nawigacyjnie jak zwykły NPC (wchodzi i stoi przed Tobą)
+            SetupCitizenData(obj);
+
+            npcQueue.Add(obj);
+        }
+    }
+
+    private void SetupCitizenData(GameObject obj)
+    {
+        ExiledCitizen citizen = obj.GetComponent<ExiledCitizen>();
+        npcPathFinding npc = obj.GetComponent<npcPathFinding>();
+        WeaponSocket socket = obj.GetComponentInChildren<WeaponSocket>();
+
+        if (citizen != null)
+        {
             citizen.GenerateRandomStats();
             if (TaskManager.Instance != null)
                 citizen.task = TaskManager.Instance.GetRandomTask();
+            
             CitizenData tempData = new CitizenData(obj.name, citizen);
 
-            // 3. Przypisanie danych do socketa
             if (socket != null)
             {
                 socket.ownerData = tempData;
                 socket.ownerName = obj.name;
             }
-            
-            // 4. Konfiguracja NPC
+        }
+        
+        if (npc != null)
+        {
             npc.rejectObject = targetNPCReject;
             npc.acceptObject = targetNPCAccept;
-
-            // 5. Dodanie do kolejki
-            npcQueue.Add(obj);
         }
-
     }
 
     public void OnNPCProcessed()
     {
         if (npcQueue.Count == 0) return;
-
-        // Usuń pierwszego (przetworzonego) NPC z listy
         npcQueue.RemoveAt(0);
-
-        // Przesuń pozostałych nie-drużynowych na nowe pozycje
         RepositionQueue();
     }
     
@@ -77,11 +157,12 @@ public class prefabSpawning : MonoBehaviour
             if (npcObj == null) continue;
 
             npcPathFinding npc = npcObj.GetComponent<npcPathFinding>();
-            if (npc.isInTeam) continue;
+            // Założenie bazujące na Twoim wcześniejszym kodzie - jeśli ma isinTeam to go nie bierzemy
+            if (npc != null && npc.isInTeam) continue;
 
             if (index < queuePositions.Count)
             {
-                npc.MoveToQueuePosition(queuePositions[index]);
+                if (npc != null) npc.MoveToQueuePosition(queuePositions[index]);
                 index++;
             }
         }

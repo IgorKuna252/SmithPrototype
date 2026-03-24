@@ -105,10 +105,20 @@ public class BlacksmithInteraction : MonoBehaviour
                 }
             }
 
-            // 2. ROZMOWA Z NPC
+            // 2. ROZMOWA Z NPC LUB KUPCEM
             npcPathFinding npc = hit.collider.GetComponent<npcPathFinding>() ?? hit.collider.GetComponentInParent<npcPathFinding>();
             if (npc != null)
             {
+                // Wpierw sprawdzamy, czy to nasz WYJĄTKOWY Kupiec
+                Merchant merchant = npc.GetComponent<Merchant>();
+                if (merchant != null)
+                {
+                    // To jest kupiec! Odpalamy dedykowaną obsługę sklepu
+                    merchant.Interact();
+                    return;
+                }
+
+                // Skoro kod tutaj dotarł, to nie kupiec, lecimy ze standardowym panelem NPC:
                 isInteractingWithNPC = true;
                 playerMovement.enabled = false;
                 Cursor.lockState = CursorLockMode.None;

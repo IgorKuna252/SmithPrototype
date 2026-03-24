@@ -7,6 +7,8 @@ using System.Collections.Generic;
 /// </summary>
 public class ForgeInventorySpawner : MonoBehaviour
 {
+    public static ForgeInventorySpawner Instance { get; private set; }
+
     [Header("Prefaby sztabek (8 materiałów)")]
     [SerializeField] GameObject copperIngotPrefab;
     [SerializeField] GameObject bronzeIngotPrefab;
@@ -26,6 +28,16 @@ public class ForgeInventorySpawner : MonoBehaviour
     [SerializeField] Transform handleSpawnArea;
     [SerializeField] float spacing = 0.3f;
     [SerializeField] int maxPerRow = 4;
+
+    // Przechowujemy indeksy, by nowe materiały nie zepsuły siatki upadając na stare
+    private int currentIngotIndex = 0;
+    private int currentHandleIndex = 0;
+
+    void Awake()
+    {
+        if (Instance != null && Instance != this) Destroy(this);
+        else Instance = this;
+    }
 
     void Start()
     {
@@ -54,31 +66,17 @@ public class ForgeInventorySpawner : MonoBehaviour
         var gm = gameManager.Instance;
         if (gm == null || ingotSpawnArea == null) return;
 
-        int spawnIndex = 0;
-
         foreach (var kvp in gm.inventory)
         {
             MetalType metalType;
             if (!System.Enum.TryParse(kvp.Key, out metalType)) continue;
 
-            GameObject prefab = GetIngotPrefab(metalType);
-            if (prefab == null) continue;
-
             for (int i = 0; i < kvp.Value; i++)
             {
-                Vector3 pos = GetGridPosition(ingotSpawnArea, spawnIndex);
-                GameObject obj = Instantiate(prefab, pos, ingotSpawnArea.rotation);
-                obj.name = $"Sztabka_{kvp.Key}_{i + 1}";
-
-                MetalPiece metal = obj.GetComponent<MetalPiece>();
-                if (metal != null)
-                    metal.metalTier = metalType;
-
-                spawnIndex++;
+                // Wywołujemy naszą nową, dynamiczną metodę, ale omijamy logikę doliczania rękojeści (zrobi to Start)
+                SpawnIngotInternal(metalType, false);
             }
         }
-
-        Debug.Log($"[ForgeSpawner] Zaspawnowano {spawnIndex} sztabek");
     }
 
     void SpawnHandles()
@@ -86,43 +84,64 @@ public class ForgeInventorySpawner : MonoBehaviour
         var gm = gameManager.Instance;
         if (gm == null || handleSpawnArea == null) return;
 
-        // Policz łączną liczbę sztabek
         int totalIngots = 0;
         foreach (var kvp in gm.inventory)
         {
-            // Tylko policz materiały które są typami metalu
-            MetalType metalType;
-            if (System.Enum.TryParse(kvp.Key, out metalType))
-                totalIngots += kvp.Value;
+            if (System.Enum.TryParse<MetalType>(kvp.Key, out _)) totalIngots += kvp.Value;
         }
 
-        int spawnIndex = 0;
+        for (int i = 0; i < totalIngots; i++)
+        {
+            SpawnHandleInternal();
+        }
+    }
 
-        // Spawnuj uchwyty mieczy
+    /// <summary>
+    /// Używaj tej metody do DODAWANIA nowej sztabki w trakcie działania gry (np. ze Sklepu).
+    /// </summary>
+    public void SpawnNewBoughtMaterial(MetalType metalType)
+    {
+        // Spawnuje sztabkę i automatycznie dorzuca na stół po jednym rodzaju drewna (ponieważ tak założyłeś mechanikę w Start)
+        SpawnIngotInternal(metalType, true);
+        SpawnHandleInternal();
+    }
+
+    private void SpawnIngotInternal(MetalType metalType, bool playDropEffect)
+    {
+        GameObject prefab = GetIngotPrefab(metalType);
+        if (prefab == null) return;
+
+        Vector3 pos = GetGridPosition(ingotSpawnArea, currentIngotIndex);
+        
+        // Jeśli kupujemy ze sklepu w trakcie gry, podnieśmy go wyżej, żeby ładnie i realistycznie "spadł" na biurko
+        if (playDropEffect) pos += Vector3.up * 0.5f;
+
+        GameObject obj = Instantiate(prefab, pos, ingotSpawnArea.rotation);
+        obj.name = $"Sztabka_{metalType}_{currentIngotIndex + 1}";
+
+        MetalPiece metal = obj.GetComponent<MetalPiece>();
+        if (metal != null) metal.metalTier = metalType;
+
+        currentIngotIndex++;
+    }
+
+    private void SpawnHandleInternal()
+    {
         if (swordHandlePrefab != null)
         {
-            for (int i = 0; i < totalIngots; i++)
-            {
-                Vector3 pos = GetGridPosition(handleSpawnArea, spawnIndex);
-                GameObject obj = Instantiate(swordHandlePrefab, pos, handleSpawnArea.rotation);
-                obj.name = $"Rękojeść_Miecza_{i + 1}";
-                spawnIndex++;
-            }
+            Vector3 posSword = GetGridPosition(handleSpawnArea, currentHandleIndex);
+            GameObject objS = Instantiate(swordHandlePrefab, posSword, handleSpawnArea.rotation);
+            objS.name = $"Rękojeść_Miecza_Sklep_{currentHandleIndex + 1}";
+            currentHandleIndex++;
         }
 
-        // Spawnuj trzonki siekier
         if (axeHandlePrefab != null)
         {
-            for (int i = 0; i < totalIngots; i++)
-            {
-                Vector3 pos = GetGridPosition(handleSpawnArea, spawnIndex);
-                GameObject obj = Instantiate(axeHandlePrefab, pos, handleSpawnArea.rotation);
-                obj.name = $"Trzonek_Siekiery_{i + 1}";
-                spawnIndex++;
-            }
+            Vector3 posAxe = GetGridPosition(handleSpawnArea, currentHandleIndex);
+            GameObject objA = Instantiate(axeHandlePrefab, posAxe, handleSpawnArea.rotation);
+            objA.name = $"Trzonek_Siekiery_Sklep_{currentHandleIndex + 1}";
+            currentHandleIndex++;
         }
-
-        Debug.Log($"[ForgeSpawner] Zaspawnowano {spawnIndex} uchwytów (po {totalIngots} na typ)");
     }
 
     /// <summary>
