@@ -19,6 +19,10 @@ public class GrindstoneStation : MonoBehaviour
     private float currentDip = 0f;
     private bool isFlipped = false;
 
+    private int currentVertexIndex = 0;
+    private float[] vertexPositions;
+    private float targetSlidePosition = 0f;
+    
     private Transform mainCamera;
     private Transform originalCameraParent;
     private Vector3 originalCameraLocalPos;
@@ -57,6 +61,14 @@ public class GrindstoneStation : MonoBehaviour
 
         bladeSlidePosition = 0f;
         isFlipped = false;
+        
+        vertexPositions = metal.GetEdgeVertexPositionsZ();
+        currentVertexIndex = 0;
+        if (vertexPositions.Length > 0)
+        {
+            targetSlidePosition = -vertexPositions[0];
+        }
+            
 
         Rigidbody rb = currentMetal.GetComponent<Rigidbody>();
         if (rb != null)
@@ -99,12 +111,17 @@ public class GrindstoneStation : MonoBehaviour
         currentMetal.transform.localRotation = Quaternion.Lerp(currentMetal.transform.localRotation, Quaternion.Euler(0, 0, targetRotationZ), Time.deltaTime * 8f);
 
         float scroll = Input.mouseScrollDelta.y;
-        bladeSlidePosition += scroll * 0.05f;
+        if (vertexPositions != null && vertexPositions.Length > 0)
+        {
+            if (scroll > 0.1f && currentVertexIndex < vertexPositions.Length - 1)
+                currentVertexIndex++;
+            else if (scroll < -0.1f && currentVertexIndex > 0)
+                currentVertexIndex--;
 
-        Mesh mesh = currentMetal.GetComponent<MeshFilter>().mesh;
-        float minLimit = -mesh.bounds.max.z - 0.05f;
-        float maxLimit = -mesh.bounds.min.z + 0.05f;
-        bladeSlidePosition = Mathf.Clamp(bladeSlidePosition, minLimit, maxLimit);
+            targetSlidePosition = -vertexPositions[currentVertexIndex];
+        }
+
+        bladeSlidePosition = Mathf.Lerp(bladeSlidePosition, targetSlidePosition, Time.deltaTime * 12f);
 
         // --- PROCEDURALNE DOPASOWANIE (MAGIA!) ---
         // Skanujemy, jak szeroki jest metal w miejscu, które aktualnie jest pod kamieniem

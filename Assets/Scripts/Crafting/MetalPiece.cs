@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 // Definiujemy nasze tiery metali
@@ -462,5 +464,23 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
         }
         // Zwracamy najmniejsze Z (tył), uwzględniając skalę obiektu
         return minY * transform.localScale.z;
+    }
+    
+    public float[] GetEdgeVertexPositionsZ()
+    {
+        HashSet<float> positions = new HashSet<float>();
+
+        for (int i = 0; i < vertices.Length; i++)
+        {
+            // Ten sam filtr co w GrindPerfectEdge — wierzchołki krawędziowe
+            if (vertices[i].x > 0.001f || vertices[i].x < -0.001f)
+            {
+                float snapped = Mathf.Round(vertices[i].z * 1000f) / 1000f;
+                positions.Add(snapped);
+            }
+        }
+
+        float[] sorted = positions.OrderBy(z => z).ToArray();
+        return sorted;
     }
 }
