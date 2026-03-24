@@ -5,11 +5,18 @@ public class WeaponSocket : MonoBehaviour
     [Tooltip("Nazwa kości w hierarchii modelu (np. jointItemR)")]
     public string socketBoneName = "jointItemR";
 
+    [Header("Ustawienia pozycji i rotacji w dłoni NPC")]
+    public Vector3 swordHoldPosition = Vector3.zero; 
+    public Vector3 swordHoldRotation = Vector3.zero;
+
+    public Vector3 axeHoldPosition = new Vector3(0, 0, -0.2f);
+    public Vector3 axeHoldRotation = new Vector3(0, 90, 0);
+
     Transform socketBone;
     [SerializeField] GameObject equippedWeapon;
-    Transform gripPoint;
-    public string ownerName; // Ustaw to w Inspektorze lub przy Equip
-    public CitizenData ownerData; // Przypisz to przy spawnowaniu NPC!
+    
+    public string ownerName; 
+    public CitizenData ownerData; 
 
     void Awake()
     {
@@ -18,12 +25,35 @@ public class WeaponSocket : MonoBehaviour
             Debug.LogWarning($"[WeaponSocket] Nie znaleziono kości '{socketBoneName}' w {gameObject.name}");
     }
 
+    // --- TYMCZASOWY KOD DO USTAWIENIA BRONI NA ŻYWO ---
+    void Update()
+    {
+        if (equippedWeapon != null)
+        {
+            FinishedObject finishedObj = equippedWeapon.GetComponent<FinishedObject>();
+            if (finishedObj != null)
+            {
+                if (finishedObj.weaponType == WeaponType.Axe)
+                {
+                    // Wymusza odświeżanie pozycji co klatkę!
+                    equippedWeapon.transform.localPosition = axeHoldPosition;
+                    equippedWeapon.transform.localRotation = Quaternion.Euler(axeHoldRotation);
+                }
+                else if (finishedObj.weaponType == WeaponType.Sword)
+                {
+                    equippedWeapon.transform.localPosition = swordHoldPosition;
+                    equippedWeapon.transform.localRotation = Quaternion.Euler(swordHoldRotation);
+                }
+            }
+        }
+    }
+    // --------------------------------------------------
+
     public void EquipWeapon(GameObject weapon)
     {
         if (socketBone == null) return;
 
         UnequipWeapon();
-
         equippedWeapon = weapon;
 
         Rigidbody rb = weapon.GetComponent<Rigidbody>();
@@ -33,16 +63,28 @@ public class WeaponSocket : MonoBehaviour
             rb.detectCollisions = false;
         }
 
-        gripPoint = weapon.transform.Find("GripPoint");
-
         weapon.transform.SetParent(socketBone);
         weapon.transform.localScale = Vector3.one;
 
-        if (gripPoint != null)
+        FinishedObject finishedObj = weapon.GetComponent<FinishedObject>();
+        
+        if (finishedObj != null)
         {
-            Quaternion rotCorrection = Quaternion.Inverse(gripPoint.localRotation);
-            weapon.transform.localRotation = rotCorrection;
-            weapon.transform.localPosition = -(rotCorrection * gripPoint.localPosition);
+            if (finishedObj.weaponType == WeaponType.Axe)
+            {
+                weapon.transform.localPosition = axeHoldPosition;
+                weapon.transform.localRotation = Quaternion.Euler(axeHoldRotation);
+            }
+            else if (finishedObj.weaponType == WeaponType.Sword)
+            {
+                weapon.transform.localPosition = swordHoldPosition;
+                weapon.transform.localRotation = Quaternion.Euler(swordHoldRotation);
+            }
+            else
+            {
+                weapon.transform.localPosition = Vector3.zero;
+                weapon.transform.localRotation = Quaternion.identity;
+            }
         }
         else
         {
@@ -52,32 +94,22 @@ public class WeaponSocket : MonoBehaviour
         
         if (ownerData != null)
         {
-            // Stwórz WeaponData ze statystykami
-            FinishedObject finished = weapon.GetComponent<FinishedObject>();
-            if (finished != null)
-                ownerData.equippedWeapon = new WeaponData(weapon.name, finished.weaponType, finished.metalTier, finished.bladeLength);
+            if (finishedObj != null)
+                ownerData.equippedWeapon = new WeaponData(weapon.name, finishedObj.weaponType, finishedObj.metalTier, finishedObj.bladeLength);
 
-            // Zniszcz stary klon jeśli istnieje
             if (ownerData.savedWeaponTemplate != null)
                 Object.Destroy(ownerData.savedWeaponTemplate);
 
-            // Zapisz siatki broni (odkształcone ostrze + kolor)
             ownerData.weaponMeshes = SavedMeshData.SaveFrom(weapon);
 
-            // Klonuj broń i schowaj w DontDestroyOnLoad
             GameObject weaponClone = Object.Instantiate(weapon);
             weaponClone.name = weapon.name + "_template";
             weaponClone.SetActive(false);
             Object.DontDestroyOnLoad(weaponClone);
             ownerData.savedWeaponTemplate = weaponClone;
 
-            // Odśwież UI
             if (gameManager.Instance != null)
                 gameManager.Instance.NotifyTeamChanged();
-        }
-        else
-        {
-            Debug.LogError("WeaponSocket nie ma przypisanego ownerData!");
         }
     }
 
@@ -95,7 +127,6 @@ public class WeaponSocket : MonoBehaviour
         }
 
         equippedWeapon = null;
-        gripPoint = null;
     }
 
     public GameObject GetEquippedWeapon() => equippedWeapon;

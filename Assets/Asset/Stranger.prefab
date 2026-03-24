@@ -2646,6 +2646,11 @@ MonoBehaviour:
   strength: 0
   intelligence: 0
   speed: 0
+  task:
+    description: 
+    requiredDamage: 0
+    requiredSpeed: 0
+    requiredAoe: 0
 --- !u!114 &6028756744746030056
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2675,6 +2680,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSocket
   socketBoneName: jointItemR
+  swordHoldPosition: {x: 0, y: 0.5, z: 0}
+  swordHoldRotation: {x: -90, y: 0, z: 0}
+  axeHoldPosition: {x: 0.15, y: 0.9, z: -0.14}
+  axeHoldRotation: {x: -90, y: 45, z: 0}
   equippedWeapon: {fileID: 0}
   ownerName: 
   ownerData:
@@ -2691,6 +2700,13 @@ MonoBehaviour:
       baseDamage: 0
       attackSpeed: 0
       range: 0
+      areaOfEffect: 0
+      bladeLength: 0
+    task:
+      description: 
+      requiredDamage: 0
+      requiredSpeed: 0
+      requiredAoe: 0
     savedWeaponTemplate: {fileID: 0}
     weaponMeshes: []
 --- !u!114 &7159525049598194826
