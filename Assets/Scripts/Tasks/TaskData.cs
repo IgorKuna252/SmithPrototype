@@ -47,13 +47,39 @@ public class AssignedTask
         requiredAoe    = entry.Aoe    != null && entry.Aoe.IsActive    ? entry.Aoe.Roll()    : -1f;
     }
 
-    /// Sprawdza czy bron spelnia wymagania (porownuje znormalizowane wartosci 0-100)
+    /// Zwraca procentowe ukończenie zadania (0.0 - 1.0)
+    public float CalculateTaskCompletion(WeaponData weapon)
+    {
+        float totalScore = 0f;
+        int statsChecked = 0;
+
+        if (requiredDamage >= 0f)
+        {
+            // Ograniczamy do max 1.0 (100%), więc zrobienie dużo lepszej broni po prostu gwarantuje dowiezienie tej statystyki na maxa.
+            totalScore += requiredDamage <= 0f ? 1f : Mathf.Clamp01(weapon.GetNormalizedDamage() / requiredDamage);
+            statsChecked++;
+        }
+        if (requiredSpeed >= 0f)
+        {
+            totalScore += requiredSpeed <= 0f ? 1f : Mathf.Clamp01(weapon.GetNormalizedSpeed() / requiredSpeed);
+            statsChecked++;
+        }
+        if (requiredAoe >= 0f)
+        {
+            totalScore += requiredAoe <= 0f ? 1f : Mathf.Clamp01(weapon.GetNormalizedAoE() / requiredAoe);
+            statsChecked++;
+        }
+
+        // Zabezpieczenie przed zadaniami bez statystyk - standardowo dajemy równe 1.0
+        if (statsChecked == 0) return 1f;
+
+        return totalScore / statsChecked;
+    }
+
+    /// Opcjonalne kompatybilne sprawdzenie na sztywno, kiedy potrzeba
     public bool CheckWeapon(WeaponData weapon)
     {
-        if (requiredDamage >= 0f && weapon.GetNormalizedDamage() < requiredDamage) return false;
-        if (requiredSpeed  >= 0f && weapon.GetNormalizedSpeed()  < requiredSpeed)  return false;
-        if (requiredAoe    >= 0f && weapon.GetNormalizedAoE()    < requiredAoe)    return false;
-        return true;
+        return CalculateTaskCompletion(weapon) >= 1f;
     }
 
     /// Zwraca czytelny tekst wymagan do wyswietlenia w UI

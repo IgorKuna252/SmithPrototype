@@ -44,6 +44,12 @@ public class npcPathFinding : MonoBehaviour
             {
                 agentNPC.ResetPath();
                 agentNPC.velocity = Vector3.zero;
+
+                // Jeśli celem, do którego właśnie doszliśmy, były drzwi wyjściowe (rejectObject) - wracamy do domu i znikamy z gry!
+                if (rejectObject != null && Vector3.Distance(transform.position, rejectObject.position) <= 2.5f)
+                {
+                    Destroy(gameObject);
+                }
             }
 
             // Brak ścieżki = stój
@@ -156,6 +162,44 @@ public class npcPathFinding : MonoBehaviour
     {
         WeaponSocket socket = GetComponentInChildren<WeaponSocket>();
         return socket?.ownerData?.equippedWeapon;
+    }
+
+    public void ProcessTransaction()
+    {
+        AssignedTask task = citizenStats.GetAssignedTask();
+        WeaponData wpn = GetWeaponData();
+        
+        if (task != null && wpn != null && wpn.type != WeaponType.None)
+        {
+            // Sprawdzamy nowy wskaźnik wykonania procentowego (0.00 do 1.00)
+            float completion = task.CalculateTaskCompletion(wpn);
+            
+            // Standardowy wyliczacz wartości broni bazujący na metalu
+            int baseValue = 100;
+            switch(wpn.metalTier) {
+                case MetalType.Copper: baseValue = 30; break;
+                case MetalType.Bronze: baseValue = 50; break;
+                case MetalType.Iron:   baseValue = 100; break;
+                case MetalType.Steel:  baseValue = 250; break;
+                case MetalType.Gold:   baseValue = 500; break;
+                case MetalType.Platinum: baseValue = 1000; break;
+                case MetalType.BlueSteel: baseValue = 2500; break;
+                case MetalType.Vibranium: baseValue = 5000; break;
+                default: baseValue = 80; break;
+            }
+
+            // Ostateczna kwota = bazowa za kruszec * Twoje zdolności spełnienia oczekiwań 
+            int finalPayment = Mathf.RoundToInt(baseValue * completion);
+            
+            if (manager != null) manager.AddGold(finalPayment);
+            Debug.Log($"Transakcja Udana: Zarobiono {finalPayment} G! (Zgodność: {Mathf.Round(completion*100f)}%, Kruszec: {wpn.metalTier})");
+
+            var spawner = Object.FindFirstObjectByType<prefabSpawning>();
+            if (spawner != null) spawner.OnNPCProcessed();
+
+            // Gra karze NPC odejść do wyjścia i odhacza go z systemu
+            WeaponAccepted(); 
+        }
     }
 
     public void MoveToQueuePosition(Vector3 position)

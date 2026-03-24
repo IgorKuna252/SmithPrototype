@@ -115,6 +115,12 @@ public class WeaponSocket : MonoBehaviour
 
             if (gameManager.Instance != null)
                 gameManager.Instance.NotifyGoldChanged();
+                
+            // Podmieniłem puste Notify na wywołanie nowo napisanej funkcji, 
+            // która fizycznie ocenia wściekłość/zadowolenie zadania i dorzuca złota!
+            npcPathFinding pathFinding = GetComponentInParent<npcPathFinding>();
+            if (pathFinding != null)
+                pathFinding.ProcessTransaction();
         }
     }
 

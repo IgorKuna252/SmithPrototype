@@ -36,15 +36,31 @@ public class NPCInteractionUI : MonoBehaviour
 
         npcStatsText.text = npc.ShowStats();
         npcTaskText.text = npc.GetAsssignedTask();
-        bool fulfilled = npc.IsTaskFulfilled();
-        npcTaskText.text += fulfilled ? "\nTAK" : "\nNIE";
-        Debug.Log($"[Task] {npc.GetAsssignedTask()} | {(fulfilled ? "TAK" : "NIE")}\n{npc.GetTaskComparison()}");
+        
+        // Dynamiczne wyliczenie punktacji na żywo ("czy klient to lubi")
+        AssignedTask task = npc.GetComponent<ExiledCitizen>()?.GetAssignedTask();
+        WeaponData wpn = npc.GetWeaponData();
+        
+        if (task != null && wpn != null && wpn.type != WeaponType.None)
+        {
+            float completion = task.CalculateTaskCompletion(wpn);
+            int percent = Mathf.RoundToInt(completion * 100f);
+            
+            // Kolorujemy tekst dla fajnego efektu - na zielono przy 100%
+            string colorHex = percent >= 100 ? "#00FF00" : (percent > 50 ? "#FFFF00" : "#FF0000");
+            npcTaskText.text += $"\nZgodność: <color={colorHex}>{percent}%</color>";
+        }
+        else
+        {
+            npcTaskText.text += "\n[Brak założonej wytycznej lub brak wręczonego przedmiotu]";
+        }
+        
+        Debug.Log($"[Task] {npc.GetAsssignedTask()}\n{npc.GetTaskComparison()}");
         wheel.UpdateWheel(npc.GetNormalizedStrength(), npc.GetNormalizedSpeed(), npc.GetNormalizedIntelligence());
 
         // Koło broni — pokaż tylko jeśli NPC ma broń
         if (weaponWheel != null)
         {
-            WeaponData wpn = npc.GetWeaponData();
             if (wpn != null && wpn.type != WeaponType.None)
             {
                 weaponWheel.SetWheel(true);

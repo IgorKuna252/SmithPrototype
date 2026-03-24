@@ -64,12 +64,21 @@ public class prefabSpawning : MonoBehaviour
 
     public void ClearCurrentQueue()
     {
-        // Opcja twardego usunięcia zalegających ludzi ze sklepu 
-        foreach(var npc in npcQueue)
-        {
-            if (npc != null) Destroy(npc);
-        }
         npcQueue.Clear();
+
+        // Niszczymy absolutnie każdego klienta NPC błąkającego się po mapie
+        ExiledCitizen[] allCitizens = Object.FindObjectsByType<ExiledCitizen>(FindObjectsSortMode.None);
+        foreach (var c in allCitizens)
+        {
+            if (c != null) Destroy(c.gameObject);
+        }
+
+        // To samo robimy z Kupcami
+        Merchant[] allMerchants = Object.FindObjectsByType<Merchant>(FindObjectsSortMode.None);
+        foreach (var m in allMerchants)
+        {
+            if (m != null) Destroy(m.gameObject);
+        }
     }
 
     private void SpawnNightCustomers()
