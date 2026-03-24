@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 // Definiujemy nasze tiery metali
@@ -18,6 +20,8 @@ public enum HitType
     Lengthen, // Wydłużanie (na osi Z)
     Widen     // Poszerzanie (na osi X)
 }
+
+
 
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(MeshCollider))]
@@ -56,7 +60,13 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
     private bool isInForge = false;
     private Color baseColdColor; // Zmienna na nasz kolor
 
-   
+    [Header("Tuning Szlifierki (Prędkość)")]
+    [Tooltip("Jak szybko miecz robi się płaski (Faza 1)")]
+    public float sharpenMultiplier = 20f;
+    [Tooltip("Jak szybko kamień zjada zepsute ostrze (Faza 2)")]
+    public float eatMultiplier = 0.8f;
+
+
 
     void Start()
     {
@@ -261,52 +271,41 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
         bool wasDeformed = false;
         float stoneWidth = 0.05f;
 
-        // Zmniejszona prędkość zjadania metalu, żeby dać graczowi czas na reakcję
-        float eatSpeed = grindSpeed * 0.01f;
+        // Zmieniamy na twarde "metry na sekundę" dla MoveTowards, żeby nie utknąć w nieskończonym ułamku
+        float sharpenSpeed = grindSpeed * sharpenMultiplier * 0.01f * Time.deltaTime;
+        float eatSpeed = grindSpeed * eatMultiplier * Time.deltaTime;
 
-        // Grubość (oś Y), przy której ostrze uznajemy za "naostrzone" i zaczyna się psuć
-        float perfectThickness = 0.015f;
+        float perfectThickness = 0.002f;
 
+        // ==========================================
+        // FAZA 1 i 2: OSTRZENIE I WŻERANIE
+        // ==========================================
         for (int i = 0; i < vertices.Length; i++)
         {
-            // Sprawdzamy, czy wierzchołek jest pod kamieniem
             if (Mathf.Abs(vertices[i].z - localZPosition) < stoneWidth)
             {
-                // Sprawdzamy, czy to prawa krawędź (nieodwrócony) lub lewa (odwrócony)
                 bool isRightEdge = !isFlipped && vertices[i].x > 0.001f;
                 bool isLeftEdge = isFlipped && vertices[i].x < -0.001f;
 
                 if (isRightEdge || isLeftEdge)
                 {
-                    // ==========================================
-                    // FAZA 1: OSTRZENIE (Spłaszczanie osi Y)
-                    // ==========================================
-                    float edgeFactor = Mathf.Abs(vertices[i].x) / maxHalfWidth;
-                    edgeFactor = Mathf.Clamp01(edgeFactor);
-
-                    // Płynnie schodzimy do docelowej grubości (0.01f)
-                    if (vertices[i].y > 0.01f)
+                    // TWARDE ścinanie do zera (MoveTowards GWARANTUJE dobicie do celu)
+                    if (Mathf.Abs(vertices[i].y) > perfectThickness)
                     {
-                        vertices[i].y = Mathf.Lerp(vertices[i].y, 0.01f, edgeFactor * grindSpeed);
+                        vertices[i].y = Mathf.MoveTowards(vertices[i].y, 0f, sharpenSpeed);
                         wasDeformed = true;
                     }
-
-                    // ==========================================
-                    // FAZA 2: ZJADANIE METALU (Zmniejszanie osi X)
-                    // ==========================================
-                    // Odpala się TYLKO wtedy, gdy krawędź jest już cienka!
-                    if (vertices[i].y <= perfectThickness)
+                    else
                     {
                         if (isRightEdge)
                         {
-                            vertices[i].x -= eatSpeed;
-                            if (vertices[i].x < 0f) vertices[i].x = 0f; // Blokada przed przejściem na drugą stronę
+                            vertices[i].x = Mathf.MoveTowards(vertices[i].x, 0f, eatSpeed);
                             wasDeformed = true;
                         }
                         else if (isLeftEdge)
                         {
-                            vertices[i].x += eatSpeed;
-                            if (vertices[i].x > 0f) vertices[i].x = 0f; // Blokada przed przejściem na drugą stronę
+                            // MoveTowards świetnie radzi sobie też z ujemnymi liczbami, dociągając do zera
+                            vertices[i].x = Mathf.MoveTowards(vertices[i].x, 0f, eatSpeed);
                             wasDeformed = true;
                         }
                     }
@@ -314,6 +313,45 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
             }
         }
 
+        // ==========================================
+        // FAZA 3: DETEKCJA ODCIĘCIA (AMPUTACJA)
+        // ==========================================
+        float maxRemainingWidth = 0f;
+        int verticesInZone = 0;
+
+        for (int i = 0; i < vertices.Length; i++)
+        {
+            if (Mathf.Abs(vertices[i].z - localZPosition) < stoneWidth)
+            {
+                verticesInZone++;
+                if (Mathf.Abs(vertices[i].x) > maxRemainingWidth)
+                {
+                    maxRemainingWidth = Mathf.Abs(vertices[i].x);
+                }
+            }
+        }
+
+        // Jeśli w strefie kamienia szerokość zjechała z obu stron do zera...
+        if (verticesInZone > 0 && maxRemainingWidth <= 0.001f)
+        {
+            for (int i = 0; i < vertices.Length; i++)
+            {
+                // ...to zgniatamy wszystkie wierzchołki znajdujące się DALEJ niż miejsce cięcia
+                if (vertices[i].z >= localZPosition - 0.01f)
+                {
+                    // Cofamy zgniecione punkty o ułamek centymetra, by schowały się "wewnątrz" ułamanej broni
+                    vertices[i].z = localZPosition - 0.02f;
+                    vertices[i].x = 0f;
+                    vertices[i].y = 0f;
+                    wasDeformed = true;
+                }
+            }
+            Debug.Log("<color=red>KRYTYCZNE USZKODZENIE! Ostrze przecięte!</color>");
+        }
+
+        // ==========================================
+        // ZAKOŃCZENIE I ZAPISANIE SIATKI
+        // ==========================================
         if (wasDeformed)
         {
             mesh.vertices = vertices;
@@ -426,5 +464,23 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
         }
         // Zwracamy najmniejsze Z (tył), uwzględniając skalę obiektu
         return minY * transform.localScale.z;
+    }
+    
+    public float[] GetEdgeVertexPositionsZ()
+    {
+        HashSet<float> positions = new HashSet<float>();
+
+        for (int i = 0; i < vertices.Length; i++)
+        {
+            // Ten sam filtr co w GrindPerfectEdge — wierzchołki krawędziowe
+            if (vertices[i].x > 0.001f || vertices[i].x < -0.001f)
+            {
+                float snapped = Mathf.Round(vertices[i].z * 1000f) / 1000f;
+                positions.Add(snapped);
+            }
+        }
+
+        float[] sorted = positions.OrderBy(z => z).ToArray();
+        return sorted;
     }
 }
