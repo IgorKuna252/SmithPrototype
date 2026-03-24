@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
 
 public class NPCInteractionUI : MonoBehaviour
@@ -12,10 +11,6 @@ public class NPCInteractionUI : MonoBehaviour
     [Header("Statystyki NPC")]
     public TextMeshProUGUI npcStatsText;
     public TextMeshProUGUI npcTaskText;
-
-    [Header("Przyciski")]
-    public Button acceptButton;
-    public Button rejectButton;
 
     [Header("Koło broni NPC")]
     public WheelController weaponWheel;
@@ -60,40 +55,6 @@ public class NPCInteractionUI : MonoBehaviour
                 weaponWheel.SetWheel(false);
             }
         }
-
-        if (npc.isInTeam)
-        {
-            acceptButton.gameObject.SetActive(false);
-            rejectButton.gameObject.SetActive(false);
-        }
-        else
-        {
-            acceptButton.gameObject.SetActive(true);
-            rejectButton.gameObject.SetActive(true);
-
-            bool teamFull = gameManager.Instance.team.Count >= gameManager.teamSize;
-            acceptButton.interactable = !teamFull;
-
-            acceptButton.onClick.RemoveAllListeners();
-            rejectButton.onClick.RemoveAllListeners();
-
-            acceptButton.onClick.AddListener(OnAccept);
-            rejectButton.onClick.AddListener(OnReject);
-        }
-    }
-
-    void OnAccept()
-    {
-        currentNPC.Accept();
-        queue.OnNPCProcessed();
-        blacksmith.CloseNPCInteraction();
-    }
-
-    void OnReject()
-    {
-        currentNPC.Reject();
-        queue.OnNPCProcessed();
-        blacksmith.CloseNPCInteraction();
     }
 
     public void Hide()

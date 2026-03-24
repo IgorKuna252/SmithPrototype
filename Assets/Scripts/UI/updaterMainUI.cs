@@ -9,18 +9,18 @@ public class updaterMainUI : MonoBehaviour
     void Start()
     {
         manager = gameManager.Instance;
-        manager.OnTeamChanged += updateCounter;
+        manager.OnGoldChanged += updateCounter;
         updateCounter();
     }
 
     void OnDestroy()
     {
         if (manager != null)
-            manager.OnTeamChanged -= updateCounter;
+            manager.OnGoldChanged -= updateCounter;
     }
 
     void updateCounter()
     {
-        teamCounterText.text = manager.team.Count + "/" + gameManager.teamSize;
+        teamCounterText.text = "Złoto: " + manager.gold;
     }
 }

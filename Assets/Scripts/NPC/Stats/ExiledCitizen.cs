@@ -58,21 +58,6 @@ public class ExiledCitizen : MonoBehaviour
     void Die()
     {
         Debug.Log($"[Citizen] {name} zginął!");
-
-        // Usuń z drużyny w gameManager
-        var manager = gameManager.Instance;
-        if (manager != null)
-        {
-            for (int i = 0; i < manager.team.Count; i++)
-            {
-                if (manager.team[i].name == name)
-                {
-                    manager.removeTeamMember(i);
-                    break;
-                }
-            }
-        }
-
         Destroy(gameObject);
     }
 

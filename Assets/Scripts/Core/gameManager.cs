@@ -1,16 +1,16 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+
 public class gameManager : MonoBehaviour
 {
     // Singleton
     public static gameManager Instance { get; private set; }
 
-    public List<CitizenData> team = new List<CitizenData>();
-    public const int teamSize = 4;
+    public int gold = 500;
 
-    // Event wywoływany gdy drużyna się zmieni (dodanie/usunięcie/equip broni)
-    public event System.Action OnTeamChanged;
+    // Event wywoływany gdy złoto się zmieni
+    public event System.Action OnGoldChanged;
 
     // Dane aktualnej bitwy (ustawiane przez TileManager przed przejściem do BattleScene)
     [HideInInspector] public List<int> selectedFighters = new List<int>();
@@ -46,15 +46,29 @@ public class gameManager : MonoBehaviour
         inventory["Vibranium"] = 1;
     }
 
-    /// <summary>
-    /// Wywołaj to po każdej zmianie w drużynie (dodanie, usunięcie, equip broni).
-    /// Powiadomi wszystkie podpięte systemy UI.
-    /// </summary>
-    public void NotifyTeamChanged()
+    public void NotifyGoldChanged()
     {
-        OnTeamChanged?.Invoke();
+        OnGoldChanged?.Invoke();
     }
-    
+
+    public void AddGold(int amount)
+    {
+        gold += amount;
+        NotifyGoldChanged();
+    }
+
+    public bool RemoveGold(int amount)
+    {
+        if (gold < amount)
+        {
+            Debug.LogWarning($"Za mało złota! (masz: {gold}, potrzeba: {amount})");
+            return false;
+        }
+        gold -= amount;
+        NotifyGoldChanged();
+        return true;
+    }
+
     public void AddResource(string name, int amount)
     {
         if (inventory.ContainsKey(name))
@@ -78,47 +92,4 @@ public class gameManager : MonoBehaviour
         return true;
     }
     
-    public bool addTeamMember(GameObject npc)
-    {
-        if (team.Count >= teamSize)
-        {
-            Debug.Log("Team is full!");
-            return false;
-        }
-
-        ExiledCitizen citizen = npc.GetComponent<ExiledCitizen>();
-        if (citizen == null)
-        {
-            Debug.LogWarning("No ExiledCitizen on " + npc.name);
-            return false;
-        }
-
-        team.Add(new CitizenData(npc.name, citizen));
-        NotifyTeamChanged();
-        return true;
-    }
-
-    public bool removeTeamMember(int index)
-    {
-        if (index >= 0 && index < team.Count)
-        {
-            // Zniszcz klon broni z DontDestroyOnLoad, żeby nie wyciekł
-            if (team[index].savedWeaponTemplate != null)
-                Destroy(team[index].savedWeaponTemplate);
-
-            team.RemoveAt(index);
-            NotifyTeamChanged();
-            return true;
-        }
-
-        Debug.Log("Invalid team index!");
-        return false;
-    }
-
-    public CitizenData getMember(int index)
-    {
-        if (index >= 0 && index < team.Count)
-            return team[index];
-        return null;
-    }
 }

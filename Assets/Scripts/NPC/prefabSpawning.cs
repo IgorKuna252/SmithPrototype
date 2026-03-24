@@ -50,59 +50,6 @@ public class prefabSpawning : MonoBehaviour
             npcQueue.Add(obj);
         }
 
-        // 6. Odtwórz członków drużyny jeśli wracamy z innej sceny
-        RespawnTeamMembers();
-    }
-
-    void RespawnTeamMembers()
-    {
-        var gm = gameManager.Instance;
-        if (gm == null || gm.team.Count == 0) return;
-
-        Vector3 basePos = targetNPCAccept != null ? targetNPCAccept.position : Vector3.zero;
-
-        for (int i = 0; i < gm.team.Count; i++)
-        {
-            CitizenData data = gm.team[i];
-
-            // Spawnuj NPC obok acceptObject
-            Vector3 pos = basePos + Vector3.right * (i * queueSpacing);
-            GameObject obj = Instantiate(prefabObject, pos, Quaternion.identity);
-            obj.name = data.name;
-
-            // Odtwórz statystyki
-            ExiledCitizen citizen = obj.GetComponent<ExiledCitizen>();
-            citizen.health       = data.health;
-            citizen.maxHealth    = data.maxHealth;
-            citizen.strength     = data.strength;
-            citizen.intelligence = data.intelligence;
-            citizen.speed        = data.speed;
-            citizen.task         = data.task;
-
-            // Oznacz jako członka drużyny
-            npcPathFinding npc = obj.GetComponent<npcPathFinding>();
-            npc.isInTeam = true;
-            npc.rejectObject = targetNPCReject;
-            npc.acceptObject = targetNPCAccept;
-
-            // Podłącz WeaponSocket do danych drużyny
-            WeaponSocket socket = obj.GetComponentInChildren<WeaponSocket>();
-            if (socket != null)
-            {
-                socket.ownerData = data;
-                socket.ownerName = data.name;
-
-                // Odtwórz broń z zapisanego klonu
-                if (data.savedWeaponTemplate != null)
-                {
-                    GameObject weapon = Instantiate(data.savedWeaponTemplate);
-                    weapon.SetActive(true);
-                    weapon.name = data.equippedWeapon != null ? data.equippedWeapon.weaponName : data.name;
-                    SavedMeshData.RestoreTo(weapon, data.weaponMeshes);
-                    socket.EquipWeapon(weapon);
-                }
-            }
-        }
     }
 
     public void OnNPCProcessed()

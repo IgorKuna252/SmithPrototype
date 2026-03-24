@@ -111,28 +111,9 @@ public class BattleManager : MonoBehaviour
         SyncSurvivorsBack();
     }
 
-    /// <summary>
-    /// Aktualizuje statystyki ocalałych wojowników (np. utracone HP)
-    /// z powrotem do CitizenData w gameManager.team.
-    /// </summary>
     void SyncSurvivorsBack()
     {
-        ExiledCitizen[] survivors = Object.FindObjectsByType<ExiledCitizen>(FindObjectsSortMode.None);
-        var team = gameManager.Instance.team;
-
-        foreach (var survivor in survivors)
-        {
-            // Szukamy odpowiedniego wpisu w teamie po nazwie
-            for (int i = 0; i < team.Count; i++)
-            {
-                if (team[i].name == survivor.gameObject.name)
-                {
-                    team[i].health = survivor.health;
-                    Debug.Log($"[BattleManager] Zsynchronizowano {team[i].name}: HP={survivor.health:F0}");
-                    break;
-                }
-            }
-        }
+        // Brak drużyny do synchronizacji
     }
 
     /// <summary>

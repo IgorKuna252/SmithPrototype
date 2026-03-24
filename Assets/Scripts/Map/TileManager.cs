@@ -52,40 +52,14 @@ public class TileManager : MonoBehaviour
         }
         else
         {
-            statusText.text = difficultyString + "Walka! Wybierz drużynę:";
+            statusText.text = difficultyString + "Walka!";
             fightButton.SetActive(true);
-
-            foreach (var member in gameManager.Instance.team)
-            {
-                GameObject newCard = Instantiate(cardPrefab, cardContainer);
-                newCard.GetComponentInChildren<TextMeshProUGUI>().text = member.GetStats();
-                
-                Toggle t = newCard.GetComponentInChildren<Toggle>();
-                // Dodajemy nasłuchiwanie kliknięcia checkboxa
-                t.onValueChanged.AddListener(delegate { UpdateTeamStrength(); });
-                
-                currentToggles.Add(t);
-                activeCards.Add(newCard);
-            }
-            
-            UpdateTeamStrength();
         }
     }
 
     public void UpdateTeamStrength()
     {
-        float totalStrength = 0;
-        int minCount = Mathf.Min(currentToggles.Count, gameManager.Instance.team.Count);
-
-        for (int i = 0; i < minCount; i++)
-        {
-            if (currentToggles[i].isOn)
-            {
-                var member = gameManager.Instance.team[i];
-                totalStrength += (member.health + member.strength + member.intelligence + member.speed);
-            }
-        }
-        teamStrengthText.text = $"Siła Drużyny: {totalStrength:F0}";
+        teamStrengthText.text = "";
     }
 
     public void Fight()

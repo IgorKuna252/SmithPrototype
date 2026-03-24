@@ -109,7 +109,7 @@ public class WeaponSocket : MonoBehaviour
             ownerData.savedWeaponTemplate = weaponClone;
 
             if (gameManager.Instance != null)
-                gameManager.Instance.NotifyTeamChanged();
+                gameManager.Instance.NotifyGoldChanged();
         }
     }
 
