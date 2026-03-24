@@ -77,49 +77,8 @@ public class npcPathFinding : MonoBehaviour
     {
         if (isInTeam) return;
 
-        bool added = manager.addTeamMember(this.gameObject);
-        
-        if (added)
-        {
-            isInTeam = true;
-            
-            var socket = GetComponentInChildren<WeaponSocket>();
-            if (socket != null)
-            {
-                // Zniszcz tymczasowy klon broni, żeby nie wyciekł do DontDestroyOnLoad
-                CitizenData oldTemp = socket.ownerData;
-                if (oldTemp != null && oldTemp.savedWeaponTemplate != null)
-                    Object.Destroy(oldTemp.savedWeaponTemplate);
-
-                CitizenData officialData = manager.team[manager.team.Count - 1];
-                socket.ownerData = officialData;
-                socket.ownerName = officialData.name;
-
-                // Jeśli NPC miał broń przed akceptacją — zapisz ją
-                GameObject currentWeapon = socket.GetEquippedWeapon();
-                if (currentWeapon != null)
-                {
-                    FinishedObject finished = currentWeapon.GetComponent<FinishedObject>();
-                    if (finished != null)
-                        officialData.equippedWeapon = new WeaponData(currentWeapon.name, finished.weaponType, finished.metalTier, finished.bladeLength);
-
-                    officialData.weaponMeshes = SavedMeshData.SaveFrom(currentWeapon);
-
-                    GameObject clone = Object.Instantiate(currentWeapon);
-                    clone.name = currentWeapon.name + "_template";
-                    clone.SetActive(false);
-                    Object.DontDestroyOnLoad(clone);
-                    officialData.savedWeaponTemplate = clone;
-                }
-                
-                Debug.Log($"[Socket] Zaktualizowano na oficjalne dane: {officialData.name}");
-            }
-            
-            // Rozstaw członków drużyny w linii obok acceptObject
-            int teamIndex = manager.team.Count - 1;
-            Vector3 targetPos = acceptObject.position + acceptObject.right * (teamIndex * 1.5f);
-            agentNPC.SetDestination(targetPos);
-        }
+        isInTeam = true;
+        SetDestination(acceptObject);
     }
 
     public void Reject()

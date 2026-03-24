@@ -14,15 +14,24 @@ public class MergingTable : MonoBehaviour
     public Transform craftSpawnPoint; 
     public GameObject craftingUI; 
 
-    [Header("Mikro-korekta łączenia")]
+[Header("Mikro-korekta łączenia Z (Przód/Tył)")]
     public float swordConnectionOffset = -0.03f; // Offset dla miecza
     public float axeConnectionOffset = -0.05f;   // Offset dla topora
+
+    [Header("Mikro-korekta łączenia X (Lewo/Prawo)")]
+    public float swordConnectionOffsetX = 0f;    // Boczny offset dla miecza
+    public float axeConnectionOffsetX = 0f;      // Boczny offset dla topora
 
     [Header("Ustawienia Pozycji Części")]
     public Vector3 handleOffset = new Vector3(0, 0, -0.4f);
     public Vector3 bladeOffset = Vector3.zero;
 
-    [Header("Grip - Rotacja broni w dłoni NPC")]
+    [Header("Grip - Pozycja i Rotacja w dłoni NPC")]
+    [Tooltip("Dodatkowe przesunięcie pozycji GripPointa miecza (X, Y, Z)")]
+    public Vector3 swordGripPositionOffset = Vector3.zero;
+    [Tooltip("Dodatkowe przesunięcie pozycji GripPointa topora (X, Y, Z)")]
+    public Vector3 axeGripPositionOffset = Vector3.zero;
+
     [Tooltip("Rotacja GripPointa miecza — dostosuj żeby ostrze celowało do przodu NPC")]
     public Vector3 swordGripRotation = new Vector3(0f, -90f, -30f);
     [Tooltip("Rotacja GripPointa topora — dostosuj żeby ostrze celowało do przodu NPC")]
@@ -171,19 +180,24 @@ public void CombineItems()
             // POBIERAMY PRZÓD RĄCZKI (Na osi Z)
             float frontOfHandle = woodFilter.mesh.bounds.max.z * woodFilter.transform.localScale.z;
 
-            float currentOffset = (placedMetal.partType == MetalPiece.MetalPartType.AxeHead) 
+            // Wybieramy odpowiedni offset Z
+            float currentOffsetZ = (placedMetal.partType == MetalPiece.MetalPartType.AxeHead) 
                               ? axeConnectionOffset 
                               : swordConnectionOffset;
 
-            // OBLICZAMY Z
-            float targetZ = backOfBlade - frontOfHandle + currentOffset;
-            
-            // PRZYPISUJEMY DO OSI Z (0, 0, targetZ) - TO JEST TA KLUCZOWA POPRAWKA!
-            placedWood.transform.localPosition = new Vector3(0, 0, targetZ);
-            
-            Debug.Log($"[Dynamiczny Pivot Z] Tył ostrza: {backOfBlade}. Przesuwam rączkę na Z: {targetZ}");
-        }
+            // Wybieramy odpowiedni offset X
+            float currentOffsetX = (placedMetal.partType == MetalPiece.MetalPartType.AxeHead) 
+                              ? axeConnectionOffsetX 
+                              : swordConnectionOffsetX;
 
+            // OBLICZAMY Z
+            float targetZ = backOfBlade - frontOfHandle + currentOffsetZ;
+            
+            // PRZYPISUJEMY DO OSI X i Z
+            placedWood.transform.localPosition = new Vector3(currentOffsetX, 0, targetZ);
+            
+            Debug.Log($"[Dynamiczny Pivot Z] Tył ostrza: {backOfBlade}. Przesuwam rączkę na X: {currentOffsetX}, Z: {targetZ}");
+        }
         // --- FINALIZACJA ---
         placedMetal.ForceCoolDown();
 
@@ -217,7 +231,12 @@ public void CombineItems()
 
         GameObject grip = new GameObject("GripPoint");
         grip.transform.SetParent(craftedWeapon.transform);
-        grip.transform.localPosition = gripLocalPos;
+        
+        // Magia: Wybieramy odpowiedni offset z Inspektora w zależności od typu broni
+        Vector3 currentGripOffset = isAxe ? axeGripPositionOffset : swordGripPositionOffset;
+        
+        // Dodajemy ten offset do bazowej pozycji rączki
+        grip.transform.localPosition = gripLocalPos + currentGripOffset;
         grip.transform.localRotation = Quaternion.Euler(isAxe ? axeGripRotation : swordGripRotation);
 
         // Odejmij surowiec z ekwipunku
@@ -228,4 +247,5 @@ public void CombineItems()
     }
 
 }
+
 }
