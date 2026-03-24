@@ -2060,7 +2060,9 @@ MonoBehaviour:
   craftSpawnPoint: {fileID: 859180550}
   craftingUI: {fileID: 0}
   swordConnectionOffset: -0.1
-  axeConnectionOffset: 0
+  axeConnectionOffset: 0.4
+  swordConnectionOffsetX: 0
+  axeConnectionOffsetX: 0.1
   handleOffset: {x: 0, y: 0, z: 0}
   bladeOffset: {x: 0, y: 0, z: 0}
   swordGripRotation: {x: 0, y: -90, z: -30}
@@ -8415,8 +8417,8 @@ MonoBehaviour:
   holdRotation: {x: 0, y: 0, z: 0}
   swordHoldPosition: {x: 0, y: 0, z: 0}
   swordHoldRotation: {x: -90, y: 0, z: 90}
-  axeHoldPosition: {x: 0, y: 0, z: 0.2}
-  axeHoldRotation: {x: 90, y: 0, z: 0}
+  axeHoldPosition: {x: 0.5, y: 0.5, z: 0.7}
+  axeHoldRotation: {x: -90, y: -90, z: 0}
   wheel: {fileID: 0}
   playerUI: {fileID: 1922304666}
 --- !u!114 &687086920

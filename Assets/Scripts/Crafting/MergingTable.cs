@@ -14,9 +14,13 @@ public class MergingTable : MonoBehaviour
     public Transform craftSpawnPoint; 
     public GameObject craftingUI; 
 
-    [Header("Mikro-korekta łączenia")]
+[Header("Mikro-korekta łączenia Z (Przód/Tył)")]
     public float swordConnectionOffset = -0.03f; // Offset dla miecza
     public float axeConnectionOffset = -0.05f;   // Offset dla topora
+
+    [Header("Mikro-korekta łączenia X (Lewo/Prawo)")]
+    public float swordConnectionOffsetX = 0f;    // Boczny offset dla miecza
+    public float axeConnectionOffsetX = 0f;      // Boczny offset dla topora
 
     [Header("Ustawienia Pozycji Części")]
     public Vector3 handleOffset = new Vector3(0, 0, -0.4f);
@@ -171,19 +175,24 @@ public void CombineItems()
             // POBIERAMY PRZÓD RĄCZKI (Na osi Z)
             float frontOfHandle = woodFilter.mesh.bounds.max.z * woodFilter.transform.localScale.z;
 
-            float currentOffset = (placedMetal.partType == MetalPiece.MetalPartType.AxeHead) 
+            // Wybieramy odpowiedni offset Z
+            float currentOffsetZ = (placedMetal.partType == MetalPiece.MetalPartType.AxeHead) 
                               ? axeConnectionOffset 
                               : swordConnectionOffset;
 
-            // OBLICZAMY Z
-            float targetZ = backOfBlade - frontOfHandle + currentOffset;
-            
-            // PRZYPISUJEMY DO OSI Z (0, 0, targetZ) - TO JEST TA KLUCZOWA POPRAWKA!
-            placedWood.transform.localPosition = new Vector3(0, 0, targetZ);
-            
-            Debug.Log($"[Dynamiczny Pivot Z] Tył ostrza: {backOfBlade}. Przesuwam rączkę na Z: {targetZ}");
-        }
+            // Wybieramy odpowiedni offset X
+            float currentOffsetX = (placedMetal.partType == MetalPiece.MetalPartType.AxeHead) 
+                              ? axeConnectionOffsetX 
+                              : swordConnectionOffsetX;
 
+            // OBLICZAMY Z
+            float targetZ = backOfBlade - frontOfHandle + currentOffsetZ;
+            
+            // PRZYPISUJEMY DO OSI X i Z
+            placedWood.transform.localPosition = new Vector3(currentOffsetX, 0, targetZ);
+            
+            Debug.Log($"[Dynamiczny Pivot Z] Tył ostrza: {backOfBlade}. Przesuwam rączkę na X: {currentOffsetX}, Z: {targetZ}");
+        }
         // --- FINALIZACJA ---
         placedMetal.ForceCoolDown();
 
