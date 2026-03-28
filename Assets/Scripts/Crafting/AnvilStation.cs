@@ -83,9 +83,11 @@ public class AnvilStation : MonoBehaviour
         Rigidbody rb = currentMetal.GetComponent<Rigidbody>();
         if (rb != null)
         {
-            rb.isKinematic = false;
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
+            if (!rb.isKinematic)
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
             rb.isKinematic = true;
         }
 
@@ -110,8 +112,6 @@ public class AnvilStation : MonoBehaviour
             hammerObject.SetActive(true);
             isSwinging = false;
         }
-
-        RefreshStatsWheel();
     }
 
     private void HandleForgingMinigame()
@@ -240,26 +240,13 @@ public class AnvilStation : MonoBehaviour
                 hitSparks.transform.position = hitPoint;
                 hitSparks.Play();
             }
-            RefreshStatsWheel();
         }
-    }
-
-    private void RefreshStatsWheel()
-    {
-        if (currentMetal == null) return;
-        var wheel = BlacksmithInteraction.Instance?.wheel;
-        if (wheel == null) return;
-        WeaponData preview = currentMetal.GetPreviewStats();
-        wheel.SetWheel(true);
-        wheel.UpdateWheel(preview.GetNormalizedDamage(), preview.GetNormalizedSpeed(), preview.GetNormalizedAoE());
     }
 
     private void ExitForgingMode()
     {
         isForgingMode = false;
 
-        var wheel = BlacksmithInteraction.Instance?.wheel;
-        if (wheel != null) wheel.SetWheel(false);
         if (hammerObject != null) hammerObject.SetActive(false);
 
         currentMetal.transform.SetParent(null);

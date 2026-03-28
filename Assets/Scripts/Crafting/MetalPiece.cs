@@ -28,9 +28,6 @@ public enum HitType
 public class MetalPiece : MonoBehaviour, IInteractable, IPickable
 {
 
-    public enum MetalPartType { SwordBlade, AxeHead }
-    public MetalPartType partType;
-    
     [Header("Dane dla Stołu Montażowego")]
     public bool isFinished = false;
     public MetalType metalTier = MetalType.Iron;
@@ -433,11 +430,6 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
         meshRenderer.SetPropertyBlock(block);
     }
 
-    public WeaponData GetPreviewStats()
-    {
-        WeaponType type = (partType == MetalPartType.SwordBlade) ? WeaponType.Sword : WeaponType.Axe;
-        return new WeaponData("Podgląd", type, metalTier, GetBladeLength());
-    }
 
     public float GetBladeLength()
     {

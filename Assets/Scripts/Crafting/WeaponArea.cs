@@ -18,7 +18,7 @@ public class WeaponArea : MonoBehaviour
         if (metal != null && !table.HasMetal())
         {
             table.PlaceMetal(metal);
-            Debug.Log($"[WeaponArea] Metal przekazany na stół: {metal.metalTier}");
+            Debug.Log($"[WeaponArea] Metal przekazany na stół: {metal.gameObject.name}");
             return;
         }
 
@@ -26,7 +26,7 @@ public class WeaponArea : MonoBehaviour
         if (wood != null && !table.HasWood())
         {
             table.PlaceWood(wood);
-            Debug.Log($"[WeaponArea] Rączka przekazana na stół: {wood.partType}");
+            Debug.Log($"[WeaponArea] Rączka przekazana na stół: {wood.gameObject.name}");
         }
     }
 }

@@ -73,8 +73,11 @@ public class GrindstoneStation : MonoBehaviour
         Rigidbody rb = currentMetal.GetComponent<Rigidbody>();
         if (rb != null)
         {
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
+            if (!rb.isKinematic)
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
             rb.isKinematic = true;
         }
 
@@ -94,8 +97,6 @@ public class GrindstoneStation : MonoBehaviour
         }
 
         if (playerObject != null) playerObject.SetActive(false);
-
-        RefreshStatsWheel();
     }
 
     private void HandleGrindingMinigame()
@@ -134,7 +135,6 @@ public class GrindstoneStation : MonoBehaviour
         if (Input.GetMouseButton(0))
         {
             currentMetal.GrindPerfectEdge(-bladeSlidePosition, isFlipped);
-            RefreshStatsWheel();
 
             currentDip = Mathf.Lerp(currentDip, hoverX + grindBiteDepth, Time.deltaTime * 15f);
 
@@ -151,20 +151,8 @@ public class GrindstoneStation : MonoBehaviour
         currentMetal.transform.localPosition = new Vector3(currentDip, 0, bladeSlidePosition);
     }
 
-    private void RefreshStatsWheel()
-    {
-        if (currentMetal == null) return;
-        var wheel = BlacksmithInteraction.Instance?.wheel;
-        if (wheel == null) return;
-        WeaponData preview = currentMetal.GetPreviewStats();
-        wheel.SetWheel(true);
-        wheel.UpdateWheel(preview.GetNormalizedDamage(), preview.GetNormalizedSpeed(), preview.GetNormalizedAoE());
-    }
-
     private void ExitGrindingMode()
     {
-        var wheel = BlacksmithInteraction.Instance?.wheel;
-        if (wheel != null) wheel.SetWheel(false);
         isGrindingMode = false;
 
         currentMetal.transform.SetParent(null);

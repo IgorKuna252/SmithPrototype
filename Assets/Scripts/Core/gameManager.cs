@@ -7,19 +7,7 @@ public class gameManager : MonoBehaviour
     // Singleton
     public static gameManager Instance { get; private set; }
 
-    public int gold = 500;
-
-    // Event wywoływany gdy złoto się zmieni
-    public event System.Action OnGoldChanged;
-
-    // Dane aktualnej bitwy (ustawiane przez TileManager przed przejściem do BattleScene)
-    [HideInInspector] public List<int> selectedFighters = new List<int>();
-    [HideInInspector] public int currentBattleDifficulty = 0;
-    [HideInInspector] public string currentBattleTileName; // nazwa kafelka, np. "Tile (2, -1)"
-
-    // Trwała pamięć mapy — przetrwa zmiany scen
-    public HashSet<string> ownedTiles = new HashSet<string>();
-    public Dictionary<string, int> tileDifficulties = new Dictionary<string, int>();
+    // Słownik z aktualnymi surowcami w ekwipunku
 
     public Dictionary<string, int> inventory = new Dictionary<string, int>();
 
@@ -46,28 +34,6 @@ public class gameManager : MonoBehaviour
         inventory["Vibranium"] = 1;
     }
 
-    public void NotifyGoldChanged()
-    {
-        OnGoldChanged?.Invoke();
-    }
-
-    public void AddGold(int amount)
-    {
-        gold += amount;
-        NotifyGoldChanged();
-    }
-
-    public bool RemoveGold(int amount)
-    {
-        if (gold < amount)
-        {
-            Debug.LogWarning($"Za mało złota! (masz: {gold}, potrzeba: {amount})");
-            return false;
-        }
-        gold -= amount;
-        NotifyGoldChanged();
-        return true;
-    }
 
     public void AddResource(string name, int amount)
     {

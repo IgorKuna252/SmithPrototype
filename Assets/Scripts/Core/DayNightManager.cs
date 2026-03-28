@@ -82,13 +82,13 @@ public class DayNightManager : MonoBehaviour
         if (isCurrentlyDay && !isDay)
         {
             isDay = true;
-            Debug.Log("🌞 Nastał Dzień! Kupcy mogą się pojawiać.");
+            Debug.Log("🌞 Nastał Nowy Dzień! Tablica zadań odświeżona.");
             OnDayStarted?.Invoke();
         }
         else if (!isCurrentlyDay && isDay)
         {
             isDay = false;
-            Debug.Log("🌙 Nastała Noc! Klienci przychodzą po broń.");
+            Debug.Log("🌙 Nastała Noc! Czas na odpoczynek przy piecu.");
             OnNightStarted?.Invoke();
         }
     }

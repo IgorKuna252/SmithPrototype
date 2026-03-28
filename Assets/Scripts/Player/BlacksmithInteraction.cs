@@ -7,21 +7,15 @@ public class BlacksmithInteraction : MonoBehaviour
     public Transform holdPosition;
     public Vector3 holdRotation = new Vector3(90f, 0f, 0f);
 
-    [Header("Pozycje trzymania w ręku - Typy")]
-    public Vector3 swordHoldPosition = Vector3.zero;
-    public Vector3 swordHoldRotation = Vector3.zero;
-    public Vector3 axeHoldPosition = new Vector3(1f, 1f, 1f);
-    public Vector3 axeHoldRotation = new Vector3(270, 270, 180);
+    [Header("Pozycje trzymania w ręku")]
 
     private Camera playerCamera;
     private GameObject heldItem;
     private Rigidbody heldItemRb;
     private PlayerMovement playerMovement;
 
-    private bool isInteractingWithNPC = false;
     private bool isInteractingWithTable = false;
     private MergingTable activeTable = null;
-    [HideInInspector] public WheelController wheel;
 
 
     public Canvas playerUI;
@@ -32,20 +26,12 @@ public class BlacksmithInteraction : MonoBehaviour
 
     void Start()
     {
-        wheel = playerUI.GetComponent<WheelController>();
         playerCamera = GetComponentInChildren<Camera>();
         playerMovement = GetComponent<PlayerMovement>();
     }
 
     void Update()
     {
-        // 1. BLOKADA NPC
-        if (isInteractingWithNPC)
-        {
-            if (Input.GetKeyDown(KeyCode.Escape)) CloseNPCInteraction();
-            return;
-        }
-
         // 2. BLOKADA KAMERY STOŁU 
         if (isInteractingWithTable)
         {
@@ -86,51 +72,6 @@ public class BlacksmithInteraction : MonoBehaviour
         Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
         if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
         {
-            // 1. ZDAWANIE BRONI DLA NPC
-            if (heldItem != null && heldItem.GetComponent<FinishedObject>() != null)
-            {
-                WeaponSocket socket = hit.collider.GetComponent<WeaponSocket>();
-                if (socket == null) socket = hit.collider.GetComponentInParent<WeaponSocket>();
-                if (socket != null)
-                {
-                    heldItem.GetComponent<IPickable>()?.OnDrop();
-                    heldItem.transform.SetParent(null);
-                    socket.EquipWeapon(heldItem);
-                    wheel.SetWheel(false);
-                    ClearHand();
-
-                    NPCCombat combat = socket.GetComponent<NPCCombat>();
-                    if (combat != null) combat.SetMode(NPCCombatMode.ArmedIdle);
-
-                    npcPathFinding npcPath = socket.GetComponent<npcPathFinding>() ?? socket.GetComponentInParent<npcPathFinding>();
-                    if (npcPath != null && npcPath.IsTaskFulfilled())
-                        npcPath.WeaponAccepted();
-
-                    return;
-                }
-            }
-
-            // 2. ROZMOWA Z NPC LUB KUPCEM
-            npcPathFinding npc = hit.collider.GetComponent<npcPathFinding>() ?? hit.collider.GetComponentInParent<npcPathFinding>();
-            if (npc != null)
-            {
-                // Wpierw sprawdzamy, czy to nasz WYJĄTKOWY Kupiec
-                Merchant merchant = npc.GetComponent<Merchant>();
-                if (merchant != null)
-                {
-                    // To jest kupiec! Odpalamy dedykowaną obsługę sklepu
-                    merchant.Interact();
-                    return;
-                }
-
-                // Skoro kod tutaj dotarł, to nie kupiec, lecimy ze standardowym panelem NPC:
-                isInteractingWithNPC = true;
-                playerMovement.enabled = false;
-                Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
-                NPCInteractionUI.Instance.Show(npc);
-                return;
-            }
 
             // 3. ZMIANA SCENY
             SceneTransition sceneTransition = hit.collider.GetComponent<SceneTransition>();
@@ -233,15 +174,6 @@ public class BlacksmithInteraction : MonoBehaviour
         playerMovement.enabled = true;
     }
 
-    public void CloseNPCInteraction()
-    {
-        isInteractingWithNPC = false;
-        playerMovement.enabled = true;
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-        NPCInteractionUI.Instance.Hide();
-    }
-
     bool TryPickUp()
     {
         if (heldItem != null) return false;
@@ -304,25 +236,8 @@ public class BlacksmithInteraction : MonoBehaviour
                 FinishedObject heldFinished = heldItem.GetComponentInParent<FinishedObject>();
                 if (heldFinished != null)
                 {
-                    if (heldFinished.weaponType == WeaponType.Axe)
-                    {
-                        heldItem.transform.localPosition = axeHoldPosition;
-                        heldItem.transform.localRotation = Quaternion.Euler(axeHoldRotation);
-                    }
-                    else if (heldFinished.weaponType == WeaponType.Sword)
-                    {
-                        heldItem.transform.localPosition = swordHoldPosition;
-                        heldItem.transform.localRotation = Quaternion.Euler(swordHoldRotation);
-                    }
-                    else
-                    {
-                        heldItem.transform.localPosition = Vector3.zero;
-                        heldItem.transform.localRotation = Quaternion.Euler(holdRotation);
-                    }
-
-                    WeaponData tempWeapon = new WeaponData(heldFinished.itemName, heldFinished.weaponType, heldFinished.metalTier, heldFinished.bladeLength);
-                    wheel.SetWheel(true);
-                    wheel.UpdateWheel(tempWeapon.GetNormalizedDamage(), tempWeapon.GetNormalizedSpeed(), tempWeapon.GetNormalizedAoE());
+                    heldItem.transform.localPosition = Vector3.zero;
+                    heldItem.transform.localRotation = Quaternion.Euler(holdRotation);
                 }
                 else if (heldItem.GetComponent<Crucible>() != null)
                 {
@@ -389,7 +304,6 @@ public class BlacksmithInteraction : MonoBehaviour
         }
 
         heldItem.GetComponent<IPickable>()?.OnDrop();
-        wheel.SetWheel(false);
         ClearHand();
     }
 
