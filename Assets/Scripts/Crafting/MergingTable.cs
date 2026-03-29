@@ -200,6 +200,9 @@ public void CombineItems()
         }
         // --- FINALIZACJA ---
         placedMetal.ForceCoolDown();
+        
+        placedWood.gameObject.name = "HandlePart";
+        placedMetal.gameObject.name = "MetalPart";
 
         // Zapamiętaj dane PRZED zniszczeniem komponentów
         Vector3 gripLocalPos = placedWood.transform.localPosition;
