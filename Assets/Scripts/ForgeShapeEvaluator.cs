@@ -22,17 +22,22 @@ public class ForgeShapeEvaluator : MonoBehaviour
     {
         if (uiShapeObject == null || forgedMetal == null)
         {
-            Debug.LogError("Brak obiektu UI lub kutego metalu!");
+            Debug.LogError("[ForgeShapeEvaluator] Brak uiShapeObject lub forgedMetal!");
             return 0f;
         }
-        
-        Vector3 originalPos = forgedMetal.transform.position;
-        Quaternion originalRot = forgedMetal.transform.rotation;
-        int originalLayer = forgedMetal.layer;
 
-        // Tworzymy jedno ukryte studio fotograficzne dla obu obiektów
+        int tempLayer = LayerMask.NameToLayer("Hidden");
+        if (tempLayer < 0)
+        {
+            Debug.LogError("[ForgeShapeEvaluator] Warstwa 'Hidden' nie istnieje! Dodaj ją: Edit → Project Settings → Tags and Layers");
+            return 0f;
+        }
+
+        Vector3 originalPos   = forgedMetal.transform.position;
+        Quaternion originalRot = forgedMetal.transform.rotation;
+        int originalLayer      = forgedMetal.layer;
+
         Vector3 hiddenPosition = new Vector3(0, -5000, 0);
-        int tempLayer = LayerMask.NameToLayer("Hidden"); 
 
         // Kamera oceniająca
         GameObject tempCamObj = new GameObject("TempPhotoboothCamera");
@@ -41,31 +46,36 @@ public class ForgeShapeEvaluator : MonoBehaviour
         tempCam.orthographic = true;
         tempCam.orthographicSize = cameraOrthoSize;
         tempCam.clearFlags = CameraClearFlags.SolidColor;
-        tempCam.backgroundColor = Color.black; 
+        tempCam.backgroundColor = Color.black;
         tempCam.cullingMask = 1 << tempLayer;
 
-        // ZDJĘCIE 1: KSZTAŁT UI 
+        // ZDJĘCIE 1: KSZTAŁT UI
         GameObject tempCanvasObj = new GameObject("TempPhotoboothCanvas");
         tempCanvasObj.transform.position = hiddenPosition;
         Canvas tempCanvas = tempCanvasObj.AddComponent<Canvas>();
         tempCanvas.renderMode = RenderMode.WorldSpace;
-        tempCanvasObj.GetComponent<RectTransform>().localScale = new Vector3(uiToWorldScale, uiToWorldScale, 1f); 
+        tempCanvasObj.GetComponent<RectTransform>().localScale = new Vector3(uiToWorldScale, uiToWorldScale, 1f);
 
         GameObject shapeCopy = Instantiate(uiShapeObject, tempCanvas.transform);
         shapeCopy.transform.localPosition = Vector3.zero;
 
         UnityEngine.UI.Graphic graphic = shapeCopy.GetComponent<UnityEngine.UI.Graphic>();
-        if (graphic != null) graphic.color = Color.white; 
+        if (graphic != null) graphic.color = Color.white;
 
         tempCamObj.layer = tempLayer;
         tempCanvasObj.layer = tempLayer;
         ChangeLayerRecursive(shapeCopy.transform, tempLayer);
         shapeCopy.SetActive(true);
-        
+
+        // Wymuszamy odbudowę meshy Canvas przed renderem — bez tego nowe Graphici są puste
+        Canvas.ForceUpdateCanvases();
+
         targetShapeMask = CaptureCameraToTexture(tempCam, resolution, resolution);
-        
-        // Niszczymy kształt UI, żeby zrobić miejsce dla metalu
-        DestroyImmediate(tempCanvasObj); 
+
+        int schemePixels = CountWhitePixels(targetShapeMask);
+        Debug.Log($"[ForgeShapeEvaluator] Schemat: {schemePixels} białych px / {resolution * resolution} total");
+
+        DestroyImmediate(tempCanvasObj);
 
         // ZDJĘCIE 2: WYKUTY METAL
         forgedMetal.transform.position = hiddenPosition;
@@ -74,14 +84,26 @@ public class ForgeShapeEvaluator : MonoBehaviour
 
         forgedSilhouette = CaptureCameraToTexture(tempCam, resolution, resolution);
 
-        // Sprzątanie obiektów i oddajemy metal do ręki NPC.
+        int weaponPixels = CountWhitePixels(forgedSilhouette);
+        Debug.Log($"[ForgeShapeEvaluator] Broń: {weaponPixels} białych px");
+
         DestroyImmediate(tempCamObj);
         forgedMetal.transform.position = originalPos;
         forgedMetal.transform.rotation = originalRot;
         ChangeLayerRecursive(forgedMetal.transform, originalLayer);
 
-        // Porównujemy zrobione zdjęcia
-        return CompareTextures(forgedSilhouette, targetShapeMask);
+        float result = CompareTextures(forgedSilhouette, targetShapeMask);
+        Debug.Log($"[ForgeShapeEvaluator] Wynik porównania: {result:F1}%");
+        return result;
+    }
+
+    private int CountWhitePixels(Texture2D tex)
+    {
+        int count = 0;
+        Color[] pixels = tex.GetPixels();
+        foreach (Color c in pixels)
+            if (c.r > 0.1f) count++;
+        return count;
     }
 
     private Texture2D CaptureCameraToTexture(Camera cam, int width, int height)

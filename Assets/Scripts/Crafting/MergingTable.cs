@@ -37,11 +37,12 @@ public class MergingTable : MonoBehaviour
     [Tooltip("Rotacja GripPointa topora — dostosuj żeby ostrze celowało do przodu NPC")]
     public Vector3 axeGripRotation = new Vector3(0f, 0f, -90f);
 
-    private GameObject mainPlayerCamera; 
+    private GameObject mainPlayerCamera;
     private bool isAssemblyMode = false;
+    private bool isHandleFlipped = false;
 
-    private MetalPiece placedMetal; 
-    private WoodPiece placedWood; 
+    private MetalPiece placedMetal;
+    private WoodPiece placedWood;
 
     void Start()
     {
@@ -73,6 +74,7 @@ public void ToggleAssemblyCamera(GameObject playerCam)
         mainPlayerCamera.SetActive(true);
         assemblyCamera.SetActive(false);
         isAssemblyMode = false;
+        isHandleFlipped = false;
 
         if (craftingUI != null) craftingUI.SetActive(false);
 
@@ -81,6 +83,14 @@ public void ToggleAssemblyCamera(GameObject playerCam)
 
         // CAŁKOWICIE USUNIĘTO pętlę włączającą skrypty!
     }
+
+    public void ToggleHandleFlip()
+    {
+        isHandleFlipped = !isHandleFlipped;
+        Debug.Log($"[MergingTable] Rączka od: {(isHandleFlipped ? "góry (przód ostrza)" : "dołu (tył ostrza)")}");
+    }
+
+    public bool IsHandleFlipped() => isHandleFlipped;
 
     public bool HasMetal() => placedMetal != null;
     public bool HasWood() => placedWood != null;
@@ -166,37 +176,33 @@ public void CombineItems()
         placedWood.transform.SetParent(craftedWeapon.transform);
         placedMetal.transform.SetParent(craftedWeapon.transform);
 
-        placedWood.transform.localRotation = Quaternion.identity;
-        placedMetal.transform.localRotation = Quaternion.identity;
-
-        // 3. Pozycjonowanie (Używamy Twojej dynamicznej logiki)
-        placedMetal.transform.localPosition = Vector3.zero;
-
+        // 3. Pozycjonowanie
         MeshFilter woodFilter = placedWood.GetComponentInChildren<MeshFilter>();
         if (woodFilter != null)
         {
-            float backOfBlade = placedMetal.GetActualBackOfBlade(); 
-            
-            // POBIERAMY PRZÓD RĄCZKI (Na osi Z)
+            float backOfBlade = placedMetal.GetActualBackOfBlade(); // ujemne (min.z * scale)
             float frontOfHandle = woodFilter.mesh.bounds.max.z * woodFilter.transform.localScale.z;
 
-            // Wybieramy odpowiedni offset Z
-            float currentOffsetZ = (placedMetal.partType == MetalPiece.MetalPartType.AxeHead) 
-                              ? axeConnectionOffset 
+            float currentOffsetZ = (placedMetal.partType == MetalPiece.MetalPartType.AxeHead)
+                              ? axeConnectionOffset
                               : swordConnectionOffset;
-
-            // Wybieramy odpowiedni offset X
-            float currentOffsetX = (placedMetal.partType == MetalPiece.MetalPartType.AxeHead) 
-                              ? axeConnectionOffsetX 
+            float currentOffsetX = (placedMetal.partType == MetalPiece.MetalPartType.AxeHead)
+                              ? axeConnectionOffsetX
                               : swordConnectionOffsetX;
 
-            // OBLICZAMY Z
+            // Rączka zawsze w tym samym miejscu
             float targetZ = backOfBlade - frontOfHandle + currentOffsetZ;
-            
-            // PRZYPISUJEMY DO OSI X i Z
+            placedWood.transform.localRotation = Quaternion.identity;
             placedWood.transform.localPosition = new Vector3(currentOffsetX, 0, targetZ);
-            
-            Debug.Log($"[Dynamiczny Pivot Z] Tył ostrza: {backOfBlade}. Przesuwam rączkę na X: {currentOffsetX}, Z: {targetZ}");
+
+            // Ostrze zawsze na pozycji zero — 180°Z odwraca je "na drugą stronę"
+            // bez ruszania osi Z, więc tip nadal celuje w górę i blade nie wpada pod rączkę
+            placedMetal.transform.localPosition = Vector3.zero;
+            placedMetal.transform.localRotation = isHandleFlipped
+                ? Quaternion.Euler(0f, 0f, 180f)
+                : Quaternion.identity;
+
+            Debug.Log($"[MergingTable] backOfBlade: {backOfBlade:F3}, Z rączki: {targetZ:F3}, Obrót ostrza: {(isHandleFlipped ? "180°Z" : "0°")}");
         }
         // --- FINALIZACJA ---
         placedMetal.ForceCoolDown();

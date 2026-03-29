@@ -457,7 +457,7 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
         // Przeszukujemy naszą zmodyfikowaną listę wierzchołków
         foreach (Vector3 v in vertices)
         {
-            if (v.z < minY) 
+            if (v.z < minY)
             {
                 minY = v.z;
             }
@@ -465,6 +465,7 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
         // Zwracamy najmniejsze Z (tył), uwzględniając skalę obiektu
         return minY * transform.localScale.z;
     }
+
     
     public float[] GetEdgeVertexPositionsZ()
     {

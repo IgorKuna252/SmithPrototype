@@ -20,6 +20,7 @@ public class BlacksmithInteraction : MonoBehaviour
 
     private bool isInteractingWithNPC = false;
     private bool isInteractingWithTable = false;
+    private bool isTransactionUIOpen = false;
     private MergingTable activeTable = null;
     [HideInInspector] public WheelController wheel;
 
@@ -37,8 +38,27 @@ public class BlacksmithInteraction : MonoBehaviour
         playerMovement = GetComponent<PlayerMovement>();
     }
 
+    public void SetTransactionUIOpen(bool open)
+    {
+        isTransactionUIOpen = open;
+        playerMovement.enabled = !open;
+        if (open)
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+        else
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+    }
+
     void Update()
     {
+        // BLOKADA OKNA WYNIKI TRANSAKCJI
+        if (isTransactionUIOpen) return;
+
         // 1. BLOKADA NPC
         if (isInteractingWithNPC)
         {
@@ -46,11 +66,16 @@ public class BlacksmithInteraction : MonoBehaviour
             return;
         }
 
-        // 2. BLOKADA KAMERY STOŁU 
+        // 2. BLOKADA KAMERY STOŁU
         if (isInteractingWithTable)
         {
+            // TAB: Przełącz stronę rączki (góra/dół ostrza)
+            if (Input.GetKeyDown(KeyCode.Tab) && activeTable != null)
+            {
+                activeTable.ToggleHandleFlip();
+            }
             // ŁĄCZENIE: Jeśli wciśniesz E (lub Spację) i stół ma obie części -> Łączymy!
-            if ((Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Space)) && activeTable != null && activeTable.HasMetal() && activeTable.HasWood())
+            else if ((Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Space)) && activeTable != null && activeTable.HasMetal() && activeTable.HasWood())
             {
                 activeTable.CombineItems();
                 CloseTableInteraction();

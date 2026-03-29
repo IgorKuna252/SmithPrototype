@@ -93,12 +93,6 @@ public class npcPathFinding : MonoBehaviour
         SetDestination(rejectObject);
     }
 
-    public string ShowStats()
-    {
-        if (citizenStats == null) return "Brak danych";
-        return citizenStats.GetStats();
-    }
-
     public float GetSpeed()             { return citizenStats.GetSpeed(); }
     public float GetIntelligence()      { return citizenStats.GetIntelligence(); }
     public float GetStrengh()           { return citizenStats.GetStrength(); }
@@ -106,49 +100,6 @@ public class npcPathFinding : MonoBehaviour
     public float GetNormalizedStrength()     { return citizenStats.GetNormalizedStrength(); }
     public float GetNormalizedSpeed()        { return citizenStats.GetNormalizedSpeed(); }
     public float GetNormalizedIntelligence() { return citizenStats.GetNormalizedIntelligence(); }
-
-    public string GetAsssignedTask()
-    {
-        AssignedTask task = citizenStats.GetAssignedTask();
-        if (task == null) return "Brak danych";
-        return task.description;
-    }
-
-    public string GetTaskRequirements()
-    {
-        AssignedTask task = citizenStats.GetAssignedTask();
-        if (task == null) return "Brak wymagań";
-        return task.GetRequirementsText();
-    }
-
-    public string GetTaskComparison()
-    {
-        AssignedTask task = citizenStats.GetAssignedTask();
-        WeaponData wpn = GetWeaponData();
-        if (task == null) return "Brak tasku";
-        if (wpn == null || wpn.type == WeaponType.None) return "Brak broni";
-
-        var sb = new System.Text.StringBuilder();
-        if (task.requiredDamage >= 0f)
-        {
-            float has = wpn.GetNormalizedDamage();
-            bool ok = has >= task.requiredDamage;
-            sb.AppendLine($"DMG: {has:F0}% / {task.requiredDamage:F0}% {(ok ? "OK" : "X")}");
-        }
-        if (task.requiredSpeed >= 0f)
-        {
-            float has = wpn.GetNormalizedSpeed();
-            bool ok = has >= task.requiredSpeed;
-            sb.AppendLine($"SPD: {has:F0}% / {task.requiredSpeed:F0}% {(ok ? "OK" : "X")}");
-        }
-        if (task.requiredAoe >= 0f)
-        {
-            float has = wpn.GetNormalizedAoE();
-            bool ok = has >= task.requiredAoe;
-            sb.AppendLine($"AOE: {has:F0}% / {task.requiredAoe:F0}% {(ok ? "OK" : "X")}");
-        }
-        return sb.ToString().TrimEnd();
-    }
 
     public bool IsTaskFulfilled()
     {
@@ -165,82 +116,78 @@ public class npcPathFinding : MonoBehaviour
     }
 
     public void ProcessTransaction()
-{
-    AssignedTask task = citizenStats.GetAssignedTask();
-    WeaponData wpn = GetWeaponData();
-    GameObject weaponObj = GetWeaponGameObject(); // Pobieramy model 3D
-    
-    if (task != null && wpn != null && wpn.type != WeaponType.None)
     {
-        // OCENA KSZTAŁTU PRZEZ NPC
-        float shapeAccuracy = 0f;
+        AssignedTask task = citizenStats.GetAssignedTask();
+        WeaponData wpn = GetWeaponData();
+        GameObject weaponObj = GetWeaponGameObject();
+
+        if (task == null || wpn == null || wpn.type == WeaponType.None) return;
+
+        // Aktualizujemy schemat UI o trójkąty bieżącego zadania tego NPC
         ForgeShapeEvaluator evaluator = Object.FindFirstObjectByType<ForgeShapeEvaluator>();
-
-        if (evaluator != null && weaponObj != null)
+        if (evaluator != null && evaluator.uiShapeObject != null)
         {
-            // Zapisujemy oryginalną pozycję i rotację w dłoni NPC
-            Quaternion originalRot = weaponObj.transform.rotation;
-            Vector3 originalPos = weaponObj.transform.position;
+            WeaponSchemeBuilder scheme = evaluator.uiShapeObject.GetComponent<WeaponSchemeBuilder>();
+            if (scheme != null) scheme.SetTriangles(task.triangles);
+        }
 
-            weaponObj.transform.position = Vector3.zero;
-            weaponObj.transform.rotation = Quaternion.identity; // Płaska rotacja
-
-            // CHOWAMY RĘKOJEŚĆ DO ZDJĘCIA
-
+        float schemeMatch;
+        if (task.triangles == null || task.triangles.Length == 0)
+        {
+            // Brak schematu = NPC akceptuje cokolwiek = pełna wypłata
+            schemeMatch = 1f;
+        }
+        else if (evaluator != null && weaponObj != null)
+        {
             Transform handle = weaponObj.transform.Find("HandlePart");
-            if (handle != null) handle.gameObject.SetActive(false); 
+            if (handle != null) handle.gameObject.SetActive(false);
 
-            // Wykonujemy zdjęcie i ocenę (kamera widzi teraz sam metal)
-            shapeAccuracy = evaluator.EvaluateForgingAccuracy(weaponObj);
-            
-            if (handle != null) handle.gameObject.SetActive(true); 
+            schemeMatch = evaluator.EvaluateForgingAccuracy(weaponObj) / 100f;
 
-            Debug.Log($"[NPC Zadowolenie] Wykuty kształt zgadza się w {shapeAccuracy:F1}% z moim zamówieniem!");
-
-            // Przywracamy broń do ręki NPC
-            weaponObj.transform.position = originalPos;
-            weaponObj.transform.rotation = originalRot;
+            if (handle != null) handle.gameObject.SetActive(true);
         }
         else
         {
-            Debug.LogWarning("Brak ForgeShapeEvaluatora na scenie lub NPC nie trzyma fizycznego modelu broni!");
+            schemeMatch = 0f;
         }
 
-
-        // Sprawdzamy nowy wskaźnik wykonania procentowego (0.00 do 1.00)
-        float completion = task.CalculateTaskCompletion(wpn);
-        
-        // OPCJONALNIE: Możesz dodać dokładność kształtu do końcowej wypłaty!
-        // Np. średnia z poprawnych statystyk (completion) i kształtu (shapeAccuracy / 100f):
-        // completion = (completion + (shapeAccuracy / 100f)) / 2f;
-
-        // Standardowy wyliczacz wartości broni bazujący na metalu
-        int baseValue = 100;
-        switch(wpn.metalTier) {
-            case MetalType.Copper: baseValue = 30; break;
-            case MetalType.Bronze: baseValue = 50; break;
-            case MetalType.Iron:   baseValue = 100; break;
-            case MetalType.Steel:  baseValue = 250; break;
-            case MetalType.Gold:   baseValue = 500; break;
-            case MetalType.Platinum: baseValue = 1000; break;
+        int baseValue;
+        switch (wpn.metalTier)
+        {
+            case MetalType.Copper:    baseValue = 30;   break;
+            case MetalType.Bronze:    baseValue = 50;   break;
+            case MetalType.Iron:      baseValue = 100;  break;
+            case MetalType.Steel:     baseValue = 250;  break;
+            case MetalType.Gold:      baseValue = 500;  break;
+            case MetalType.Platinum:  baseValue = 1000; break;
             case MetalType.BlueSteel: baseValue = 2500; break;
             case MetalType.Vibranium: baseValue = 5000; break;
-            default: baseValue = 80; break;
+            default:                  baseValue = 80;   break;
         }
 
-        // Ostateczna kwota = bazowa za kruszec * Twoje zdolności spełnienia oczekiwań 
-        int finalPayment = Mathf.RoundToInt(baseValue * completion);
-        
-        if (manager != null) manager.AddGold(finalPayment);
-        Debug.Log($"Transakcja Udana: Zarobiono {finalPayment} G! (Zgodność Statsów: {Mathf.Round(completion*100f)}%, Kruszec: {wpn.metalTier})");
+        int finalPayment = Mathf.RoundToInt(baseValue * schemeMatch);
 
-        var spawner = Object.FindFirstObjectByType<prefabSpawning>();
-        if (spawner != null) spawner.OnNPCProcessed();
+        Debug.Log($"[Transakcja] +{finalPayment} G | Schemat: {schemeMatch*100f:F0}% | Metal: {wpn.metalTier}");
 
-        // Gra karze NPC odejść do wyjścia i odhacza go z systemu
-        WeaponAccepted(); 
+        if (TransactionResultUI.Instance != null)
+        {
+            TransactionResultUI.Instance.Show(schemeMatch * 100f, finalPayment, () =>
+            {
+                if (manager != null) manager.AddGold(finalPayment);
+                var spawner = Object.FindFirstObjectByType<prefabSpawning>();
+                if (spawner != null) spawner.OnNPCProcessed();
+                WeaponAccepted();
+            });
+        }
+        else
+        {
+            // Fallback gdy brak UI — stare zachowanie
+            if (manager != null) manager.AddGold(finalPayment);
+            var spawner = Object.FindFirstObjectByType<prefabSpawning>();
+            if (spawner != null) spawner.OnNPCProcessed();
+            WeaponAccepted();
+        }
     }
-}
 
     public void MoveToQueuePosition(Vector3 position)
     {

@@ -8,9 +8,11 @@ public class NPCInteractionUI : MonoBehaviour
     [Header("Panel")]
     public GameObject panel;
 
-    [Header("Statystyki NPC")]
-    public TextMeshProUGUI npcStatsText;
-    public TextMeshProUGUI npcTaskText;
+    [Header("Opis zadania")]
+    public TextMeshProUGUI taskDescriptionText;
+
+    [Header("Schemat broni (zadanie)")]
+    public WeaponSchemeBuilder taskSchemeBuilder;
 
     [Header("Koło broni NPC")]
     public WheelController weaponWheel;
@@ -34,31 +36,17 @@ public class NPCInteractionUI : MonoBehaviour
         currentNPC = npc;
         panel.SetActive(true);
 
-        npcStatsText.text = npc.ShowStats();
-        npcTaskText.text = npc.GetAsssignedTask();
-        
-        // Dynamiczne wyliczenie punktacji na żywo ("czy klient to lubi")
         AssignedTask task = npc.GetComponent<ExiledCitizen>()?.GetAssignedTask();
         WeaponData wpn = npc.GetWeaponData();
-        
-        if (task != null && wpn != null && wpn.type != WeaponType.None)
-        {
-            float completion = task.CalculateTaskCompletion(wpn);
-            int percent = Mathf.RoundToInt(completion * 100f);
-            
-            // Kolorujemy tekst dla fajnego efektu - na zielono przy 100%
-            string colorHex = percent >= 100 ? "#00FF00" : (percent > 50 ? "#FFFF00" : "#FF0000");
-            npcTaskText.text += $"\nZgodność: <color={colorHex}>{percent}%</color>";
-        }
-        else
-        {
-            npcTaskText.text += "\n[Brak założonej wytycznej lub brak wręczonego przedmiotu]";
-        }
-        
-        Debug.Log($"[Task] {npc.GetAsssignedTask()}\n{npc.GetTaskComparison()}");
+
+        if (taskDescriptionText != null)
+            taskDescriptionText.text = task?.description ?? "";
+
+        if (taskSchemeBuilder != null && task != null)
+            taskSchemeBuilder.SetTriangles(task.triangles);
+
         wheel.UpdateWheel(npc.GetNormalizedStrength(), npc.GetNormalizedSpeed(), npc.GetNormalizedIntelligence());
 
-        // Koło broni — pokaż tylko jeśli NPC ma broń
         if (weaponWheel != null)
         {
             if (wpn != null && wpn.type != WeaponType.None)
