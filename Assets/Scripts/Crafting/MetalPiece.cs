@@ -272,43 +272,61 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
     public void GrindPerfectEdge(float localZPosition, bool isFlipped)
     {
         bool wasDeformed = false;
-        float stoneWidth = 0.05f;
 
-        // Zmieniamy na twarde "metry na sekundę" dla MoveTowards, żeby nie utknąć w nieskończonym ułamku
-        float sharpenSpeed = grindSpeed * sharpenMultiplier * 0.01f * Time.deltaTime;
-        float eatSpeed = grindSpeed * eatMultiplier * Time.deltaTime;
+        // --- NOWOŚĆ: MIĘKKI PĘDZEL SZLIFIERKI ---
+        float coreStoneWidth = 0.02f; // Płaski środek kamienia (100% siły wcinania)
+        float falloffRadius = 0.08f;  // Miękki brzeg (siła spada płynnie do 0%)
+
+        // Zapisujemy bazowe prędkości
+        float baseSharpenSpeed = grindSpeed * sharpenMultiplier * 0.01f * Time.deltaTime;
+        float baseEatSpeed = grindSpeed * eatMultiplier * Time.deltaTime;
 
         float perfectThickness = 0.002f;
 
         // ==========================================
-        // FAZA 1 i 2: OSTRZENIE I WŻERANIE
+        // FAZA 1 i 2: OSTRZENIE I WŻERANIE Z GRADIENTEM
         // ==========================================
         for (int i = 0; i < vertices.Length; i++)
         {
-            if (Mathf.Abs(vertices[i].z - localZPosition) < stoneWidth)
+            // Sprawdzamy odległość wierzchołka od samego środka kamienia
+            float distance = Mathf.Abs(vertices[i].z - localZPosition);
+
+            // Jeśli wierzchołek jest w całkowitej strefie rażenia (nawet tej miękkiej)
+            if (distance < falloffRadius)
             {
                 bool isRightEdge = !isFlipped && vertices[i].x > 0.001f;
                 bool isLeftEdge = isFlipped && vertices[i].x < -0.001f;
 
                 if (isRightEdge || isLeftEdge)
                 {
-                    // TWARDE ścinanie do zera (MoveTowards GWARANTUJE dobicie do celu)
+                    // Obliczamy MNOŻNIK SIŁY (od 0.0 do 1.0)
+                    float forceMultiplier = 1f;
+                    if (distance > coreStoneWidth)
+                    {
+                        // Płynnie zmniejszamy siłę dla wierzchołków na obrzeżach
+                        forceMultiplier = 1f - ((distance - coreStoneWidth) / (falloffRadius - coreStoneWidth));
+                    }
+
+                    // Aplikujemy mnożnik do prędkości
+                    float currentSharpenSpeed = baseSharpenSpeed * forceMultiplier;
+                    float currentEatSpeed = baseEatSpeed * forceMultiplier;
+
+                    // TWARDE ścinanie do zera
                     if (Mathf.Abs(vertices[i].y) > perfectThickness)
                     {
-                        vertices[i].y = Mathf.MoveTowards(vertices[i].y, 0f, sharpenSpeed);
+                        vertices[i].y = Mathf.MoveTowards(vertices[i].y, 0f, currentSharpenSpeed);
                         wasDeformed = true;
                     }
                     else
                     {
                         if (isRightEdge)
                         {
-                            vertices[i].x = Mathf.MoveTowards(vertices[i].x, 0f, eatSpeed);
+                            vertices[i].x = Mathf.MoveTowards(vertices[i].x, 0f, currentEatSpeed);
                             wasDeformed = true;
                         }
                         else if (isLeftEdge)
                         {
-                            // MoveTowards świetnie radzi sobie też z ujemnymi liczbami, dociągając do zera
-                            vertices[i].x = Mathf.MoveTowards(vertices[i].x, 0f, eatSpeed);
+                            vertices[i].x = Mathf.MoveTowards(vertices[i].x, 0f, currentEatSpeed);
                             wasDeformed = true;
                         }
                     }
@@ -324,7 +342,8 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
 
         for (int i = 0; i < vertices.Length; i++)
         {
-            if (Mathf.Abs(vertices[i].z - localZPosition) < stoneWidth)
+            // Detekcję odcięcia sprawdzamy TYLKO w wąskim rdzeniu kamienia!
+            if (Mathf.Abs(vertices[i].z - localZPosition) < coreStoneWidth)
             {
                 verticesInZone++;
                 if (Mathf.Abs(vertices[i].x) > maxRemainingWidth)
@@ -334,15 +353,12 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
             }
         }
 
-        // Jeśli w strefie kamienia szerokość zjechała z obu stron do zera...
         if (verticesInZone > 0 && maxRemainingWidth <= 0.001f)
         {
             for (int i = 0; i < vertices.Length; i++)
             {
-                // ...to zgniatamy wszystkie wierzchołki znajdujące się DALEJ niż miejsce cięcia
                 if (vertices[i].z >= localZPosition - 0.01f)
                 {
-                    // Cofamy zgniecione punkty o ułamek centymetra, by schowały się "wewnątrz" ułamanej broni
                     vertices[i].z = localZPosition - 0.02f;
                     vertices[i].x = 0f;
                     vertices[i].y = 0f;
