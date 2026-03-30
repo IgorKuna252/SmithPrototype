@@ -8225,7 +8225,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.GraphicRaycaster
   m_IgnoreReversedGraphics: 1
   m_BlockingObjects: 0
@@ -8242,7 +8242,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
   m_UiScaleMode: 0
   m_ReferencePixelsPerUnit: 100
@@ -8351,7 +8351,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2a42ede28005d3e49aa80bc940d45cbf, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BlacksmithInteraction
   reachDistance: 3
   holdPosition: {fileID: 780535810}
@@ -8373,7 +8373,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 050628a952be4a8489faebba76543975, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
   speed: 5
   mouseSensitivity: 2
@@ -10133,9 +10133,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   gold: 500
-  selectedFighters: 
-  currentBattleDifficulty: 0
-  currentBattleTileName: 
 --- !u!4 &941246523
 Transform:
   m_ObjectHideFlags: 0
@@ -20625,7 +20622,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AnvilStation
   snapPoint: {fileID: 957256774}
   cameraSocket: {fileID: 1292045171}
-  playerObject: {fileID: 687086918}
+  playerObject: {fileID: 536991569}
   hammerPrefab: {fileID: 100000, guid: 8010c8bda8f3c62409d805b17923338f, type: 3}
   hammerHoverOffset: {x: 0, y: 0.3, z: 0.4}
   hammerStrikeRotation: {x: -60, y: 0, z: 0}
@@ -21796,7 +21793,6 @@ SceneRoots:
   - {fileID: 1986878771}
   - {fileID: 314010849}
   - {fileID: 528518585}
-  - {fileID: 687086925}
   - {fileID: 536991570}
   - {fileID: 777212648}
   - {fileID: 1492569825}
