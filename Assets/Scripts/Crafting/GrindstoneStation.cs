@@ -8,7 +8,7 @@ public class GrindstoneStation : MonoBehaviour
     public GameObject playerObject;
 
     [Header("Ustawienia Kamienia (Tuning)")]
-    [Tooltip("Gdzie fizycznie znajduje się powierzchnia kamienia? (Zwiększaj/Zmniejszaj aż miecz idealnie dotknie tarczy)")]
+    [Tooltip("Gdzie fizycznie znajduje się powierzchnia kamienia?")]
     public float distanceToStone = 0.1f;
     [Tooltip("Jak głęboko wcinamy się w kamień podczas kliknięcia (szlifowania)")]
     public float grindBiteDepth = 0.015f;
@@ -19,10 +19,6 @@ public class GrindstoneStation : MonoBehaviour
     private float currentDip = 0f;
     private bool isFlipped = false;
 
-    private int currentVertexIndex = 0;
-    private float[] vertexPositions;
-    private float targetSlidePosition = 0f;
-    
     private Transform mainCamera;
     private Transform originalCameraParent;
     private Vector3 originalCameraLocalPos;
@@ -61,14 +57,6 @@ public class GrindstoneStation : MonoBehaviour
 
         bladeSlidePosition = 0f;
         isFlipped = false;
-        
-        vertexPositions = metal.GetEdgeVertexPositionsZ();
-        currentVertexIndex = 0;
-        if (vertexPositions.Length > 0)
-        {
-            targetSlidePosition = -vertexPositions[0];
-        }
-            
 
         Rigidbody rb = currentMetal.GetComponent<Rigidbody>();
         if (rb != null)
@@ -85,7 +73,6 @@ public class GrindstoneStation : MonoBehaviour
         currentMetal.transform.localPosition = Vector3.zero;
         currentMetal.transform.localRotation = Quaternion.identity;
 
-        // Resetujemy startową pozycję X, by uniknąć skoku animacji
         currentDip = distanceToStone - currentMetal.GetEdgeWidthAt(0, false);
 
         if (mainCamera != null)
@@ -107,29 +94,26 @@ public class GrindstoneStation : MonoBehaviour
             mainCamera.rotation = cameraSocket.rotation;
         }
 
+        // Obracanie miecza
         if (Input.GetMouseButtonDown(1)) isFlipped = !isFlipped;
         float targetRotationZ = isFlipped ? 180f : 0f;
         currentMetal.transform.localRotation = Quaternion.Lerp(currentMetal.transform.localRotation, Quaternion.Euler(0, 0, targetRotationZ), Time.deltaTime * 8f);
 
+        // --- PŁYNNE PRZESUWANIE ---
         float scroll = Input.mouseScrollDelta.y;
-        if (vertexPositions != null && vertexPositions.Length > 0)
-        {
-            if (scroll > 0.1f && currentVertexIndex < vertexPositions.Length - 1)
-                currentVertexIndex++;
-            else if (scroll < -0.1f && currentVertexIndex > 0)
-                currentVertexIndex--;
+        bladeSlidePosition += scroll * 0.015f;
 
-            targetSlidePosition = -vertexPositions[currentVertexIndex];
+        // Zabezpieczenie limitów przesuwania (czytamy to z naszej nowej matematycznej listy "metalSpine")
+        if (currentMetal.metalSpine.Count > 0)
+        {
+            // Ostatni punkt z listy to czubek miecza
+            float minLimit = -currentMetal.metalSpine[currentMetal.metalSpine.Count - 1].z - 0.05f;
+            // Pierwszy punkt to rączka
+            float maxLimit = -currentMetal.metalSpine[0].z + 0.05f;
+            bladeSlidePosition = Mathf.Clamp(bladeSlidePosition, minLimit, maxLimit);
         }
 
-        bladeSlidePosition = Mathf.Lerp(bladeSlidePosition, targetSlidePosition, Time.deltaTime * 12f);
-
-        // --- PROCEDURALNE DOPASOWANIE (MAGIA!) ---
-        // Skanujemy, jak szeroki jest metal w miejscu, które aktualnie jest pod kamieniem
         float currentEdgeWidth = currentMetal.GetEdgeWidthAt(-bladeSlidePosition, isFlipped);
-
-        // Obliczamy idealną pozycję: Powierzchnia kamienia minus szerokość naszego metalu
-        // Dzięki temu krawędź metalu ZAWSZE ląduje idealnie na wartości "distanceToStone"
         float hoverX = distanceToStone - currentEdgeWidth;
 
         if (Input.GetMouseButton(0))
@@ -142,7 +126,6 @@ public class GrindstoneStation : MonoBehaviour
         }
         else
         {
-            // Kiedy puszczamy, metal "cofa się" do idealnego muskania powierzchni
             currentDip = Mathf.Lerp(currentDip, hoverX, Time.deltaTime * 15f);
 
             if (sparksEffect != null && sparksEffect.isPlaying) sparksEffect.Stop();

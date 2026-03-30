@@ -92,7 +92,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1310281892831240101}
-  m_Mesh: {fileID: 5501189259175347940, guid: 1029fed889e2cc648938a03d11ee9119, type: 3}
+  m_Mesh: {fileID: 0}
 --- !u!64 &8446042336090163915
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -114,7 +114,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 5501189259175347940, guid: 1029fed889e2cc648938a03d11ee9119, type: 3}
+  m_Mesh: {fileID: 0}
 --- !u!54 &8642369307305486554
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -154,18 +154,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: da0d0779af1dd2040923f042c40a466d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IronPiece
+  partType: 0
   isFinished: 0
   metalTier: 1
   currentTemperature: 1000
   maxTemperature: 1000
   coolingRate: 10
   forgingTemperature: 500
-  deformRadius: 0.6
-  deformForce: 0.5
+  initialSegments: 40
+  startLength: 0.8
+  startWidth: 0.2
+  startThickness: 0.05
   minThickness: 0.01
-  grindRadius: 0.02
-  tipLength: 0.05
   grindSpeed: 0.05
-  maxHalfWidth: 0.1
   sharpenMultiplier: 20
   eatMultiplier: 0.8
+  hammerRadius: 0.15
+  squishSpeed: 0.004
+  spreadSpeed: 0.006
+  metalSpine: []

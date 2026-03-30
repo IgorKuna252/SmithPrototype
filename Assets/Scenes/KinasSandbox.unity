@@ -18433,7 +18433,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DayNightManager
   currentTime: 8
-  timeMultipler: 10
+  timeMultipler: 0
   directionalLight: {fileID: 2101794178}
   lightIntensityCurve:
     serializedVersion: 2
