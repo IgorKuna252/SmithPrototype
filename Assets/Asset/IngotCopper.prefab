@@ -11590,7 +11590,7 @@ MonoBehaviour:
   m_PreserveMeshAssetOnDestroy: 0
   assetGuid: 
   m_Mesh: {fileID: 0}
-  m_VersionIndex: 1968
+  m_VersionIndex: 1992
   m_IsSelectable: 1
   m_SelectedFaces: 
   m_SelectedEdges: []
@@ -11737,7 +11737,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: da0d0779af1dd2040923f042c40a466d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IronPiece
-  partType: 0
   isFinished: 0
   metalTier: 1
   currentTemperature: 1000
@@ -11751,3 +11750,5 @@ MonoBehaviour:
   tipLength: 0.05
   grindSpeed: 0.05
   maxHalfWidth: 0.1
+  sharpenMultiplier: 20
+  eatMultiplier: 0.8
