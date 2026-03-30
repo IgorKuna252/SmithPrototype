@@ -11,7 +11,6 @@ public class npcPathFinding : MonoBehaviour
     public Transform rejectObject;
     public Transform acceptObject;
     [HideInInspector] public bool isInTeam = false;
-    [HideInInspector] public bool isManagedByCombat = false; // NPCFightBehavior ustawia to na true
 
     void Start()
     {
@@ -36,8 +35,6 @@ public class npcPathFinding : MonoBehaviour
     {
         if (agentNPC == null) return;
 
-        // Jeśli walka kontroluje tego NPC — nie ingeruj w ruch!
-        if (!isManagedByCombat)
         {
             // Gdy dotarł do celu — zatrzymaj
             if (!agentNPC.pathPending && agentNPC.hasPath && agentNPC.remainingDistance <= agentNPC.stoppingDistance)
@@ -63,15 +60,10 @@ public class npcPathFinding : MonoBehaviour
             }
         }
 
-        // Animacja prędkości — tylko gdy walka nie zarządza NPC
-        if (!isManagedByCombat)
-        {
-            float speed = agentNPC.velocity.magnitude;
-            if (speed < 0.15f) speed = 0f;
-
-            if (animator != null)
-                animator.SetFloat("Speed", speed);
-        }
+        float speed = agentNPC.velocity.magnitude;
+        if (speed < 0.15f) speed = 0f;
+        if (animator != null)
+            animator.SetFloat("Speed", speed);
     }
 
     void SetDestination(Transform target)

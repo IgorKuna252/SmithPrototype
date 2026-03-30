@@ -217,8 +217,6 @@ public class MergingTable : MonoBehaviour
             col.size = new Vector3(0.1f, 0.1f, 1f);
             col.center = new Vector3(0, 0, 0.2f);
 
-            craftedWeapon.AddComponent<WeaponHitbox>();
-
             GameObject grip = new GameObject("GripPoint");
             grip.transform.SetParent(craftedWeapon.transform);
             

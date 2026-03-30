@@ -119,9 +119,6 @@ public class BlacksmithInteraction : MonoBehaviour
                     wheel.SetWheel(false);
                     ClearHand();
 
-                    NPCCombat combat = socket.GetComponent<NPCCombat>();
-                    if (combat != null) combat.SetMode(NPCCombatMode.ArmedIdle);
-
                     npcPathFinding npcPath = socket.GetComponent<npcPathFinding>() ?? socket.GetComponentInParent<npcPathFinding>();
                     if (npcPath != null && npcPath.IsTaskFulfilled())
                         npcPath.WeaponAccepted();

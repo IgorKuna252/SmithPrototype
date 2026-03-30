@@ -12,15 +12,6 @@ public class gameManager : MonoBehaviour
     // Event wywoływany gdy złoto się zmieni
     public event System.Action OnGoldChanged;
 
-    // Dane aktualnej bitwy (ustawiane przez TileManager przed przejściem do BattleScene)
-    [HideInInspector] public List<int> selectedFighters = new List<int>();
-    [HideInInspector] public int currentBattleDifficulty = 0;
-    [HideInInspector] public string currentBattleTileName; // nazwa kafelka, np. "Tile (2, -1)"
-
-    // Trwała pamięć mapy — przetrwa zmiany scen
-    public HashSet<string> ownedTiles = new HashSet<string>();
-    public Dictionary<string, int> tileDifficulties = new Dictionary<string, int>();
-
     public Dictionary<string, int> inventory = new Dictionary<string, int>();
 
     private void Awake()

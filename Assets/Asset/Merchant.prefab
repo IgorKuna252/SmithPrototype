@@ -2535,8 +2535,6 @@ GameObject:
   - component: {fileID: 7020101178905024488}
   - component: {fileID: 6028756744746030056}
   - component: {fileID: 3195324698991328936}
-  - component: {fileID: 7159525049598194826}
-  - component: {fileID: 3458153959580206967}
   - component: {fileID: 3324601434385487425}
   m_Layer: 0
   m_Name: Merchant
@@ -2652,6 +2650,7 @@ MonoBehaviour:
     requiredDamage: 0
     requiredSpeed: 0
     requiredAoe: 0
+    triangles: []
 --- !u!114 &6028756744746030056
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2667,7 +2666,6 @@ MonoBehaviour:
   rejectObject: {fileID: 0}
   acceptObject: {fileID: 0}
   isInTeam: 0
-  isManagedByCombat: 0
 --- !u!114 &3195324698991328936
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2708,38 +2706,9 @@ MonoBehaviour:
       requiredDamage: 0
       requiredSpeed: 0
       requiredAoe: 0
+      triangles: []
     savedWeaponTemplate: {fileID: 0}
     weaponMeshes: []
---- !u!114 &7159525049598194826
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4316528496479175685}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0bca916e3f7c8da4ca7e09b2599af8b4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::NPCCombat
-  attackCooldown: 1.2
-  hitboxActiveDelay: 0.1
-  hitboxActiveDuration: 0.3
---- !u!114 &3458153959580206967
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4316528496479175685}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 781d0b405aa3c6e40ad29ce2fb7dba39, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::NPCFightBehavior
-  detectionRadius: 100
-  attackRange: 2
-  checkInterval: 0.25
 --- !u!114 &3324601434385487425
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2753,6 +2722,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Merchant
   merchantName: Bob Handlarz
+  merchantColor: {r: 0.8, g: 0.6, b: 0.2, a: 1}
 --- !u!1 &4505246088591205311
 GameObject:
   m_ObjectHideFlags: 0
