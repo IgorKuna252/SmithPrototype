@@ -270,13 +270,61 @@ public class BlacksmithInteraction : MonoBehaviour
                     heldItem.transform.localPosition = Vector3.zero;
                     heldItem.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
                 }
+                else if (heldItem.GetComponent<WoodPiece>() != null)
+                {
+                    // Ustawiamy docelową rotację dłoni specjalnie dla surowego trzonka, żeby stał na sztorc!
+                    // Jeśli 0,0,0 kładłoby go krzywo, wystarczy zmienić tu na np. (0, 0, 90f)
+                    heldItem.transform.localRotation = Quaternion.Euler(-90, 0, 90f);
+
+                    // Szukamy punktu trzymania, gdyby drewno miało go w prefabie
+                    Transform gripPoint = null;
+                    foreach (Transform t in heldItem.GetComponentsInChildren<Transform>())
+                    {
+                        if (t.name == "GripPoint") { gripPoint = t; break; }
+                    }
+
+                    if (gripPoint != null)
+                    {
+                        Vector3 offset = heldItem.transform.position - gripPoint.position;
+                        heldItem.transform.position = holdPosition.position + offset;
+                    }
+                    else
+                    {
+                        // Wyśrodkowanie z geometrii
+                        Renderer[] rends = heldItem.GetComponentsInChildren<Renderer>();
+                        if (rends.Length > 0)
+                        {
+                            Bounds totalBounds = rends[0].bounds;
+                            for (int i = 1; i < rends.Length; i++) totalBounds.Encapsulate(rends[i].bounds);
+                            Vector3 centerOffset = heldItem.transform.position - totalBounds.center;
+                            heldItem.transform.position = holdPosition.position + centerOffset;
+                        }
+                        else
+                        {
+                            heldItem.transform.localPosition = Vector3.zero;
+                        }
+                    }
+                }
                 else
                 {
-                    // Ustawiamy docelową rotację dłoni na wejściu
-                    heldItem.transform.localRotation = Quaternion.Euler(holdRotation);
+                    // Używamy wspólnego ułożenia: jeśli to gotowa broń (skończona), powinna w dłoni 
+                    // leżeć z tą samą rotacją, co domyślny uchwyt drewna wyżej.
+                    if (heldItem.GetComponent<FinishedObject>() != null)
+                    {
+                        heldItem.transform.localRotation = Quaternion.Euler(-90f, 0f, 90f);
+                    }
+                    else
+                    {
+                        // Inne przedmioty (metale, tygielki z fallbacku) korzystają ze standardowego ułożenia
+                        heldItem.transform.localRotation = Quaternion.Euler(holdRotation);
+                    }
 
                     // Szukamy specyficznego klejonego punktu dłoni (np. na drewnianej rączce broni)
-                    Transform gripPoint = heldItem.transform.Find("GripPoint");
+                    Transform gripPoint = null;
+                    foreach (Transform t in heldItem.GetComponentsInChildren<Transform>())
+                    {
+                        if (t.name == "GripPoint") { gripPoint = t; break; }
+                    }
                     
                     if (gripPoint != null)
                     {

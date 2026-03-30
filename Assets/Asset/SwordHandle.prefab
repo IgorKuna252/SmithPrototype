@@ -27,7 +27,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1625750240063040988}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0.7071068, y: 0, z: 0, w: 0.7071068}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -35,7 +35,7 @@ Transform:
   - {fileID: 399952670105512472}
   - {fileID: 8607196466122541670}
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: -90, y: 0, z: 0}
 --- !u!54 &8628935807349913615
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -75,7 +75,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 42a4044f05ebb5a40a92c9cdcb430419, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WoodPiece
-  partType: 0
 --- !u!33 &4251174719660449458
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -112,7 +111,7 @@ Transform:
   m_GameObject: {fileID: 2141156402148122305}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -0.02}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 0.03, y: 0.02, z: 0.14}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -224,7 +223,7 @@ Transform:
   m_GameObject: {fileID: 6583236956333027081}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 0, y: 0, z: 0.06}
+  m_LocalPosition: {x: 0, y: 0, z: 0.08}
   m_LocalScale: {x: 0.04, y: 0.03, z: 0.2}
   m_ConstrainProportionsScale: 0
   m_Children: []

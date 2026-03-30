@@ -220,6 +220,18 @@ public class MergingTable : MonoBehaviour
         GameObject craftedWeapon = new GameObject(weaponName);
         craftedWeapon.transform.position = parts[0].position; // Środkiem nowej broni będzie upuszczony bloczek
 
+        // Zapisujemy rotację bazową (rączki), by móc potem wyzerować model do defaultu
+        Quaternion baseRot = Quaternion.Euler(-90, 0, 90f);
+        foreach (Transform p in parts)
+        {
+            if (p.GetComponent<WoodPiece>() != null || p.GetComponent<FinishedObject>() != null)
+            {
+                baseRot = p.rotation;
+                break;
+            }
+        }
+        craftedWeapon.transform.rotation = baseRot;
+
         Vector3 gripLocalPos = Vector3.zero;
 
         foreach (Transform part in parts)
@@ -272,6 +284,10 @@ public class MergingTable : MonoBehaviour
                 }
             }
         }
+
+        // UWAGA: Usunięto tutaj zerowanie rotacji! Dzięki temu po sklejeniu 
+        // obiekt nie 'skacze' na stole, tylko zostaje w 100% z taką rotacją, 
+        // jaką gracz ułożył sobie przed dołączeniem!
 
         // Cała wariacja otrzymuje JEDEN wspólny silnik fizyczny
         Rigidbody weaponRb = craftedWeapon.AddComponent<Rigidbody>();
