@@ -24,8 +24,8 @@ public class FurnaceStation : MonoBehaviour
     private bool isMinigameActive = false;
     private MetalPiece currentMetal;
 
-    private Color coldFireColor = new Color(0.2f, 0.05f, 0f); // Ciemny popiół
-    private Color hotFireColor = new Color(0.8f, 0.25f, 0f);  // Lekko stonowany czerwony-pomarańczowy, bez oczojebności
+    private Color coldFireColor = new Color(0.1f, 0.02f, 0f); // Bardzo ciemny popiół
+    private Color hotFireColor = new Color(0.4f, 0.1f, 0f);  // Przygaszony pomarańcz, w ogóle nie oczojebny
 
     void Start()
     {
@@ -187,8 +187,9 @@ public class FurnaceStation : MonoBehaviour
             {
                 mat.EnableKeyword("_EMISSION"); // Ważne, żeby włączyć tryb świecenia, jeśli był wyłączony
                 
-                // Mnożnik odczuwalnie obniżony. Zamiast mnożyć do 400% (c * 4), mnoży max o delikatne 80% w gorączce (c * 1.8f)
-                mat.SetColor("_EmissionColor", c * (1f + t * 0.8f)); 
+                // Zmieniono na czyste mnożenie przez t, żeby zimny piec w ogóle nie świecił.
+                // Mnożnik ustawiony na ekstremalnie niskie 0.05f, by był to tylko "duch" żaru.
+                mat.SetColor("_EmissionColor", hotFireColor * (t * 0.05f)); 
             }
         }
     }
