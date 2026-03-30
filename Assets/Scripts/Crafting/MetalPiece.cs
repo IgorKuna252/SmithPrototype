@@ -1,32 +1,29 @@
 using System.Collections.Generic;
+using UnityEngine;
 using System.Linq;
 using UnityEngine;
 
-// Definiujemy nasze tiery metali
-public enum MetalType
+public enum MetalType { Copper, Bronze, Iron, Steel, Gold, Platinum, BlueSteel, Vibranium }
+public enum HitType { Lengthen, Widen }
+
+// --- EWOLUCJA: 6-punktowy profil (Niezależne krawędzie i środek!) ---
+[System.Serializable]
+public class MetalProfile
 {
-    Copper,      // Miedź
-    Bronze,      // Brąz
-    Iron,        // Żelazo
-    Steel,       // Stal
-    Gold,        // Złoto
-    Platinum,    // Platyna
-    BlueSteel,   // Niebieska Stal
-    Vibranium    // Wibranium
+    public float z;               // Pozycja na długości
+    public float leftX;           // Lewa krawędź (ujemna)
+    public float rightX;          // Prawa krawędź (dodatnia)
+
+    public float centerHalfHeight; // Grubość na samym środku miecza (Rdzeń)
+    public float leftHalfHeight;   // Grubość lewej krawędzi (Do ostrzenia!)
+    public float rightHalfHeight;  // Grubość prawej krawędzi (Do ostrzenia!)
 }
 
-public enum HitType
-{
-    Lengthen, // Wydłużanie (na osi Z)
-    Widen     // Poszerzanie (na osi X)
-}
-
-
-
-[RequireComponent(typeof(MeshFilter))]
-[RequireComponent(typeof(MeshCollider))]
+[RequireComponent(typeof(MeshFilter), typeof(MeshCollider), typeof(MeshRenderer))]
 public class MetalPiece : MonoBehaviour, IInteractable, IPickable
 {
+    public enum MetalPartType { SwordBlade, AxeHead }
+    public MetalPartType partType;
 
     [Header("Dane dla Stołu Montażowego")]
     public bool isFinished = false;
@@ -38,456 +35,382 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
     public float coolingRate = 10f;
     public float forgingTemperature = 500f;
 
-    [Header("Ustawienia Deformacji (Bezpieczne wartości!)")]
-    public float deformRadius = 0.15f; // Zwiększone domyślnie, żeby trafiało w siatkę!
-    public float deformForce = 0.15f;
-    public float minThickness = 0.01f;
-    public float grindRadius = 0.30f;
+    [Header("Ustawienia Wstążki (Wymiary)")]
+    public int initialSegments = 40;
+    public float startLength = 1.0f;
+    public float startWidth = 0.12f;      // Poszerzona sztaba!
+    public float startThickness = 0.04f;  // Pogrubiona sztaba!
 
-    [Header("Ustawienia Szpikulca")]
-    public float tipLength = 0.15f;
+    [Header("Narzędzia")]
+    public float minThickness = 0.005f;
     public float grindSpeed = 0.05f;
-    public float maxHalfWidth = 0.1f;
+    public float sharpenMultiplier = 20f;
+    public float eatMultiplier = 0.8f;
+
+    [Header("Młotek (Tuning)")]
+    public float hammerRadius = 0.15f;   // Promień rażenia młotka
+    public float squishSpeed = 0.004f;   // ZMniejszone z 0.015f (wolniejsze spłaszczanie)
+    public float spreadSpeed = 0.006f;   // Jak mocno rozlewa na boki/długość
+
+    [SerializeField]
+    public List<MetalProfile> metalSpine = new List<MetalProfile>();
 
     private MeshFilter meshFilter;
     private MeshCollider meshCollider;
-    private Mesh mesh;
-    private Vector3[] vertices;
     private MeshRenderer meshRenderer;
     private bool isInForge = false;
-    private Color baseColdColor; // Zmienna na nasz kolor
-
-    [Header("Tuning Szlifierki (Prędkość)")]
-    [Tooltip("Jak szybko miecz robi się płaski (Faza 1)")]
-    public float sharpenMultiplier = 20f;
-    [Tooltip("Jak szybko kamień zjada zepsute ostrze (Faza 2)")]
-    public float eatMultiplier = 0.8f;
-
-
+    private Color baseColdColor;
 
     void Start()
     {
-        meshRenderer = GetComponentInChildren<MeshRenderer>();
-        meshFilter = GetComponentInChildren<MeshFilter>();
-        meshCollider = GetComponentInChildren<MeshCollider>();
+        meshRenderer = GetComponent<MeshRenderer>();
+        meshFilter = GetComponent<MeshFilter>();
+        meshCollider = GetComponent<MeshCollider>();
+        if (meshRenderer != null) meshRenderer.SetPropertyBlock(null);
 
-        // Klonujemy siatkę, żeby nie zepsuć oryginalnego pliku na dysku!
-        mesh = meshFilter.mesh;
-        vertices = mesh.vertices;
-
-        // BARDZO WAŻNE: Czyścimy widmo ze starych bloków z Inspektora (OnValidate), które zamrażały kolor "na twardo" i blokowały nagrzewanie!
-        if (meshRenderer != null)
-        {
-            meshRenderer.SetPropertyBlock(null);
-        }
-
-        SetBaseColor(); // Ustawiamy startowy kolor
-    }
-
-
-
-    void OnValidate()
-    {
-        // Szukamy w dzieciach również w edytorze
-        if (meshRenderer == null) meshRenderer = GetComponentInChildren<MeshRenderer>();
-        if (meshRenderer != null)
-        {
-            SetBaseColor();
-            MaterialPropertyBlock block = new MaterialPropertyBlock();
-            meshRenderer.GetPropertyBlock(block);
-            block.SetColor("_Color", baseColdColor);
-            meshRenderer.SetPropertyBlock(block);
-        }
+        SetBaseColor();
+        InitializeSpine();
+        BuildMeshFromSpine();
     }
 
     void Update()
     {
-        if (!isInForge && currentTemperature > 20f)
-        {
-            currentTemperature -= coolingRate * Time.deltaTime;
-        }
+        if (!isInForge && currentTemperature > 20f) currentTemperature -= coolingRate * Time.deltaTime;
         UpdateVisuals();
     }
 
-    public bool Interact()
+    // =================================================================
+    // GENEROWANIE DANYCH I SIATKI (TKACZ)
+    // =================================================================
+
+    private void InitializeSpine()
     {
-        return currentTemperature >= forgingTemperature;
-    }
+        metalSpine.Clear();
+        float startZ = -startLength / 2f;
+        float segmentLength = startLength / initialSegments;
 
-    public void OnPickUp()
-    {
-        isInForge = false;
-    }
-
-    public void OnDrop()
-    {
-        // iskry itp.
-    }
-
-    public void ForceCoolDown()
-    {
-        currentTemperature = 20f;
-        isInForge = false;
-        UpdateVisuals();
-    }
-
-    // --- NOWA FUNKCJA: Skanuje szerokość metalu w danym punkcie ---
-    // --- NOWA FUNKCJA: Gładko interpoluje szerokość metalu między wierzchołkami ---
-    public float GetEdgeWidthAt(float localZPosition, bool isFlipped)
-    {
-        float prevZ = float.MinValue;
-        float nextZ = float.MaxValue;
-
-        float prevX = 0.005f; // Domyślna bezpieczna grubość
-        float nextX = 0.005f;
-
-        bool foundPrev = false;
-        bool foundNext = false;
-
-        // Szukamy dwóch punktów brzegowych, między którymi aktualnie znajduje się kursor/kamień
-        for (int i = 0; i < vertices.Length; i++)
+        for (int i = 0; i <= initialSegments; i++)
         {
-            // Filtrujemy tylko wierzchołki zewnętrzne (prawą lub lewą krawędź)
-            bool isEdgeVertex = (!isFlipped && vertices[i].x > 0.001f) || (isFlipped && vertices[i].x < -0.001f);
-
-            if (isEdgeVertex)
+            metalSpine.Add(new MetalProfile
             {
-                float currentX = Mathf.Abs(vertices[i].x); // Zawsze chcemy wartość dodatnią jako grubość
-
-                // 1. Najbliższy wierzchołek ZA kamieniem (mniejsze Z)
-                if (vertices[i].z <= localZPosition && vertices[i].z > prevZ)
-                {
-                    prevZ = vertices[i].z;
-                    prevX = currentX;
-                    foundPrev = true;
-                }
-                // 2. Najbliższy wierzchołek PRZED kamieniem (większe Z)
-                else if (vertices[i].z > localZPosition && vertices[i].z < nextZ)
-                {
-                    nextZ = vertices[i].z;
-                    nextX = currentX;
-                    foundNext = true;
-                }
-            }
+                z = startZ + (i * segmentLength),
+                leftX = -startWidth / 2f,
+                rightX = startWidth / 2f,
+                centerHalfHeight = startThickness / 2f,
+                leftHalfHeight = startThickness / 2f,
+                rightHalfHeight = startThickness / 2f
+            });
         }
-
-        float exactWidth = 0.005f;
-
-        // --- MATEMATYCZNA LINIA (INTERPOLACJA) ---
-        if (foundPrev && foundNext)
-        {
-            // Obliczamy w jakim procencie drogi (0.0 do 1.0) między wierzchołkami jest kamień
-            float t = (localZPosition - prevZ) / (nextZ - prevZ);
-
-            // Tworzymy linię prostą między grubościami i pobieramy z niej punkt
-            exactWidth = Mathf.Lerp(prevX, nextX, t);
-        }
-        else if (foundPrev)
-        {
-            exactWidth = prevX; // Jesteśmy na samej górze miecza (brak punktów przed nami)
-        }
-        else if (foundNext)
-        {
-            exactWidth = nextX; // Jesteśmy na samym dole (brak punktów za nami)
-        }
-
-        // Zwracamy idealnie gładką szerokość, z uwzględnieniem skali
-        return exactWidth * transform.localScale.x;
     }
 
-    // Zmieniamy void na bool!
+    public void BuildMeshFromSpine()
+    {
+        if (metalSpine.Count < 2) return;
+
+        Mesh mesh = new Mesh();
+        mesh.name = "RibbonSwordMesh";
+
+        int segments = metalSpine.Count - 1;
+        // Mamy teraz 6 wierzchołków na profil! (Lewy, Środek, Prawy) * (Góra, Dół)
+        Vector3[] vertices = new Vector3[(segments + 1) * 6];
+        int[] triangles = new int[segments * 36 + 24]; // Złożona topologia dla ostrza
+
+        int v = 0;
+        int t = 0;
+
+        // 1. Ustawiamy wierzchołki
+        for (int i = 0; i < metalSpine.Count; i++)
+        {
+            MetalProfile p = metalSpine[i];
+
+            // Górna połowa (Y na plusie)
+            vertices[v++] = new Vector3(p.leftX, p.leftHalfHeight, p.z);    // 0: Lewy Górny
+            vertices[v++] = new Vector3(0f, p.centerHalfHeight, p.z);       // 1: Środek Górny (Rdzeń)
+            vertices[v++] = new Vector3(p.rightX, p.rightHalfHeight, p.z);  // 2: Prawy Górny
+
+            // Dolna połowa (Y na minusie)
+            vertices[v++] = new Vector3(p.leftX, -p.leftHalfHeight, p.z);   // 3: Lewy Dolny
+            vertices[v++] = new Vector3(0f, -p.centerHalfHeight, p.z);      // 4: Środek Dolny
+            vertices[v++] = new Vector3(p.rightX, -p.rightHalfHeight, p.z); // 5: Prawy Dolny
+        }
+
+        // 2. Łączymy w trójkąty
+        for (int i = 0; i < segments; i++)
+        {
+            int c = i * 6;       // Bieżący profil
+            int n = (i + 1) * 6; // Następny profil
+
+            // Ściana Górna Lewa
+            triangles[t++] = c; triangles[t++] = n; triangles[t++] = c + 1;
+            triangles[t++] = c + 1; triangles[t++] = n; triangles[t++] = n + 1;
+            // Ściana Górna Prawa
+            triangles[t++] = c + 1; triangles[t++] = n + 1; triangles[t++] = c + 2;
+            triangles[t++] = c + 2; triangles[t++] = n + 1; triangles[t++] = n + 2;
+            // Ściana Dolna Lewa
+            triangles[t++] = c + 3; triangles[t++] = c + 4; triangles[t++] = n + 3;
+            triangles[t++] = c + 4; triangles[t++] = n + 4; triangles[t++] = n + 3;
+            // Ściana Dolna Prawa
+            triangles[t++] = c + 4; triangles[t++] = c + 5; triangles[t++] = n + 4;
+            triangles[t++] = c + 5; triangles[t++] = n + 5; triangles[t++] = n + 4;
+            // Bok Lewy (Zamyka krawędź jeśli nie jest w pełni ostra)
+            triangles[t++] = c; triangles[t++] = c + 3; triangles[t++] = n;
+            triangles[t++] = c + 3; triangles[t++] = n + 3; triangles[t++] = n;
+            // Bok Prawy
+            triangles[t++] = c + 2; triangles[t++] = n + 2; triangles[t++] = c + 5;
+            triangles[t++] = c + 5; triangles[t++] = n + 2; triangles[t++] = n + 5;
+        }
+
+        // Zaślepka Tył (Z-min)
+        triangles[t++] = 0; triangles[t++] = 1; triangles[t++] = 4;
+        triangles[t++] = 4; triangles[t++] = 3; triangles[t++] = 0;
+        triangles[t++] = 1; triangles[t++] = 2; triangles[t++] = 5;
+        triangles[t++] = 5; triangles[t++] = 4; triangles[t++] = 1;
+
+        // Zaślepka Przód (Z-max)
+        int L = segments * 6;
+        triangles[t++] = L + 1; triangles[t++] = L + 0; triangles[t++] = L + 3;
+        triangles[t++] = L + 3; triangles[t++] = L + 4; triangles[t++] = L + 1;
+        triangles[t++] = L + 2; triangles[t++] = L + 1; triangles[t++] = L + 4;
+        triangles[t++] = L + 4; triangles[t++] = L + 5; triangles[t++] = L + 2;
+
+        mesh.vertices = vertices;
+        mesh.triangles = triangles;
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+
+        meshFilter.mesh = mesh;
+        meshCollider.sharedMesh = mesh;
+    }
+
+    // =================================================================
+    // INTERAKCJE (Młotek i Szlifierka)
+    // =================================================================
+
     public bool HitMetal(Vector3 hitPoint, Vector3 hitNormal, HitType hitType = HitType.Lengthen)
     {
-        if (currentTemperature >= forgingTemperature)
+        if (currentTemperature < forgingTemperature) return false;
+
+        Vector3 localHit = transform.InverseTransformPoint(hitPoint);
+        float localZ = localHit.z;
+        float localX = localHit.x;
+
+        if (metalSpine.Count > 0)
         {
-            // Debug.Log($"Kucie! Typ: {hitType}");
-
-            // Przekazujemy typ uderzenia dalej
-            bool success = DeformMesh(hitPoint, hitNormal, hitType);
-
-            if (success) isFinished = true;
-            return success;
+            float minZ = metalSpine[0].z;
+            float maxZ = metalSpine[metalSpine.Count - 1].z;
+            localZ = Mathf.Clamp(localZ, minZ, maxZ);
         }
-        else
-        {
-            Debug.Log("Metal jest zbyt zimny, by go kuć!");
-            return false;
-        }
-    }
-
-    // Zmieniamy void na bool!
-    private bool DeformMesh(Vector3 hitPoint, Vector3 hitNormal, HitType hitType)
-    {
-        Vector3 localHitPoint = transform.InverseTransformPoint(hitPoint);
-
-        float currentThickness = Mathf.Abs(localHitPoint.y) * 2f;
-        if (currentThickness < 0.005f) currentThickness = minThickness + 0.05f;
-
-        float resistanceFactor = Mathf.Clamp01((currentThickness - minThickness) / 0.02f);
-        if (resistanceFactor <= 0.01f) return false;
 
         bool wasDeformed = false;
 
-        // --- USTALAMY SIŁĘ ROZLEWANIA W ZALEŻNOŚCI OD MŁOTA ---
-        float spreadZ = (hitType == HitType.Lengthen) ? 0.08f : 0.01f;
-        float spreadX = (hitType == HitType.Widen) ? 0.08f : 0.01f;
+        // TUNING SIŁY (Możesz to też wystawić do Inspektora)
+        float powerSquish = 0.007f; // ZMNIEJSZONE: Metal wolniej się spłaszcza (ok. 20-30 uderzeń do min)
+        float powerStretch = 0.04f; // ZWIĘKSZONE: Metal mocniej ucieka na długość/szerokość
 
-        for (int i = 0; i < vertices.Length; i++)
+        for (int i = 0; i < metalSpine.Count; i++)
         {
-            float distance = Vector3.Distance(localHitPoint, vertices[i]);
+            float distZ = Mathf.Abs(metalSpine[i].z - localZ);
+            float profileCenterX = (metalSpine[i].leftX + metalSpine[i].rightX) / 2f;
+            float distX = Mathf.Abs(profileCenterX - localX);
+            float trueDistance = Mathf.Sqrt(distZ * distZ + distX * distX);
 
-            if (distance < deformRadius)
+            if (trueDistance < hammerRadius)
             {
-                float baseForce = (deformRadius - distance) / deformRadius;
-                float finalForce = baseForce * deformForce * resistanceFactor;
+                // Obliczamy opór: im cieńszy metal, tym trudniej go dalej zgnieść
+                float currentThickness = metalSpine[i].centerHalfHeight * 2f;
+                float resistance = Mathf.Clamp01((currentThickness - minThickness) / 0.02f);
 
-                float dirY = vertices[i].y > 0.001f ? 1f : (vertices[i].y < -0.001f ? -1f : 0f);
-                float dirZ = vertices[i].z > 0.001f ? 1f : (vertices[i].z < -0.001f ? -1f : 0f);
-                float dirX = vertices[i].x > 0.001f ? 1f : (vertices[i].x < -0.001f ? -1f : 0f);
+                if (resistance > 0.01f)
+                {
+                    float force = (1f - (trueDistance / hammerRadius)) * resistance;
+                    float targetY = minThickness / 2f;
 
-                // Zawsze spłaszczamy tak samo
-                float targetY = dirY * (minThickness / 2f);
-                vertices[i].y = Mathf.Lerp(vertices[i].y, targetY, finalForce);
+                    // 1. SPŁASZCZANIE (Bardzo subtelne)
+                    metalSpine[i].centerHalfHeight = Mathf.MoveTowards(metalSpine[i].centerHalfHeight, targetY, powerSquish * force);
+                    metalSpine[i].leftHalfHeight = Mathf.MoveTowards(metalSpine[i].leftHalfHeight, targetY, powerSquish * force);
+                    metalSpine[i].rightHalfHeight = Mathf.MoveTowards(metalSpine[i].rightHalfHeight, targetY, powerSquish * force);
 
-                // Zmieniamy kształt kierunkowo!
-                vertices[i].z += dirZ * (finalForce * spreadZ);
-                vertices[i].x += dirX * (finalForce * spreadX);
+                    // 2. WYDŁUŻANIE / POSZERZANIE (Agresywne)
+                    if (hitType == HitType.Widen)
+                    {
+                        metalSpine[i].leftX -= powerStretch * force;
+                        metalSpine[i].rightX += powerStretch * force;
+                    }
+                    else if (hitType == HitType.Lengthen)
+                    {
+                        float pushDirection = Mathf.Sign(metalSpine[i].z - localZ);
+                        if (pushDirection == 0) pushDirection = (i > metalSpine.Count / 2) ? 1f : -1f;
 
-                wasDeformed = true;
+                        // Przesuwamy kręgi znacznie mocniej
+                        metalSpine[i].z += pushDirection * powerStretch * force;
+                    }
+                    wasDeformed = true;
+                }
             }
         }
 
         if (wasDeformed)
         {
-            mesh.vertices = vertices;
-            mesh.RecalculateNormals();
-            mesh.RecalculateBounds();
-            meshCollider.sharedMesh = null;
-            meshCollider.sharedMesh = mesh;
+            metalSpine = metalSpine.OrderBy(p => p.z).ToList();
+            SubdivideSpine();
+            BuildMeshFromSpine();
         }
-
         return wasDeformed;
+    }
+
+    // NOWOŚĆ: Automatyczne dodawanie nowych kręgów po rozciągnięciu
+    private void SubdivideSpine()
+    {
+        float maxSegmentLength = (startLength / initialSegments) * 1.5f;
+
+        for (int i = 0; i < metalSpine.Count - 1; i++)
+        {
+            if (Mathf.Abs(metalSpine[i + 1].z - metalSpine[i].z) > maxSegmentLength)
+            {
+                MetalProfile p1 = metalSpine[i];
+                MetalProfile p2 = metalSpine[i + 1];
+
+                // Wstawiamy nowy idealnie pośrodku
+                MetalProfile mid = new MetalProfile
+                {
+                    z = (p1.z + p2.z) / 2f,
+                    leftX = (p1.leftX + p2.leftX) / 2f,
+                    rightX = (p1.rightX + p2.rightX) / 2f,
+                    centerHalfHeight = (p1.centerHalfHeight + p2.centerHalfHeight) / 2f,
+                    leftHalfHeight = (p1.leftHalfHeight + p2.leftHalfHeight) / 2f,
+                    rightHalfHeight = (p1.rightHalfHeight + p2.rightHalfHeight) / 2f
+                };
+
+                metalSpine.Insert(i + 1, mid);
+                i++; // Przeskakujemy go, żeby nie wpaść w nieskończoną pętlę!
+            }
+        }
     }
 
     public void GrindPerfectEdge(float localZPosition, bool isFlipped)
     {
+        float coreWidth = 0.02f;
+        float falloffRadius = 0.015f;
         bool wasDeformed = false;
-        float stoneWidth = 0.05f;
 
-        // Zmieniamy na twarde "metry na sekundę" dla MoveTowards, żeby nie utknąć w nieskończonym ułamku
-        float sharpenSpeed = grindSpeed * sharpenMultiplier * 0.01f * Time.deltaTime;
-        float eatSpeed = grindSpeed * eatMultiplier * Time.deltaTime;
+        float baseSharpenSpeed = grindSpeed * sharpenMultiplier * 0.01f * Time.deltaTime;
+        float baseEatSpeed = grindSpeed * eatMultiplier * Time.deltaTime;
 
-        float perfectThickness = 0.002f;
-        
-        // FAZA 1 i 2: OSTRZENIE I WŻERANIE
-        for (int i = 0; i < vertices.Length; i++)
+        for (int i = 0; i < metalSpine.Count; i++)
         {
-            if (Mathf.Abs(vertices[i].z - localZPosition) < stoneWidth)
-            {
-                bool isRightEdge = !isFlipped && vertices[i].x > 0.001f;
-                bool isLeftEdge = isFlipped && vertices[i].x < -0.001f;
+            float distance = Mathf.Abs(metalSpine[i].z - localZPosition);
 
-                if (isRightEdge || isLeftEdge)
+            if (distance < falloffRadius)
+            {
+                float forceMultiplier = distance < coreWidth ? 1f : 1f - ((distance - coreWidth) / (falloffRadius - coreWidth));
+                float curSharpenSpeed = baseSharpenSpeed * forceMultiplier;
+                float curEatSpeed = baseEatSpeed * forceMultiplier;
+
+                if (!isFlipped) // PRAWA KRAWĘDŹ
                 {
-                    // TWARDE ścinanie do zera (MoveTowards GWARANTUJE dobicie do celu)
-                    if (Mathf.Abs(vertices[i].y) > perfectThickness)
+                    // 1. Najpierw OSTRZENIE (Ścina do płaskiego zera na brzegu, robi trójkąt!)
+                    if (metalSpine[i].rightHalfHeight > 0.001f)
                     {
-                        vertices[i].y = Mathf.MoveTowards(vertices[i].y, 0f, sharpenSpeed);
+                        metalSpine[i].rightHalfHeight = Mathf.MoveTowards(metalSpine[i].rightHalfHeight, 0f, curSharpenSpeed);
                         wasDeformed = true;
                     }
-                    else
+                    // 2. Potem WŻERANIE (Kiedy jest już ostre jak brzytwa)
+                    else if (metalSpine[i].rightX > 0f)
                     {
-                        if (isRightEdge)
-                        {
-                            vertices[i].x = Mathf.MoveTowards(vertices[i].x, 0f, eatSpeed);
-                            wasDeformed = true;
-                        }
-                        else if (isLeftEdge)
-                        {
-                            // MoveTowards świetnie radzi sobie też z ujemnymi liczbami, dociągając do zera
-                            vertices[i].x = Mathf.MoveTowards(vertices[i].x, 0f, eatSpeed);
-                            wasDeformed = true;
-                        }
+                        metalSpine[i].rightX = Mathf.MoveTowards(metalSpine[i].rightX, 0f, curEatSpeed);
+                        wasDeformed = true;
+                    }
+                }
+                else // LEWA KRAWĘDŹ
+                {
+                    // 1. Najpierw OSTRZENIE
+                    if (metalSpine[i].leftHalfHeight > 0.001f)
+                    {
+                        metalSpine[i].leftHalfHeight = Mathf.MoveTowards(metalSpine[i].leftHalfHeight, 0f, curSharpenSpeed);
+                        wasDeformed = true;
+                    }
+                    // 2. Potem WŻERANIE
+                    else if (metalSpine[i].leftX < 0f)
+                    {
+                        metalSpine[i].leftX = Mathf.MoveTowards(metalSpine[i].leftX, 0f, curEatSpeed);
+                        wasDeformed = true;
                     }
                 }
             }
         }
-        
-        // FAZA 3: DETEKCJA ODCIĘCIA (AMPUTACJA)
-        float maxRemainingWidth = 0f;
-        int verticesInZone = 0;
 
-        for (int i = 0; i < vertices.Length; i++)
-        {
-            if (Mathf.Abs(vertices[i].z - localZPosition) < stoneWidth)
-            {
-                verticesInZone++;
-                if (Mathf.Abs(vertices[i].x) > maxRemainingWidth)
-                {
-                    maxRemainingWidth = Mathf.Abs(vertices[i].x);
-                }
-            }
-        }
-
-        // Jeśli w strefie kamienia szerokość zjechała z obu stron do zera...
-        if (verticesInZone > 0 && maxRemainingWidth <= 0.001f)
-        {
-            for (int i = 0; i < vertices.Length; i++)
-            {
-                // ...to zgniatamy wszystkie wierzchołki znajdujące się DALEJ niż miejsce cięcia
-                if (vertices[i].z >= localZPosition - 0.01f)
-                {
-                    // Cofamy zgniecione punkty o ułamek centymetra, by schowały się "wewnątrz" ułamanej broni
-                    vertices[i].z = localZPosition - 0.02f;
-                    vertices[i].x = 0f;
-                    vertices[i].y = 0f;
-                    wasDeformed = true;
-                }
-            }
-            Debug.Log("<color=red>KRYTYCZNE USZKODZENIE! Ostrze przecięte!</color>");
-        }
-        
-        // ZAKOŃCZENIE I ZAPISANIE SIATKI
+        // --- DETEKCJA ODCIĘCIA (Jeśli krawędzie się spotkały) ---
         if (wasDeformed)
         {
-            mesh.vertices = vertices;
-            mesh.RecalculateNormals();
-            mesh.RecalculateBounds();
-            meshCollider.sharedMesh = null;
-            meshCollider.sharedMesh = mesh;
+            for (int i = 1; i < metalSpine.Count - 1; i++)
+            {
+                if (Mathf.Abs(metalSpine[i].z - localZPosition) < coreWidth)
+                {
+                    // Jeśli Prawy styk spotkał się z Lewym, miecz przerwany!
+                    if (metalSpine[i].rightX <= metalSpine[i].leftX + 0.005f)
+                    {
+                        Debug.Log("<color=red>AMPUTACJA! Miecz przecięty!</color>");
+                        metalSpine.RemoveRange(i, metalSpine.Count - i);
+                        break;
+                    }
+                }
+            }
+            BuildMeshFromSpine();
         }
     }
 
-    public void SharpenEdge(Vector3 hitPoint)
+    public float GetEdgeWidthAt(float localZPosition, bool isFlipped)
     {
-        Vector3 localHitPoint = transform.InverseTransformPoint(hitPoint);
-        bool wasDeformed = false;
+        float closestDist = float.MaxValue;
+        float edgeDistance = 0.05f;
 
-        for (int i = 0; i < vertices.Length; i++)
+        foreach (var profile in metalSpine)
         {
-            float distance = Vector3.Distance(localHitPoint, vertices[i]);
-
-            if (distance < grindRadius)
+            float dist = Mathf.Abs(profile.z - localZPosition);
+            if (dist < closestDist)
             {
-                float force = (grindRadius - distance) / grindRadius;
-                vertices[i].y = Mathf.Lerp(vertices[i].y, 0f, force * 0.2f);
-                wasDeformed = true;
+                closestDist = dist;
+                // Jeśli niezwrócony, szlifierka czyta prawy X. Jeśli zwrócony, czyta lewy X (jako wartość dodatnią do kamienia)
+                edgeDistance = !isFlipped ? profile.rightX : Mathf.Abs(profile.leftX);
             }
         }
-
-        if (wasDeformed)
-        {
-            mesh.vertices = vertices;
-            mesh.RecalculateNormals();
-            mesh.RecalculateBounds();
-            meshCollider.sharedMesh = null;
-            meshCollider.sharedMesh = mesh;
-        }
+        return edgeDistance * transform.localScale.x;
     }
 
-    void OnTriggerStay(Collider other)
-    {
-        // Usunięto stare automatyczne grzanie przez Trigger. Teraz zarządza tym Minigra w FurnaceStation.
-    }
+    // =================================================================
+    // RESZTA FUNKCJI
+    // =================================================================
 
-    void OnTriggerExit(Collider other)
-    {
-        // Puste
-    }
+    public bool Interact() => currentTemperature >= forgingTemperature;
+    public void OnPickUp() => isInForge = false;
+    public void OnDrop() { }
+    public void ForceCoolDown() { currentTemperature = 20f; isInForge = false; UpdateVisuals(); }
 
-    // --- SYSTEM KOLORÓW ---
     void SetBaseColor()
     {
         switch (metalTier)
         {
             case MetalType.Copper: baseColdColor = new Color(0.8f, 0.4f, 0.2f); break;
-            case MetalType.Bronze: baseColdColor = new Color(0.6f, 0.5f, 0.2f); break;
             case MetalType.Iron: baseColdColor = new Color(0.5f, 0.5f, 0.5f); break;
-            case MetalType.Steel: baseColdColor = new Color(0.7f, 0.75f, 0.8f); break;
-            case MetalType.Gold: baseColdColor = new Color(1f, 0.84f, 0f); break;
-            case MetalType.Platinum: baseColdColor = new Color(0.9f, 0.9f, 0.95f); break;
-            case MetalType.BlueSteel: baseColdColor = new Color(0.2f, 0.4f, 0.6f); break;
-            case MetalType.Vibranium: baseColdColor = new Color(0.6f, 0.2f, 0.8f); break;
             default: baseColdColor = Color.gray; break;
         }
     }
 
     void UpdateVisuals()
     {
-        // Sprawdzamy postęp temperatury
+        if (meshRenderer == null) return;
         float tempNormalized = Mathf.Clamp01((currentTemperature - 20f) / (maxTemperature - 20f));
-
-        // Ten sam płomień co w piecu
         Color hotColor = new Color(0.8f, 0.25f, 0f);
         Color currentColor = Color.Lerp(baseColdColor, hotColor, tempNormalized);
 
-        // Kuloodporna zmiana - bezpośrednio na materiale! (Instancjonuje go, by ominąć ewentualne blokady globalne)
         Material mat = meshRenderer.material;
-        
-        // Twarda modyfikacja głównego koloru uderzając po wszystkich znanych flagach silnika
-        mat.color = currentColor; 
+        mat.color = currentColor;
         if (mat.HasProperty("_Color")) mat.SetColor("_Color", currentColor);
-        if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", currentColor);
 
-        // Zapalenie emisji
-        if (mat.HasProperty("_EmissionColor")) 
+        if (mat.HasProperty("_EmissionColor"))
         {
-            mat.EnableKeyword("_EMISSION"); 
-            mat.SetColor("_EmissionColor", currentColor * (1f + tempNormalized * 4f)); 
+            mat.EnableKeyword("_EMISSION");
+            mat.SetColor("_EmissionColor", currentColor * (1f + tempNormalized * 4f));
         }
-
-        // Pokaż wynik pierwszych zmian z logu w konsoli gdy metal już wyjdzie poza letnią wodę
-        // if (tempNormalized > 0.5f && tempNormalized < 0.55f)
-        // {
-        //     Debug.Log($"[MetalPiece] Nagrzałem się w ponad połowie!! Moja obecna temp: {currentTemperature}");
-        // }
-    }
-
-
-    public float GetBladeLength()
-    {
-        float minZ = float.MaxValue;
-        float maxZ = float.MinValue;
-        foreach (Vector3 v in vertices)
-        {
-            if (v.z < minZ) minZ = v.z;
-            if (v.z > maxZ) maxZ = v.z;
-        }
-        return (maxZ - minZ) * transform.localScale.z;
-    }
-
-    public float GetActualBackOfBlade()
-    {
-        float minY = float.MaxValue;
-        // Przeszukujemy naszą zmodyfikowaną listę wierzchołków
-        foreach (Vector3 v in vertices)
-        {
-            if (v.z < minY)
-            {
-                minY = v.z;
-            }
-        }
-        // Zwracamy najmniejsze Z (tył), uwzględniając skalę obiektu
-        return minY * transform.localScale.z;
-    }
-
-    
-    public float[] GetEdgeVertexPositionsZ()
-    {
-        HashSet<float> positions = new HashSet<float>();
-
-        for (int i = 0; i < vertices.Length; i++)
-        {
-            // Ten sam filtr co w GrindPerfectEdge — wierzchołki krawędziowe
-            if (vertices[i].x > 0.001f || vertices[i].x < -0.001f)
-            {
-                float snapped = Mathf.Round(vertices[i].z * 1000f) / 1000f;
-                positions.Add(snapped);
-            }
-        }
-
-        float[] sorted = positions.OrderBy(z => z).ToArray();
-        return sorted;
     }
 }
