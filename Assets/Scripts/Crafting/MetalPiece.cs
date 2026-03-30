@@ -200,7 +200,7 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
     {
         if (currentTemperature >= forgingTemperature)
         {
-            Debug.Log($"Kucie! Typ: {hitType}");
+            // Debug.Log($"Kucie! Typ: {hitType}");
 
             // Przekazujemy typ uderzenia dalej
             bool success = DeformMesh(hitPoint, hitNormal, hitType);
@@ -438,10 +438,10 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
         }
 
         // Pokaż wynik pierwszych zmian z logu w konsoli gdy metal już wyjdzie poza letnią wodę
-        if (tempNormalized > 0.5f && tempNormalized < 0.55f)
-        {
-            Debug.Log($"[MetalPiece] Nagrzałem się w ponad połowie!! Moja obecna temp: {currentTemperature}");
-        }
+        // if (tempNormalized > 0.5f && tempNormalized < 0.55f)
+        // {
+        //     Debug.Log($"[MetalPiece] Nagrzałem się w ponad połowie!! Moja obecna temp: {currentTemperature}");
+        // }
     }
 
 

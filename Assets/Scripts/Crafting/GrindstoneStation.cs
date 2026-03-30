@@ -5,7 +5,6 @@ public class GrindstoneStation : MonoBehaviour
     [Header("Przypisz te obiekty:")]
     public Transform snapPoint;
     public Transform cameraSocket;
-    public GameObject playerObject;
 
     [Header("Ustawienia Kamienia (Tuning)")]
     public float distanceToStone = 0.1f;
@@ -55,7 +54,9 @@ public class GrindstoneStation : MonoBehaviour
         isGrindingMode = true;
         grindStartTime = Time.time;
 
-        if (playerObject == null) playerObject = GameObject.FindGameObjectWithTag("Player");
+        var playerMovement = UnityEngine.Object.FindFirstObjectByType<PlayerMovement>();
+        if (playerMovement != null) playerMovement.enabled = false;
+        if (BlacksmithInteraction.Instance != null) BlacksmithInteraction.Instance.enabled = false;
 
         bladeSlidePosition = 0f;
         isFlipped = false;
@@ -94,7 +95,11 @@ public class GrindstoneStation : MonoBehaviour
             mainCamera.SetParent(null);
         }
 
-        if (playerObject != null) playerObject.SetActive(false);
+        if (BlacksmithInteraction.Instance != null && BlacksmithInteraction.Instance.playerVisuals != null)
+            BlacksmithInteraction.Instance.playerVisuals.SetActive(false);
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
 
     private void HandleGrindingMinigame()
@@ -164,7 +169,12 @@ public class GrindstoneStation : MonoBehaviour
 
         currentMetal = null;
 
-        if (playerObject != null) playerObject.SetActive(true);
+        var playerMovement = UnityEngine.Object.FindFirstObjectByType<PlayerMovement>();
+        if (playerMovement != null) playerMovement.enabled = true;
+        if (BlacksmithInteraction.Instance != null) BlacksmithInteraction.Instance.enabled = true;
+
+        if (BlacksmithInteraction.Instance != null && BlacksmithInteraction.Instance.playerVisuals != null)
+            BlacksmithInteraction.Instance.playerVisuals.SetActive(true);
 
         if (mainCamera != null)
         {
@@ -174,5 +184,8 @@ public class GrindstoneStation : MonoBehaviour
         }
 
         if (sparksEffect != null && sparksEffect.isPlaying) sparksEffect.Stop();
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 }

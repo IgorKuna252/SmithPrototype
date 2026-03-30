@@ -83,7 +83,7 @@ public class npcPathFinding : MonoBehaviour
     {
         AssignedTask task = citizenStats.GetAssignedTask();
         WeaponData wpn = GetWeaponData();
-        if (task == null || wpn == null || wpn.type == WeaponType.None) return false;
+        if (task == null || wpn == null || !wpn.isValid) return false;
         return task.CheckWeapon(wpn);
     }
 
@@ -99,7 +99,7 @@ public class npcPathFinding : MonoBehaviour
         WeaponData wpn = GetWeaponData();
         GameObject weaponObj = GetWeaponGameObject();
 
-        if (task == null || wpn == null || wpn.type == WeaponType.None) return;
+        if (task == null || wpn == null || !wpn.isValid) return;
 
         // Aktualizujemy schemat UI o trójkąty bieżącego zadania tego NPC
         ForgeShapeEvaluator evaluator = Object.FindFirstObjectByType<ForgeShapeEvaluator>();
@@ -147,19 +147,27 @@ public class npcPathFinding : MonoBehaviour
 
         Debug.Log($"[Transakcja] +{finalPayment} G | Schemat: {schemeMatch*100f:F0}% | Metal: {wpn.metalTier}");
 
-        if (TransactionResultUI.Instance != null)
+        // ZMIENIONE: Używamy teraz SilhouetteDebugUI
+        if (SilhouetteDebugUI.Instance != null)
         {
-            TransactionResultUI.Instance.Show(schemeMatch * 100f, finalPayment, () =>
+            // Zatrzymujemy NPC w miejscu (dla pewności)
+            agentNPC.velocity = Vector3.zero;
+
+            // Przekazujemy procent, złoto i co ma się stać PO zamknięciu panelu
+            SilhouetteDebugUI.Instance.ShowTransaction(schemeMatch * 100f, finalPayment, () =>
             {
+                // Ten kod wykona się DOPIERO gdy gracz zamknie okno z wynikiem!
                 if (manager != null) manager.AddGold(finalPayment);
                 var spawner = Object.FindFirstObjectByType<prefabSpawning>();
                 if (spawner != null) spawner.OnNPCProcessed();
+                
+                // NPC odchodzi
                 WeaponAccepted();
             });
         }
         else
         {
-            // Fallback gdy brak UI — stare zachowanie
+            // Fallback gdy brak UI
             if (manager != null) manager.AddGold(finalPayment);
             var spawner = Object.FindFirstObjectByType<prefabSpawning>();
             if (spawner != null) spawner.OnNPCProcessed();

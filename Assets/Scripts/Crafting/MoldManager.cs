@@ -42,6 +42,19 @@ public class MoldManager : MonoBehaviour
 
     void Start()
     {
+        if (crucibleDockPoint == null)
+        {
+            Transform dock = transform.Find("CrucibleDockPoint") ?? transform.Find("CrucibleDock") ?? transform.Find("DockPoint");
+            if (dock != null)
+            {
+                crucibleDockPoint = dock;
+            }
+            else
+            {
+                Debug.LogWarning($"[MoldManager] UWAGA! Na obiekcie '{gameObject.name}' brakuje podpięto 'crucibleDockPoint'! Wiadro nie ma gdzie się przypiąć i położy się na środku mapy (0,0,0). Podepnij pusty obiekt w Inspektorze!");
+            }
+        }
+
         for (int i = 0; i < molds.Count; i++)
         {
             // ZAPISUJEMY SKALĘ ZANIM COKOLWIEK WYŁĄCZYMY
@@ -193,13 +206,30 @@ public class MoldManager : MonoBehaviour
             return false;
         }
 
-        // Jeśli wszystko OK - przełączamy formę
         molds[currentMoldIndex].moldGroupParent.SetActive(false);
-        currentMoldIndex = (currentMoldIndex + 1) % molds.Count;
+        
+        int nextIndex = currentMoldIndex;
+        for (int i = 0; i < molds.Count; i++)
+        {
+            nextIndex = (nextIndex + 1) % molds.Count;
+            if (IsMoldUnlocked(molds[nextIndex].moldName)) 
+            {
+                break;
+            }
+        }
+        
+        currentMoldIndex = nextIndex;
         molds[currentMoldIndex].moldGroupParent.SetActive(true);
         
         Debug.Log("Zmieniono formę na: " + molds[currentMoldIndex].moldName);
         return true;
+    }
+
+    private bool IsMoldUnlocked(string moldName)
+    {
+        if (moldName.ToLower().Contains("sword")) return true;
+        if (moldName.ToLower().Contains("axe")) return gameManager.Instance != null && gameManager.Instance.unlockedAxeMold;
+        return true; 
     }
     public void DockCrucible(Crucible crucible)
     {

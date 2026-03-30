@@ -2551,7 +2551,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4316528496479175685}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: 0, y: -0.7071068, z: 0, w: 0.7071068}
   m_LocalPosition: {x: -11.467403, y: -0.00000040472128, z: -6.4380083}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -2560,7 +2560,7 @@ Transform:
   - {fileID: 5102200781046781565}
   - {fileID: 7026272110965773623}
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: -90, z: 0}
 --- !u!136 &4418441859405303442
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -2665,7 +2665,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::npcPathFinding
   rejectObject: {fileID: 0}
   acceptObject: {fileID: 0}
-  isInTeam: 0
 --- !u!114 &3195324698991328936
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2679,10 +2678,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSocket
   socketBoneName: jointItemR
-  swordHoldPosition: {x: 0, y: 0.5, z: 0}
-  swordHoldRotation: {x: -90, y: 0, z: 0}
-  axeHoldPosition: {x: 0.15, y: 0.9, z: -0.14}
-  axeHoldRotation: {x: -90, y: 45, z: 0}
+  weaponHoldPosition: {x: 0, y: 0, z: 0}
+  weaponHoldRotation: {x: -90, y: 0, z: 0}
   equippedWeapon: {fileID: 0}
   ownerName: 
   ownerData:
@@ -2694,8 +2691,8 @@ MonoBehaviour:
     speed: 0
     equippedWeapon:
       weaponName: 
-      type: 0
       metalTier: 0
+      isValid: 0
       baseDamage: 0
       attackSpeed: 0
       range: 0

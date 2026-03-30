@@ -6,7 +6,6 @@ public class AnvilStation : MonoBehaviour
     [Header("Referencje do potrzebnych obiektów")]
     public Transform snapPoint;
     public Transform cameraSocket;
-    public GameObject playerObject;
 
     [Header("Młotek")]
     public GameObject hammerPrefab;
@@ -75,7 +74,9 @@ public class AnvilStation : MonoBehaviour
         isForgingMode = true;
         forgeStartTime = Time.time;
 
-        if (playerObject == null) playerObject = GameObject.FindGameObjectWithTag("Player");
+        var playerMovement = UnityEngine.Object.FindFirstObjectByType<PlayerMovement>();
+        if (playerMovement != null) playerMovement.enabled = false;
+        if (BlacksmithInteraction.Instance != null) BlacksmithInteraction.Instance.enabled = false;
 
         slidePosition = 0f;
         rotationStep = 0;
@@ -103,7 +104,8 @@ public class AnvilStation : MonoBehaviour
             mainCamera.SetParent(null);
         }
 
-        if (playerObject != null) playerObject.SetActive(false);
+        if (BlacksmithInteraction.Instance != null && BlacksmithInteraction.Instance.playerVisuals != null)
+            BlacksmithInteraction.Instance.playerVisuals.SetActive(false);
 
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
@@ -261,7 +263,12 @@ public class AnvilStation : MonoBehaviour
 
         currentMetal = null;
 
-        if (playerObject != null) playerObject.SetActive(true);
+        var playerMovement = UnityEngine.Object.FindFirstObjectByType<PlayerMovement>();
+        if (playerMovement != null) playerMovement.enabled = true;
+        if (BlacksmithInteraction.Instance != null) BlacksmithInteraction.Instance.enabled = true;
+
+        if (BlacksmithInteraction.Instance != null && BlacksmithInteraction.Instance.playerVisuals != null)
+            BlacksmithInteraction.Instance.playerVisuals.SetActive(true);
 
         if (mainCamera != null)
         {

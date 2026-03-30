@@ -49,7 +49,7 @@ public class NPCInteractionUI : MonoBehaviour
 
         if (weaponWheel != null)
         {
-            if (wpn != null && wpn.type != WeaponType.None)
+            if (wpn != null && wpn.isValid)
             {
                 weaponWheel.SetWheel(true);
                 weaponWheel.UpdateWheel(wpn.GetNormalizedDamage(), wpn.GetNormalizedSpeed(), wpn.GetNormalizedAoE());

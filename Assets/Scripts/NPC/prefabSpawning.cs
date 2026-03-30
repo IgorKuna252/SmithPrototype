@@ -90,7 +90,7 @@ public class prefabSpawning : MonoBehaviour
         {
             if (customerPrefab == null) break;
 
-            GameObject obj = Instantiate(customerPrefab, queuePositions[i], Quaternion.identity);
+            GameObject obj = Instantiate(customerPrefab, queuePositions[i], Quaternion.Euler(0, -90, 0));
             obj.name = $"Klient_Nocny_{i + 1}";
 
             SetupCitizenData(obj);
@@ -106,7 +106,7 @@ public class prefabSpawning : MonoBehaviour
 
         if (merchantPrefab != null)
         {
-            GameObject obj = Instantiate(merchantPrefab, queuePositions[0], Quaternion.identity);
+            GameObject obj = Instantiate(merchantPrefab, queuePositions[0], Quaternion.Euler(0, -90, 0));
             obj.name = "Kupiec_Poranny_1";
 
             // Tutaj później wyłapiesz go, i podepniesz jego GUI/Skrypt

@@ -14,6 +14,9 @@ public class gameManager : MonoBehaviour
     [Header("System Dni")]
     public int currentDay = 1;
 
+    public int gold = 100;
+    public event System.Action OnGoldChanged;
+
     private void Awake()
     {
         // Jeśli instancja już istnieje i to nie my, zniszcz się
@@ -45,6 +48,28 @@ public class gameManager : MonoBehaviour
         Debug.Log($"Dodano {amount} {name}. Stan: {inventory[name]}");
     }
 
+    public void AddGold(int amount)
+    {
+        gold += amount;
+        NotifyGoldChanged();
+    }
+
+    public bool RemoveGold(int amount)
+    {
+        if (gold >= amount)
+        {
+            gold -= amount;
+            NotifyGoldChanged();
+            return true;
+        }
+        return false;
+    }
+
+    public void NotifyGoldChanged()
+    {
+        OnGoldChanged?.Invoke();
+    }
+
     public bool RemoveResource(string name, int amount)
     {
         if (!inventory.ContainsKey(name) || inventory[name] < amount)
@@ -59,4 +84,9 @@ public class gameManager : MonoBehaviour
         return true;
     }
     
+    [Header("Odblokowania Ekranów Dnia")]
+    public bool unlockedFoundry = false;
+    public bool unlockedAxeMold = false;
+    public int type1Progress = 0;
+    public int type2Progress = 0;
 }

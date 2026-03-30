@@ -53,9 +53,8 @@ public class DaySystemManager : MonoBehaviour
     public TextMeshProUGUI reward1Text;
     public TextMeshProUGUI reward2Text;
 
-    private string[] rewardPool = { "AxeHandle", "SwordHandle", "Steel", "Gold", "Platinum", "BlueSteel", "Vibranium" };
-    private string currentChoice1;
-    private string currentChoice2;
+    private string type2CurrentRandom;
+    private string[] type2Pool = { "Steel", "Gold", "Platinum", "BlueSteel", "Vibranium" };
 
     private void UpdateWorkshopProgression()
     {
@@ -63,24 +62,21 @@ public class DaySystemManager : MonoBehaviour
         if (crucibleObject == null) crucibleObject = GameObject.Find("CrucibleParent");
         if (moldManagerObject == null) moldManagerObject = GameObject.Find("MoldManager");
 
-        // Tymczasowe całkowite wyłączenie pieców odlewniczych (wiaderko itp) 
-        if (crucibleObject != null) crucibleObject.SetActive(false);
-        if (moldManagerObject != null) moldManagerObject.SetActive(false);
+        bool hasFoundry = gameManager.Instance != null && gameManager.Instance.unlockedFoundry;
+        
+        if (crucibleObject != null) crucibleObject.SetActive(hasFoundry);
+        if (moldManagerObject != null) moldManagerObject.SetActive(hasFoundry);
     }
 
     public void EndDayButton()
     {
         Debug.Log("[DaySystemManager] Kończymy dzień...");
         
-        // --- LOSOWANIE NAGRÓD ---
-        currentChoice1 = rewardPool[Random.Range(0, rewardPool.Length)];
-        do {
-            currentChoice2 = rewardPool[Random.Range(0, rewardPool.Length)];
-        } while (currentChoice1 == currentChoice2);
-
-        if (reward1Text != null) reward1Text.text = FormatRewardObj(currentChoice1);
-        if (reward2Text != null) reward2Text.text = FormatRewardObj(currentChoice2);
-        // ------------------------
+        if (gameManager.Instance != null)
+        {
+            if (reward1Text != null) reward1Text.text = GenerateType1RewardText();
+            if (reward2Text != null) reward2Text.text = GenerateType2RewardText();
+        }
 
         if (summaryWindow != null) summaryWindow.SetActive(true);
 
@@ -91,31 +87,80 @@ public class DaySystemManager : MonoBehaviour
         if (BlacksmithInteraction.Instance != null) BlacksmithInteraction.Instance.enabled = false;
     }
 
-    private string FormatRewardObj(string rewardName)
+    private string GenerateType1RewardText()
     {
-        if (rewardName == "AxeHandle") return "Długi trzonek x 3";
-        if (rewardName == "SwordHandle") return "Krótki trzonek x 3";
-        return $"Sztabka {rewardName} x 3";
+        int p = gameManager.Instance.type1Progress;
+        if (p == 0) return "Odblokuj: Odlewnia, Wiadro, Odlew Miecza";
+        if (p == 1) return "Długi trzonek x 3";
+        if (p == 2) return "Odblokuj: Odlew Siekiery";
+        if (p == 3) return "Krótki trzonek x 3";
+        
+        if (p % 2 == 0) return "Długi trzonek x 3";
+        return "Krótki trzonek x 3";
+    }
+
+    private string GenerateType2RewardText()
+    {
+        int p = gameManager.Instance.type2Progress;
+        if (p == 0) return "Sztabki Steel x 3";
+        if (p == 1) return "Sztabki Gold x 3";
+        if (p == 2) return "Sztabki Platinum x 3";
+        if (p == 3) return "Sztabki BlueSteel x 3";
+        if (p == 4) return "Sztabki Vibranium x 3";
+        
+        type2CurrentRandom = type2Pool[Random.Range(0, type2Pool.Length)];
+        return $"Sztabki {type2CurrentRandom} x 3";
     }
 
     public void SelectReward1AndNextDay() 
     { 
-        GiveReward(currentChoice1); 
+        GiveType1Reward(); 
         GoToNextDay(); 
     }
     
     public void SelectReward2AndNextDay() 
     { 
-        GiveReward(currentChoice2); 
+        GiveType2Reward(); 
         GoToNextDay(); 
     }
 
-    private void GiveReward(string reward)
+    private void GiveType1Reward()
     {
-        if (gameManager.Instance != null)
+        if (gameManager.Instance == null) return;
+        
+        int p = gameManager.Instance.type1Progress;
+        if (p == 0) gameManager.Instance.unlockedFoundry = true;
+        else if (p == 1) gameManager.Instance.AddResource("AxeHandle", 3);
+        else if (p == 2) gameManager.Instance.unlockedAxeMold = true;
+        else if (p == 3) gameManager.Instance.AddResource("SwordHandle", 3);
+        else
         {
-            gameManager.Instance.AddResource(reward, 3);
+            if (p % 2 == 0) gameManager.Instance.AddResource("AxeHandle", 3);
+            else gameManager.Instance.AddResource("SwordHandle", 3);
         }
+        
+        gameManager.Instance.type1Progress++;
+    }
+
+    private void GiveType2Reward()
+    {
+        if (gameManager.Instance == null) return;
+        
+        int p = gameManager.Instance.type2Progress;
+        string res = "";
+        if (p == 0) res = "Steel";
+        else if (p == 1) res = "Gold";
+        else if (p == 2) res = "Platinum";
+        else if (p == 3) res = "BlueSteel";
+        else if (p == 4) res = "Vibranium";
+        else res = type2CurrentRandom;
+
+        if (!string.IsNullOrEmpty(res))
+        {
+            gameManager.Instance.AddResource(res, 3);
+        }
+        
+        gameManager.Instance.type2Progress++;
     }
 
     public void GoToNextDay()

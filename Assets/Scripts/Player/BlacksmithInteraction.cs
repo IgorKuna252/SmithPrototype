@@ -38,6 +38,20 @@ public class BlacksmithInteraction : MonoBehaviour
     {
         playerCamera = GetComponentInChildren<Camera>();
         playerMovement = GetComponent<PlayerMovement>();
+
+        if (playerVisuals == null)
+        {
+            // Próba automatycznego znalezienia, żeby oszczędzić zapominania!
+            Transform vis = transform.Find("Visuals") ?? transform.Find("PlayerVisuals") ?? transform.Find("Model") ?? transform.Find("PlayerModel");
+            if (vis != null) 
+            {
+                playerVisuals = vis.gameObject;
+            }
+            else
+            {
+                Debug.LogWarning("[BlacksmithInteraction] UWAGA: Nie podpięto 'Player Visuals' w inspektorze! Aby ręce gracza znikały przy stole, przeciągnij model gracza do tego pola w skrypcie BlacksmithInteraction.");
+            }
+        }
     }
 
     public void SetTransactionUIOpen(bool open)
@@ -86,7 +100,7 @@ public class BlacksmithInteraction : MonoBehaviour
             {
                 CloseMoldInteraction();
             }
-            else if (Input.GetKeyDown(KeyCode.Space))
+            else if (Input.GetMouseButtonDown(1)) // PPM do zmiany formy
             {
                 if (activeMold != null) activeMold.ChangeMold();
             }

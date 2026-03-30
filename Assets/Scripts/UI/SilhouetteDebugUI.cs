@@ -11,6 +11,8 @@ using TMPro;
 //   CloseButton — Button który zamyka panel
 public class SilhouetteDebugUI : MonoBehaviour
 {
+    public static SilhouetteDebugUI Instance { get; private set; }
+
     [Header("Referencje UI (przypisz w Inspectorze)")]
     public GameObject        Panel;
     public RawImage          ImgScheme;
@@ -20,6 +22,12 @@ public class SilhouetteDebugUI : MonoBehaviour
     public Button            CloseButton;
 
     private BlacksmithInteraction _blacksmith;
+    private System.Action _onCloseCallback;
+
+    private void Awake()
+    {
+        Instance = this;
+    }
 
     private void Start()
     {
@@ -78,5 +86,25 @@ public class SilhouetteDebugUI : MonoBehaviour
 
         if (_blacksmith != null)
             _blacksmith.SetTransactionUIOpen(false);
+
+        _onCloseCallback?.Invoke();
+        _onCloseCallback = null;
+    }
+
+    public void ShowTransaction(float matchPercentage, int goldEarned, System.Action onCloseCallback)
+    {
+        _onCloseCallback = onCloseCallback;
+
+        if (Label != null)
+        {
+            Label.text = $"Dopasowanie: <color=#00DA33>{matchPercentage:F0}%</color>\n" +
+                         $"Zarobiono: <color=#FFD700>{goldEarned} G</color>";
+        }
+
+        if (_blacksmith != null)
+            _blacksmith.SetTransactionUIOpen(true);
+
+        if (Panel != null)
+            Panel.SetActive(true);
     }
 }

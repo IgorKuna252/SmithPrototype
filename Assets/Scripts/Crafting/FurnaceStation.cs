@@ -74,7 +74,7 @@ public class FurnaceStation : MonoBehaviour
 
         currentFurnaceTemp += bellowsPower;
         if (currentFurnaceTemp > maxFurnaceTemp) currentFurnaceTemp = maxFurnaceTemp;
-        Debug.Log($"[Furnace] Pompowanie miechem! Temp: {Mathf.RoundToInt(currentFurnaceTemp)}");
+        // Debug.Log($"[Furnace] Pompowanie miechem! Temp: {Mathf.RoundToInt(currentFurnaceTemp)}");
     }
 
     public void EnterFurnaceMode(MetalPiece metal)
@@ -115,9 +115,14 @@ public class FurnaceStation : MonoBehaviour
         mainCamera.transform.localPosition = Vector3.zero;
         mainCamera.transform.localRotation = Quaternion.identity;
 
-        // Schowanie ogólnego UI gracza (crosshair)
-        if (BlacksmithInteraction.Instance != null && BlacksmithInteraction.Instance.playerUI != null)
-            BlacksmithInteraction.Instance.playerUI.gameObject.SetActive(false);
+        // Schowanie ogólnego UI gracza (crosshair) i wizuali
+        if (BlacksmithInteraction.Instance != null)
+        {
+            if (BlacksmithInteraction.Instance.playerUI != null)
+                BlacksmithInteraction.Instance.playerUI.gameObject.SetActive(false);
+            if (BlacksmithInteraction.Instance.playerVisuals != null)
+                BlacksmithInteraction.Instance.playerVisuals.SetActive(false);
+        }
 
         // Pojawienie się specjalnego UI pieca (guzik Dmuchania)
         if (furnaceUI != null) furnaceUI.SetActive(true);
@@ -143,10 +148,15 @@ public class FurnaceStation : MonoBehaviour
         mainCamera.transform.localPosition = originalCameraPos;
         mainCamera.transform.localRotation = originalCameraRot;
 
-        // Reset UI i zaciągnięcie celownika 
+        // Reset UI, zaciągnięcie celownika i przywrócenie wizualu gracza
         if (furnaceUI != null) furnaceUI.SetActive(false);
-        if (BlacksmithInteraction.Instance != null && BlacksmithInteraction.Instance.playerUI != null)
-            BlacksmithInteraction.Instance.playerUI.gameObject.SetActive(true);
+        if (BlacksmithInteraction.Instance != null)
+        {
+            if (BlacksmithInteraction.Instance.playerUI != null)
+                BlacksmithInteraction.Instance.playerUI.gameObject.SetActive(true);
+            if (BlacksmithInteraction.Instance.playerVisuals != null)
+                BlacksmithInteraction.Instance.playerVisuals.SetActive(true);
+        }
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;

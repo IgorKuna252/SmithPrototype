@@ -25,7 +25,7 @@ public class Crucible : MonoBehaviour, IPickable
     private MoldManager currentMold;
     private bool isPouring = false;
     
-    private bool isHeld = false; 
+    // private bool isHeld = false; 
 
     void Start()
     {
@@ -153,12 +153,12 @@ public class Crucible : MonoBehaviour, IPickable
     
     public void OnPickUp()
     {
-        isHeld = true; // Gracz podniósł tygiel, pozwalamy na lanie!
+        // isHeld = true; // Gracz podniósł tygiel, pozwalamy na lanie!
     }
 
     public void OnDrop()
     {
-        isHeld = false; // Gracz wyrzucił tygiel
+        // isHeld = false; // Gracz wyrzucił tygiel
         StopPouring();  // Zabezpieczenie: jeśli gracz wyrzuci tygiel w trakcie lania, automatycznie zakręcamy kurek
     }
 
