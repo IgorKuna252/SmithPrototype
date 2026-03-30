@@ -161,8 +161,8 @@ MonoBehaviour:
   maxTemperature: 1000
   coolingRate: 10
   forgingTemperature: 500
-  initialSegments: 40
-  startLength: 0.8
+  initialSegments: 20
+  startLength: 1.2
   startWidth: 0.2
   startThickness: 0.05
   minThickness: 0.01
