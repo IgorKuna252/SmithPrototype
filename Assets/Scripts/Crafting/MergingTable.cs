@@ -18,11 +18,11 @@ public class MergingTable : MonoBehaviour
     public Vector3 gripPositionOffset = Vector3.zero;
     public Vector3 gripRotation = new Vector3(0f, -90f, -30f);
 
-    private GameObject mainPlayerCamera; 
+    private GameObject mainPlayerCamera;
     private bool isAssemblyMode = false;
 
-    private MetalPiece placedMetal; 
-    private WoodPiece placedWood; 
+    private MetalPiece placedMetal;
+    private WoodPiece placedWood;
 
     private Transform draggedObject;
     private float dragY;

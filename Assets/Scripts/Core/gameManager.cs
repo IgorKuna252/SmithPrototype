@@ -1,10 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-
+// Singleton, żeby mieć łatwy dostęp do zarządzania zasobami i złotem z innych skryptów!
 public class gameManager : MonoBehaviour
 {
-    // Singleton
     public static gameManager Instance { get; private set; }
 
     // Słownik z aktualnymi surowcami w ekwipunku

@@ -7,11 +7,9 @@ public class SceneTransition : MonoBehaviour
 
     public void ChangeScene()
     {
-        // 1. Zresetuj kursor przed przejściem do nowej sceny
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
-        // 2. Załaduj scenę
         SceneManager.LoadScene(sceneToLoad);
     }
 }

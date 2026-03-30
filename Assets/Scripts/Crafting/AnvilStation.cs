@@ -3,7 +3,7 @@ using System.Collections;
 
 public class AnvilStation : MonoBehaviour
 {
-    [Header("Przypisz te obiekty:")]
+    [Header("Referencje do potrzebnych obiektów")]
     public Transform snapPoint;
     public Transform cameraSocket;
     public GameObject playerObject;
@@ -11,21 +11,27 @@ public class AnvilStation : MonoBehaviour
     [Header("Młotek")]
     public GameObject hammerPrefab;
     private GameObject hammerObject;
-    public Vector3 hammerHoverOffset = new Vector3(0, 0.4f, 0);
-    public Vector3 hammerStrikeRotation = new Vector3(60f, 0, 0);
+    public Vector3 hammerHoverOffset = new (0, 0.4f, 0);
+    public Vector3 hammerStrikeRotation = new (60f, 0, 0);
 
     [Header("Obrót i Korekta Pozycji (Pivot)")]
     public float sidewaysTwistAngle = 90f;
-    public Vector3 normalStrikeOffset = Vector3.zero;           // Przesunięcie wizualne gdy prosto
-    public Vector3 sidewaysStrikeOffset = new Vector3(0.2f, 0, 0); // Przesunięcie wizualne gdy bokiem (Zmień to w Inspektorze!)
+    public Vector3 normalStrikeOffset = Vector3.zero;       // Przesunięcie wizualne gdy prosto
+    public Vector3 sidewaysStrikeOffset = new (0.2f, 0, 0); // Przesunięcie wizualne gdy bokiem 
+    
+    [Header("Czas odnowienia uderzenia młotem")]
+    public float hammerCooldown = 0.2f;
+    
+    [Header("Efekty")]
+    public ParticleSystem hitSparks;
 
-    private bool isHammerSideways = false;
-    private bool isSwinging = false;
+    private bool isHammerSideways;
+    private bool isSwinging;
 
     private MetalPiece currentMetal;
-    private bool isForgingMode = false;
-    private float slidePosition = 0f;
-    private int rotationStep = 0;
+    private bool isForgingMode;
+    private float slidePosition;
+    private int rotationStep;
 
     private Transform mainCamera;
     private Camera camComponent;
@@ -33,14 +39,9 @@ public class AnvilStation : MonoBehaviour
     private Vector3 originalCameraLocalPos;
     private Quaternion originalCameraLocalRot;
 
-    private float forgeStartTime = 0f;
-    private float lastHitTime = 0f;
-    public float hammerCooldown = 0.2f;
-
-    [Header("Efekty")]
-    public ParticleSystem hitSparks;
-
-
+    private float forgeStartTime;
+    private float lastHitTime;
+    
     void Start()
     {
         if (hammerPrefab != null)
@@ -148,7 +149,7 @@ public class AnvilStation : MonoBehaviour
             // Wybieramy odpowiedni offset w zależności od tego, czy młot jest obrócony
             Vector3 currentVisualOffset = isHammerSideways ? sidewaysStrikeOffset : normalStrikeOffset;
 
-            // 1. ŚLEDZENIE I OBRÓT (HOVER)
+            // ŚLEDZENIE I OBRÓT (HOVER)
             if (hammerObject != null && !isSwinging)
             {
                 // Dodajemy nasz offset korygujący!
@@ -160,13 +161,13 @@ public class AnvilStation : MonoBehaviour
                 hammerObject.transform.rotation = Quaternion.Lerp(hammerObject.transform.rotation, targetHoverRotation, Time.deltaTime * 15f);
             }
 
-            // 2. PRZEŁĄCZANIE TRYBU MŁOTKA (PPM)
+            // PRZEŁĄCZANIE TRYBU MŁOTKA (PPM)
             if (Input.GetMouseButtonDown(1))
             {
                 isHammerSideways = !isHammerSideways;
             }
 
-            // 3. UDERZENIE MŁOTEM (LPM)
+            // UDERZENIE MŁOTEM (LPM)
             if (Input.GetMouseButtonDown(0) && Time.time > lastHitTime + hammerCooldown && !isSwinging)
             {
                 lastHitTime = Time.time;
@@ -212,7 +213,6 @@ public class AnvilStation : MonoBehaviour
         hammerObject.transform.position = visualStrikePos;
         hammerObject.transform.rotation = strikeRot;
 
-        // Ale gra WIE, że uderzyłeś dokładnie tam, gdzie myszką!
         PerformHitEffects(hitPoint, hitType);
 
         float swingUpTime = 0.1f;

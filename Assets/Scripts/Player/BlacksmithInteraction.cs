@@ -7,16 +7,23 @@ public class BlacksmithInteraction : MonoBehaviour
     public float throwForce = 12f; // Siła wyrzucania trzymanego przedmiotu 
     public Transform holdPosition;
     public Vector3 holdRotation = new Vector3(90f, 0f, 0f);
+    public GameObject playerVisuals;
 
     [Header("Pozycje trzymania w ręku")]
 
-    private Camera playerCamera;
+    public Camera playerCamera;
     private GameObject heldItem;
     private Rigidbody heldItemRb;
     private PlayerMovement playerMovement;
 
     private bool isInteractingWithTable = false;
+    private bool isTransactionUIOpen = false;
     private MergingTable activeTable = null;
+    
+    private bool isInteractingWithMold = false;
+    private MoldManager activeMold = null;
+
+    [HideInInspector] public WheelController wheel;
 
 
     public Canvas playerUI;
@@ -31,10 +38,37 @@ public class BlacksmithInteraction : MonoBehaviour
         playerMovement = GetComponent<PlayerMovement>();
     }
 
+    public void SetTransactionUIOpen(bool open)
+    {
+        isTransactionUIOpen = open;
+        playerMovement.enabled = !open;
+        if (open)
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+        else
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+    }
+
     void Update()
     {
-        // 2. BLOKADA KAMERY STOŁU 
-            if (isInteractingWithTable)
+        // BLOKADA OKNA WYNIKI TRANSAKCJI
+        if (isTransactionUIOpen) return;
+
+        // 1. BLOKADA NPC
+        if (isInteractingWithNPC)
+        {
+            if (Input.GetKeyDown(KeyCode.Escape)) CloseNPCInteraction();
+            return;
+        }
+
+        // 2. BLOKADA KAMERY STOŁU
+        if (isInteractingWithTable)
+        {
             {
                 // WYJŚCIE: Jeśli wciśniesz ESC lub E -> Wracasz do swobodnego chodzenia
                 if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.E))
@@ -43,6 +77,20 @@ public class BlacksmithInteraction : MonoBehaviour
                 }
                 return; // Blokujemy resztę, żeby gracz nie machał rękami pod stołem
             }
+
+        // 3. BLOKADA KAMERY FORMY
+        if (isInteractingWithMold)
+        {
+            if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.E))
+            {
+                CloseMoldInteraction();
+            }
+            else if (Input.GetKeyDown(KeyCode.Space))
+            {
+                if (activeMold != null) activeMold.ChangeMold();
+            }
+            return;
+        }
 
         // ==========================================
         // GŁÓWNY KLAWISZ 'E' - ROBI WSZYSTKO W ŚWIECIE
@@ -73,7 +121,51 @@ public class BlacksmithInteraction : MonoBehaviour
         Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
         if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
         {
-            Debug.Log($"[Raycast Test] Gracz patrzy na obiekt: {hit.collider.gameObject.name}");
+            // 1. ZDAWANIE BRONI DLA NPC
+            if (heldItem != null && heldItem.GetComponent<FinishedObject>() != null)
+            {
+                WeaponSocket socket = hit.collider.GetComponent<WeaponSocket>();
+                if (socket == null) socket = hit.collider.GetComponentInParent<WeaponSocket>();
+                if (socket != null)
+                {
+                    heldItem.GetComponent<IPickable>()?.OnDrop();
+                    heldItem.transform.SetParent(null);
+                    socket.EquipWeapon(heldItem);
+                    wheel.SetWheel(false);
+                    ClearHand();
+
+                    npcPathFinding npcPath = socket.GetComponent<npcPathFinding>() ?? socket.GetComponentInParent<npcPathFinding>();
+                    if (npcPath != null && npcPath.IsTaskFulfilled())
+                        npcPath.WeaponAccepted();
+
+                    return;
+                }
+            }
+
+            // ROZMOWA Z NPC LUB KUPCEM
+            npcPathFinding npc = hit.collider.GetComponent<npcPathFinding>() ?? hit.collider.GetComponentInParent<npcPathFinding>();
+            if (npc != null)
+            {
+                // Wpierw sprawdzamy, czy to nasz WYJĄTKOWY Kupiec
+                Merchant merchant = npc.GetComponent<Merchant>();
+                if (merchant != null)
+                {
+                    // To jest kupiec! Odpalamy dedykowaną obsługę sklepu
+                    merchant.Interact();
+                    return;
+                }
+
+                // Skoro kod tutaj dotarł, to nie kupiec, lecimy ze standardowym panelem NPC:
+                isInteractingWithNPC = true;
+                playerMovement.enabled = false;
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+                
+                if (playerVisuals != null) playerVisuals.SetActive(false);
+                
+                NPCInteractionUI.Instance.Show(npc);
+                return;
+            }
 
             // 3. ZMIANA SCENY
             SceneTransition sceneTransition = hit.collider.GetComponent<SceneTransition>();
@@ -111,6 +203,9 @@ public class BlacksmithInteraction : MonoBehaviour
                     activeTable = table;
                     isInteractingWithTable = true;
                     playerMovement.enabled = false;
+                    
+                    if (playerVisuals != null) playerVisuals.SetActive(false);
+                    
                     table.ToggleAssemblyCamera(playerCamera.gameObject);
                     return;
                 }
@@ -148,11 +243,55 @@ public class BlacksmithInteraction : MonoBehaviour
                 {
                     furnace.EnterFurnaceMode(heldItem.GetComponent<MetalPiece>());
                     ClearHand();
+            // FORMY (MOLD MANAGER)
+            MoldManager mold = hit.collider.GetComponentInParent<MoldManager>();
+            if (mold != null)
+            {
+                Crucible heldCrucible = heldItem != null ? heldItem.GetComponent<Crucible>() : null;
+                
+                // Jeśli jesteśmy z pustymi rękami LUB trzymamy tygiel, i forma nie czeka na wyjęcie obiektu
+                if ((heldItem == null || heldCrucible != null) && !mold.IsReadyToExtract())
+                {
+                    activeMold = mold;
+                    isInteractingWithMold = true;
+                    playerMovement.enabled = false;
+                    mold.ToggleAssemblyCamera(playerCamera.gameObject);
+                    
+                    if (playerVisuals != null) playerVisuals.SetActive(false);
+                    
+                    if (heldCrucible != null)
+                    {
+                        mold.DockCrucible(heldCrucible);
+                        ClearHand(); // zapominamy że trzymamy, bo stacja go przechwyciła
+                    }
                     return;
                 }
             }
 
-            // 8. PODNOSZENIE Z ZIEMI (Zawsze najwyższy priorytet, gdy mamy puste ręce!)
+            // NAPEŁNIANIE WIADERKA CZYMŚ Z RĘKI
+            Crucible targetCrucible = hit.collider.GetComponentInParent<Crucible>();
+            if (targetCrucible != null)
+            {
+                MetalPiece heldMetal = heldItem != null ? heldItem.GetComponent<MetalPiece>() : null;
+                
+                if (heldMetal != null)
+                {
+                    if (heldMetal.currentTemperature >= heldMetal.forgingTemperature)
+                    {
+                        // Wrzucasz rozgrzany metal z ręki prosto do tygla
+                        targetCrucible.FillWithMetal(heldMetal.metalTier);
+                        Destroy(heldItem);
+                        ClearHand();
+                    }
+                    else
+                    {
+                        Debug.Log("Metal jest za zimny by włożyć go do tygla! Najpierw go rozgrzej w piecu.");
+                    }
+                    return;
+                }
+            }
+
+            // PODNOSZENIE Z ZIEMI (Zawsze najwyższy priorytet, gdy mamy puste ręce!)
             if (heldItem == null)
             {
                 // TryPickUp automatycznie radzi sobie z wyciąganiem z form, stojaków i podnoszeniem z ziemi
@@ -166,21 +305,17 @@ public class BlacksmithInteraction : MonoBehaviour
                 return;
             }
 
-            // ==========================================
-            // 10. UPUSZCZANIE NA ZIEMIĘ (Zwykła podłoga/ściana)
-            // ==========================================
+            // UPUSZCZANIE NA ZIEMIĘ (Zwykła podłoga/ściana)
             // Jeśli dotarliśmy aż tutaj, trzymamy przedmiot, ale nie trafiliśmy w żaden stół roboczy
             if (heldItem != null)
             {
                 DropItem();
                 return;
             }
-            }
-            else
-            {
-            // ==========================================
-            // 11. UPUSZCZANIE W POWIETRZE (Patrzymy w niebo)
-            // ==========================================
+        }
+        else
+        {
+            // UPUSZCZANIE W POWIETRZE (Patrzymy w niebo)
             // Jeśli laser w nic nie trafił (brak kolizji), ale mamy coś w rękach
             if (heldItem != null)
             {
@@ -197,6 +332,54 @@ public class BlacksmithInteraction : MonoBehaviour
         isInteractingWithTable = false;
         activeTable = null;
         playerMovement.enabled = true;
+        
+        if (playerVisuals != null) playerVisuals.SetActive(true);
+    }
+
+    public void CloseMoldInteraction()
+    {
+        if (activeMold != null)
+        {
+            activeMold.ExitAssemblyMode();
+            
+            Crucible pickedCrucible = activeMold.dockedCrucible;
+            if (pickedCrucible != null)
+            {
+                activeMold.UndockCrucible();
+                
+                pickedCrucible.transform.SetParent(null);
+                heldItem = pickedCrucible.gameObject;
+                heldItemRb = heldItem.GetComponent<Rigidbody>();
+                if (heldItemRb != null)
+                {
+                    heldItemRb.useGravity = false;
+                    heldItemRb.isKinematic = true;
+                    heldItemRb.detectCollisions = false;
+                }
+                heldItem.transform.SetParent(holdPosition);
+                heldItem.transform.localPosition = Vector3.zero;
+                heldItem.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+                
+                pickedCrucible.OnPickUp();
+            }
+            
+            if (playerVisuals != null) playerVisuals.SetActive(true);
+        }
+        
+        isInteractingWithMold = false;
+        activeMold = null;
+        playerMovement.enabled = true;
+    }
+
+    public void CloseNPCInteraction()
+    {
+        isInteractingWithNPC = false;
+        playerMovement.enabled = true;
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+        NPCInteractionUI.Instance.Hide();
+        
+        if (playerVisuals != null) playerVisuals.SetActive(true);
     }
 
     bool TryPickUp()

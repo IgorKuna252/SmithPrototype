@@ -12,6 +12,6 @@ public class FinishedObject : MonoBehaviour, IPickable
 
     public void OnDrop()
     {
-        // Tutaj możesz dodać dźwięk upadku miecza o ziemię
+        
     }
 }
