@@ -4,6 +4,7 @@ public class BlacksmithInteraction : MonoBehaviour
 {
     [Header("Ustawienia Interakcji")]
     public float reachDistance = 3f;
+    public float throwForce = 12f; // Siła wyrzucania trzymanego przedmiotu 
     public Transform holdPosition;
     public Vector3 holdRotation = new Vector3(90f, 0f, 0f);
 
@@ -49,6 +50,12 @@ public class BlacksmithInteraction : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.E))
         {
             TryInteractWithEnvironmentE();
+        }
+
+        // Miotanie trzymanym przedmiotem - KLAWISZ 'Q'
+        if (Input.GetKeyDown(KeyCode.Q) && heldItem != null)
+        {
+            ThrowItem();
         }
 
         // Zapasowe sterowanie MYSZĄ (dla wygody i starych nawyków)
@@ -356,6 +363,35 @@ public class BlacksmithInteraction : MonoBehaviour
 
             heldItemRb.WakeUp();
             heldItemRb.AddForce(Vector3.down * 0.1f, ForceMode.Impulse);
+        }
+
+        heldItem.GetComponent<IPickable>()?.OnDrop();
+        ClearHand();
+    }
+
+    void ThrowItem()
+    {
+        if (heldItem == null) return;
+
+        heldItem.transform.SetParent(null);
+
+        if (heldItemRb == null) heldItemRb = heldItem.AddComponent<Rigidbody>();
+
+        if (heldItemRb != null)
+        {
+            heldItemRb.interpolation = RigidbodyInterpolation.Interpolate;
+            heldItemRb.isKinematic = false;
+            heldItemRb.useGravity = true;
+            heldItemRb.detectCollisions = true;
+
+            heldItemRb.WakeUp();
+            
+            // Odbijamy lekko do góry wektor patrzenia kamery, by nakreślić naturalną łagodną parabolę lotu
+            Vector3 throwDirection = playerCamera.transform.forward + (Vector3.up * 0.15f);
+            heldItemRb.AddForce(throwDirection.normalized * throwForce, ForceMode.Impulse);
+            
+            // Dokładamy losowy moment obrotowy żeby przedmiot realistycznie rotował w locie po rzuceniu
+            heldItemRb.AddTorque(new Vector3(Random.Range(-2f, 2f), Random.Range(-2f, 2f), Random.Range(-2f, 2f)), ForceMode.Impulse);
         }
 
         heldItem.GetComponent<IPickable>()?.OnDrop();
