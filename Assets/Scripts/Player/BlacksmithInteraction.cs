@@ -21,6 +21,10 @@ public class BlacksmithInteraction : MonoBehaviour
     private bool isInteractingWithNPC = false;
     private bool isInteractingWithTable = false;
     private MergingTable activeTable = null;
+    
+    private bool isInteractingWithMold = false;
+    private MoldManager activeMold = null;
+
     [HideInInspector] public WheelController wheel;
 
 
@@ -61,6 +65,20 @@ public class BlacksmithInteraction : MonoBehaviour
                 CloseTableInteraction();
             }
             return; // Blokujemy resztę, żeby gracz nie machał rękami pod stołem
+        }
+
+        // 3. BLOKADA KAMERY FORMY
+        if (isInteractingWithMold)
+        {
+            if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.E))
+            {
+                CloseMoldInteraction();
+            }
+            else if (Input.GetKeyDown(KeyCode.Space))
+            {
+                if (activeMold != null) activeMold.ChangeMold();
+            }
+            return;
         }
 
         // ==========================================
@@ -186,6 +204,29 @@ public class BlacksmithInteraction : MonoBehaviour
                 return;
             }
 
+            // 7.5. FORMY (MOLD MANAGER)
+            MoldManager mold = hit.collider.GetComponentInParent<MoldManager>();
+            if (mold != null)
+            {
+                Crucible heldCrucible = heldItem != null ? heldItem.GetComponent<Crucible>() : null;
+                
+                // Jeśli jesteśmy z pustymi rękami LUB trzymamy tygiel, i forma nie czeka na wyjęcie obiektu
+                if ((heldItem == null || heldCrucible != null) && !mold.IsReadyToExtract())
+                {
+                    activeMold = mold;
+                    isInteractingWithMold = true;
+                    playerMovement.enabled = false;
+                    mold.ToggleAssemblyCamera(playerCamera.gameObject);
+                    
+                    if (heldCrucible != null)
+                    {
+                        mold.DockCrucible(heldCrucible);
+                        ClearHand(); // zapominamy że trzymamy, bo stacja go przechwyciła
+                    }
+                    return;
+                }
+            }
+
             // 8. PODNOSZENIE Z ZIEMI (Zawsze najwyższy priorytet, gdy mamy puste ręce!)
             if (heldItem == null)
             {
@@ -230,6 +271,38 @@ public class BlacksmithInteraction : MonoBehaviour
         if (activeTable != null) activeTable.ExitAssemblyMode();
         isInteractingWithTable = false;
         activeTable = null;
+        playerMovement.enabled = true;
+    }
+
+    public void CloseMoldInteraction()
+    {
+        if (activeMold != null)
+        {
+            // Odbieramy tygiel, jeśli tam jest
+            if (activeMold.dockedCrucible != null)
+            {
+                Crucible c = activeMold.dockedCrucible;
+                activeMold.UndockCrucible();
+                
+                c.transform.SetParent(null);
+                heldItem = c.gameObject;
+                heldItemRb = heldItem.GetComponent<Rigidbody>();
+                if (heldItemRb != null)
+                {
+                    heldItemRb.useGravity = false;
+                    heldItemRb.isKinematic = true;
+                    heldItemRb.detectCollisions = false;
+                }
+                heldItem.transform.SetParent(holdPosition);
+                heldItem.transform.localPosition = Vector3.zero;
+                heldItem.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+                
+                c.OnPickUp();
+            }
+            activeMold.ExitAssemblyMode();
+        }
+        isInteractingWithMold = false;
+        activeMold = null;
         playerMovement.enabled = true;
     }
 
