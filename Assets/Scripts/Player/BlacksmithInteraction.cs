@@ -20,6 +20,8 @@ public class BlacksmithInteraction : MonoBehaviour
     private bool isTransactionUIOpen = false;
     private MergingTable activeTable = null;
     
+    private bool isInteractingWithNPC = false;
+
     private bool isInteractingWithMold = false;
     private MoldManager activeMold = null;
 
@@ -69,14 +71,13 @@ public class BlacksmithInteraction : MonoBehaviour
         // 2. BLOKADA KAMERY STOŁU
         if (isInteractingWithTable)
         {
+            // WYJŚCIE: Jeśli wciśniesz ESC lub E -> Wracasz do swobodnego chodzenia
+            if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.E))
             {
-                // WYJŚCIE: Jeśli wciśniesz ESC lub E -> Wracasz do swobodnego chodzenia
-                if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.E))
-                {
-                    CloseTableInteraction();
-                }
-                return; // Blokujemy resztę, żeby gracz nie machał rękami pod stołem
+                CloseTableInteraction();
             }
+            return; // Blokujemy resztę, żeby gracz nie machał rękami pod stołem
+        }
 
         // 3. BLOKADA KAMERY FORMY
         if (isInteractingWithMold)
@@ -243,6 +244,10 @@ public class BlacksmithInteraction : MonoBehaviour
                 {
                     furnace.EnterFurnaceMode(heldItem.GetComponent<MetalPiece>());
                     ClearHand();
+                    return;
+                }
+            }
+
             // FORMY (MOLD MANAGER)
             MoldManager mold = hit.collider.GetComponentInParent<MoldManager>();
             if (mold != null)
