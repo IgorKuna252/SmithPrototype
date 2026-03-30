@@ -166,8 +166,7 @@ public class prefabSpawning : MonoBehaviour
             if (npcObj == null) continue;
 
             npcPathFinding npc = npcObj.GetComponent<npcPathFinding>();
-            // Założenie bazujące na Twoim wcześniejszym kodzie - jeśli ma isinTeam to go nie bierzemy
-            if (npc != null && npc.isInTeam) continue;
+            if (npc != null) continue;
 
             if (index < queuePositions.Count)
             {

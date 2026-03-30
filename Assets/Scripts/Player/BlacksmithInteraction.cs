@@ -14,7 +14,7 @@ public class BlacksmithInteraction : MonoBehaviour
     public Vector3 axeHoldPosition = new Vector3(1f, 1f, 1f);
     public Vector3 axeHoldRotation = new Vector3(270, 270, 180);
 
-    private Camera playerCamera;
+    public Camera playerCamera;
     private GameObject heldItem;
     private Rigidbody heldItemRb;
     private PlayerMovement playerMovement;
@@ -146,7 +146,7 @@ public class BlacksmithInteraction : MonoBehaviour
                 }
             }
 
-            // 2. ROZMOWA Z NPC LUB KUPCEM
+            // ROZMOWA Z NPC LUB KUPCEM
             npcPathFinding npc = hit.collider.GetComponent<npcPathFinding>() ?? hit.collider.GetComponentInParent<npcPathFinding>();
             if (npc != null)
             {
@@ -228,7 +228,7 @@ public class BlacksmithInteraction : MonoBehaviour
                 return;
             }
 
-            // 7.5. FORMY (MOLD MANAGER)
+            // FORMY (MOLD MANAGER)
             MoldManager mold = hit.collider.GetComponentInParent<MoldManager>();
             if (mold != null)
             {
@@ -253,7 +253,7 @@ public class BlacksmithInteraction : MonoBehaviour
                 }
             }
 
-            // 7.6. NAPEŁNIANIE TYGLA CZYMŚ Z RĘKI
+            // NAPEŁNIANIE WIADERKA CZYMŚ Z RĘKI
             Crucible targetCrucible = hit.collider.GetComponentInParent<Crucible>();
             if (targetCrucible != null)
             {
@@ -276,7 +276,7 @@ public class BlacksmithInteraction : MonoBehaviour
                 }
             }
 
-            // 8. PODNOSZENIE Z ZIEMI (Zawsze najwyższy priorytet, gdy mamy puste ręce!)
+            // PODNOSZENIE Z ZIEMI (Zawsze najwyższy priorytet, gdy mamy puste ręce!)
             if (heldItem == null)
             {
                 // TryPickUp automatycznie radzi sobie z wyciąganiem z form, stojaków i podnoszeniem z ziemi
@@ -290,9 +290,7 @@ public class BlacksmithInteraction : MonoBehaviour
                 return;
             }
 
-            // ==========================================
-            // 10. UPUSZCZANIE NA ZIEMIĘ (Zwykła podłoga/ściana)
-            // ==========================================
+            // UPUSZCZANIE NA ZIEMIĘ (Zwykła podłoga/ściana)
             // Jeśli dotarliśmy aż tutaj, trzymamy przedmiot, ale nie trafiliśmy w żaden stół roboczy
             if (heldItem != null)
             {
@@ -302,9 +300,7 @@ public class BlacksmithInteraction : MonoBehaviour
         }
         else
         {
-            // ==========================================
-            // 11. UPUSZCZANIE W POWIETRZE (Patrzymy w niebo)
-            // ==========================================
+            // UPUSZCZANIE W POWIETRZE (Patrzymy w niebo)
             // Jeśli laser w nic nie trafił (brak kolizji), ale mamy coś w rękach
             if (heldItem != null)
             {

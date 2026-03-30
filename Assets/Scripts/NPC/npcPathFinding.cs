@@ -10,7 +10,6 @@ public class npcPathFinding : MonoBehaviour
     Animator animator;
     public Transform rejectObject;
     public Transform acceptObject;
-    [HideInInspector] public bool isInTeam = false;
 
     void Start()
     {
@@ -55,7 +54,7 @@ public class npcPathFinding : MonoBehaviour
                 agentNPC.velocity = Vector3.zero;
 
                 // Członek drużyny patrzy w kierunku acceptObject
-                if (isInTeam && acceptObject != null)
+                if (acceptObject != null)
                     transform.rotation = Quaternion.Slerp(transform.rotation, acceptObject.rotation, Time.deltaTime * 5f);
             }
         }
@@ -70,19 +69,6 @@ public class npcPathFinding : MonoBehaviour
     {
         if (target != null)
             agentNPC.SetDestination(target.position);
-    }
-
-    public void Accept()
-    {
-        if (isInTeam) return;
-
-        isInTeam = true;
-        SetDestination(acceptObject);
-    }
-
-    public void Reject()
-    {
-        SetDestination(rejectObject);
     }
 
     public float GetSpeed()             { return citizenStats.GetSpeed(); }
