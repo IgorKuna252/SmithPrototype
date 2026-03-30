@@ -290,7 +290,7 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
     public void GrindPerfectEdge(float localZPosition, bool isFlipped)
     {
         float coreWidth = 0.02f;
-        float falloffRadius = 0.08f;
+        float falloffRadius = 0.015f;
         bool wasDeformed = false;
 
         float baseSharpenSpeed = grindSpeed * sharpenMultiplier * 0.01f * Time.deltaTime;
