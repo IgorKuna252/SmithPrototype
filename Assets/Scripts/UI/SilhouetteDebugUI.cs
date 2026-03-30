@@ -91,14 +91,14 @@ public class SilhouetteDebugUI : MonoBehaviour
         _onCloseCallback = null;
     }
 
-    public void ShowTransaction(float matchPercentage, int goldEarned, System.Action onCloseCallback)
+    public void ShowTransaction(float matchPercentage, string rewardMaterial, int rewardAmount, System.Action onCloseCallback)
     {
         _onCloseCallback = onCloseCallback;
 
         if (Label != null)
         {
             Label.text = $"Dopasowanie: <color=#00DA33>{matchPercentage:F0}%</color>\n" +
-                         $"Zarobiono: <color=#FFD700>{goldEarned} G</color>";
+                         $"Otrzymujesz: <color=#FFD700>{rewardMaterial} x{rewardAmount}</color>";
         }
 
         if (_blacksmith != null)

@@ -14,9 +14,6 @@ public class gameManager : MonoBehaviour
     [Header("System Dni")]
     public int currentDay = 1;
 
-    public int gold = 100;
-    public event System.Action OnGoldChanged;
-
     private void Awake()
     {
         // Jeśli instancja już istnieje i to nie my, zniszcz się
@@ -47,29 +44,6 @@ public class gameManager : MonoBehaviour
         
         Debug.Log($"Dodano {amount} {name}. Stan: {inventory[name]}");
     }
-
-    public void AddGold(int amount)
-    {
-        gold += amount;
-        NotifyGoldChanged();
-    }
-
-    public bool RemoveGold(int amount)
-    {
-        if (gold >= amount)
-        {
-            gold -= amount;
-            NotifyGoldChanged();
-            return true;
-        }
-        return false;
-    }
-
-    public void NotifyGoldChanged()
-    {
-        OnGoldChanged?.Invoke();
-    }
-
     public bool RemoveResource(string name, int amount)
     {
         if (!inventory.ContainsKey(name) || inventory[name] < amount)
@@ -78,9 +52,8 @@ public class gameManager : MonoBehaviour
             return false;
         }
 
-        // PULA NIELIMITOWANA (Faza 1)
-        // inventory[name] -= amount; 
-        Debug.Log($"Crafting bez zużycia ({name}). Zasoby testowe.");
+        inventory[name] -= amount; 
+        Debug.Log($"Zużyto {amount} {name}. Pozostało w EQ: {inventory[name]}");
         return true;
     }
     
@@ -89,4 +62,28 @@ public class gameManager : MonoBehaviour
     public bool unlockedAxeMold = false;
     public int type1Progress = 0;
     public int type2Progress = 0;
+
+    [Header("Pula odblokowanych materiałów (do nagród od klientów)")]
+    public List<string> unlockedMaterials = new List<string> { "Copper", "Bronze", "Iron", "SwordHandle" };
+
+    /// <summary>
+    /// Losuje materiał z puli odblokowanych zasobów
+    /// </summary>
+    public string GetRandomUnlockedMaterial()
+    {
+        if (unlockedMaterials.Count == 0) return "Iron"; // fallback
+        return unlockedMaterials[Random.Range(0, unlockedMaterials.Count)];
+    }
+
+    /// <summary>
+    /// Dodaje nowy materiał do puli (jeśli jeszcze go nie ma)
+    /// </summary>
+    public void UnlockMaterial(string materialName)
+    {
+        if (!unlockedMaterials.Contains(materialName))
+        {
+            unlockedMaterials.Add(materialName);
+            Debug.Log($"[gameManager] Odblokowano nowy materiał w puli: {materialName}");
+        }
+    }
 }

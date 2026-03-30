@@ -92,11 +92,7 @@ public class WeaponSocket : MonoBehaviour
             Object.DontDestroyOnLoad(weaponClone);
             ownerData.savedWeaponTemplate = weaponClone;
 
-            if (gameManager.Instance != null)
-                gameManager.Instance.NotifyGoldChanged();
-                
-            // Podmieniłem puste Notify na wywołanie nowo napisanej funkcji, 
-            // która fizycznie ocenia wściekłość/zadowolenie zadania i dorzuca złota!
+            // Wywołujemy mechanikę oceny za zadanie bez powiadamiania o zmianie złota
             npcPathFinding pathFinding = GetComponentInParent<npcPathFinding>();
             if (pathFinding != null)
                 pathFinding.ProcessTransaction();

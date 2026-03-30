@@ -9,6 +9,10 @@ public class ExiledCitizen : MonoBehaviour
     public float speed;
 
     public AssignedTask task;
+    
+    [Header("Nagroda za zlecenie")]
+    [Tooltip("Materiał który NPC da graczowi za wykonanie zlecenia")]
+    public string rewardResource = "Iron";
 
     public void Initialize(float maxHealth, float strength, float intelligence, float speed)
     {

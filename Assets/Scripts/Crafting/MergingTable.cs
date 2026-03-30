@@ -29,6 +29,8 @@ public class MergingTable : MonoBehaviour
     private Vector3 dragOffset;
     public float snapThreshold = 0.5f;
 
+    private System.Collections.Generic.Dictionary<string, int> pendingDeductions = new System.Collections.Generic.Dictionary<string, int>();
+
     void Start()
     {
         if (craftingUI != null) craftingUI.SetActive(false);
@@ -133,6 +135,18 @@ public class MergingTable : MonoBehaviour
         mainPlayerCamera.SetActive(true);
         assemblyCamera.SetActive(false);
         isAssemblyMode = false;
+
+        // --- USUWANIE Z EQ ---
+        if (pendingDeductions.Count > 0 && gameManager.Instance != null)
+        {
+            foreach (var kvp in pendingDeductions)
+            {
+                gameManager.Instance.RemoveResource(kvp.Key, kvp.Value);
+            }
+            pendingDeductions.Clear();
+            Debug.Log("[MergingTable] Zaktualizowano EQ gracza (usunięto zużyte materiały) po wyjściu ze stołu.");
+        }
+        // ---------------------
 
         if (craftingUI != null) craftingUI.SetActive(false);
         Cursor.lockState = CursorLockMode.Locked;
@@ -249,6 +263,10 @@ public class MergingTable : MonoBehaviour
             MetalPiece metal = part.GetComponent<MetalPiece>();
             if (metal != null) 
             {
+                string key = metal.metalTier.ToString();
+                if (pendingDeductions.ContainsKey(key)) pendingDeductions[key]++;
+                else pendingDeductions[key] = 1;
+
                 metal.ForceCoolDown();
                 Destroy(metal);
             }
@@ -256,6 +274,12 @@ public class MergingTable : MonoBehaviour
             WoodPiece wood = part.GetComponent<WoodPiece>();
             if (wood != null)
             {
+                string key = string.IsNullOrEmpty(wood.partType) ? "SwordHandle" : wood.partType;
+                if (part.name.Contains("Siekier") || part.name.Contains("Axe")) key = "AxeHandle";
+
+                if (pendingDeductions.ContainsKey(key)) pendingDeductions[key]++;
+                else pendingDeductions[key] = 1;
+
                 // Powrót do pierwotnej niezawodnej metody - bierzemy punkt Pivotu drewna (najlepsze do trzymania)
                 gripLocalPos = part.localPosition;
                 Destroy(wood);

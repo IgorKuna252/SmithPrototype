@@ -22,33 +22,22 @@ public class prefabSpawning : MonoBehaviour
 
     void Start()
     {
-        // Sprawdzamy czy mamy cykl Dnia i Nocy, by nasłuchiwać zmian
+        // Klienci pojawiają się TYLKO gdy gracz otworzy warsztat (tabliczka)
         if (DayNightManager.Instance != null)
         {
-            DayNightManager.Instance.OnNightStarted += SpawnNightCustomers;
-            DayNightManager.Instance.OnDayStarted += SpawnDayMerchant;
-            
-            // Reakcja natychmiastowa na stan przy załadowaniu gry (żeby ktoś stał po kliknięciu Play)
-            if (DayNightManager.Instance.isDay)
-                SpawnDayMerchant();
-            else
-                SpawnNightCustomers();
+            DayNightManager.Instance.OnShopOpened += SpawnNightCustomers;
         }
         else
         {
-            CalculateQueuePositions(customerCount);
-            Debug.LogWarning("Brak DayNight Managera (TimeManager)! Pobieram stary system spawnu.");
-            SpawnNightCustomers();
+            Debug.LogWarning("Brak DayNight Managera! Klienci nie będą się pojawiać.");
         }
     }
 
     void OnDestroy()
     {
-        // Usunięcie powiązań z pamięci na wypadek zamknięcia sceny
         if (DayNightManager.Instance != null)
         {
-            DayNightManager.Instance.OnNightStarted -= SpawnNightCustomers;
-            DayNightManager.Instance.OnDayStarted -= SpawnDayMerchant;
+            DayNightManager.Instance.OnShopOpened -= SpawnNightCustomers;
         }
     }
 
@@ -98,24 +87,6 @@ public class prefabSpawning : MonoBehaviour
         }
     }
 
-    private void SpawnDayMerchant()
-    {
-        ClearCurrentQueue();
-        // Dla kupca wystarczy jedna pozycja
-        CalculateQueuePositions(1); 
-
-        if (merchantPrefab != null)
-        {
-            GameObject obj = Instantiate(merchantPrefab, queuePositions[0], Quaternion.Euler(0, -90, 0));
-            obj.name = "Kupiec_Poranny_1";
-
-            // Tutaj później wyłapiesz go, i podepniesz jego GUI/Skrypt
-            // Obecnie zachowuje się nawigacyjnie jak zwykły NPC (wchodzi i stoi przed Tobą)
-            SetupCitizenData(obj);
-
-            npcQueue.Add(obj);
-        }
-    }
 
     private void SetupCitizenData(GameObject obj)
     {
@@ -128,6 +99,10 @@ public class prefabSpawning : MonoBehaviour
             citizen.GenerateRandomStats();
             if (TaskManager.Instance != null)
                 citizen.task = TaskManager.Instance.GetRandomTask();
+            
+            // Losowanie nagrody z puli odblokowanych materiałów
+            if (gameManager.Instance != null)
+                citizen.rewardResource = gameManager.Instance.GetRandomUnlockedMaterial();
             
             CitizenData tempData = new CitizenData(obj.name, citizen);
 
@@ -166,7 +141,6 @@ public class prefabSpawning : MonoBehaviour
             if (npcObj == null) continue;
 
             npcPathFinding npc = npcObj.GetComponent<npcPathFinding>();
-            if (npc != null) continue;
 
             if (index < queuePositions.Count)
             {

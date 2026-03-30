@@ -146,7 +146,7 @@ public class BlacksmithInteraction : MonoBehaviour
                     heldItem.GetComponent<IPickable>()?.OnDrop();
                     heldItem.transform.SetParent(null);
                     socket.EquipWeapon(heldItem);
-                    wheel.SetWheel(false);
+                    if (wheel != null) wheel.SetWheel(false);
                     ClearHand();
 
                     npcPathFinding npcPath = socket.GetComponent<npcPathFinding>() ?? socket.GetComponentInParent<npcPathFinding>();
@@ -161,15 +161,6 @@ public class BlacksmithInteraction : MonoBehaviour
             npcPathFinding npc = hit.collider.GetComponent<npcPathFinding>() ?? hit.collider.GetComponentInParent<npcPathFinding>();
             if (npc != null)
             {
-                // Wpierw sprawdzamy, czy to nasz WYJĄTKOWY Kupiec
-                Merchant merchant = npc.GetComponent<Merchant>();
-                if (merchant != null)
-                {
-                    // To jest kupiec! Odpalamy dedykowaną obsługę sklepu
-                    merchant.Interact();
-                    return;
-                }
-
                 // Skoro kod tutaj dotarł, to nie kupiec, lecimy ze standardowym panelem NPC:
                 isInteractingWithNPC = true;
                 playerMovement.enabled = false;

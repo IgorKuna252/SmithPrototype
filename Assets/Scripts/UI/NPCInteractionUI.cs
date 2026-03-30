@@ -11,6 +11,9 @@ public class NPCInteractionUI : MonoBehaviour
     [Header("Opis zadania")]
     public TextMeshProUGUI taskDescriptionText;
 
+    [Header("Nagroda za zlecenie")]
+    public TextMeshProUGUI rewardText;
+
     [Header("Schemat broni (zadanie)")]
     public WeaponSchemeBuilder taskSchemeBuilder;
 
@@ -38,14 +41,22 @@ public class NPCInteractionUI : MonoBehaviour
 
         AssignedTask task = npc.GetComponent<ExiledCitizen>()?.GetAssignedTask();
         WeaponData wpn = npc.GetWeaponData();
+        ExiledCitizen citizen = npc.GetComponent<ExiledCitizen>();
 
         if (taskDescriptionText != null)
             taskDescriptionText.text = task?.description ?? "";
 
+        // Wyświetl nagrodę za zlecenie
+        if (rewardText != null && citizen != null)
+            rewardText.text = $"Nagroda: {citizen.rewardResource}";
+        else if (rewardText != null)
+            rewardText.text = "";
+
         if (taskSchemeBuilder != null && task != null)
             taskSchemeBuilder.SetTriangles(task.triangles);
 
-        wheel.UpdateWheel(npc.GetNormalizedStrength(), npc.GetNormalizedSpeed(), npc.GetNormalizedIntelligence());
+        if (wheel != null)
+            wheel.UpdateWheel(npc.GetNormalizedStrength(), npc.GetNormalizedSpeed(), npc.GetNormalizedIntelligence());
 
         if (weaponWheel != null)
         {

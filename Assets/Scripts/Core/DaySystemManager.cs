@@ -129,14 +129,31 @@ public class DaySystemManager : MonoBehaviour
         if (gameManager.Instance == null) return;
         
         int p = gameManager.Instance.type1Progress;
-        if (p == 0) gameManager.Instance.unlockedFoundry = true;
-        else if (p == 1) gameManager.Instance.AddResource("AxeHandle", 3);
-        else if (p == 2) gameManager.Instance.unlockedAxeMold = true;
-        else if (p == 3) gameManager.Instance.AddResource("SwordHandle", 3);
+        if (p == 0)
+        {
+            gameManager.Instance.unlockedFoundry = true;
+        }
+        else if (p == 1)
+        {
+            gameManager.Instance.AddResource("SwordHandle", 3);
+            gameManager.Instance.UnlockMaterial("SwordHandle");
+        }
+        else if (p == 2)
+        {
+            gameManager.Instance.unlockedAxeMold = true;
+            gameManager.Instance.AddResource("AxeHandle", 3);
+            gameManager.Instance.UnlockMaterial("AxeHandle");
+        }
         else
         {
-            if (p % 2 == 0) gameManager.Instance.AddResource("AxeHandle", 3);
-            else gameManager.Instance.AddResource("SwordHandle", 3);
+            if (p % 2 == 1)
+            {
+                gameManager.Instance.AddResource("SwordHandle", 3);
+            }
+            else
+            {
+                gameManager.Instance.AddResource("AxeHandle", 3);
+            }
         }
         
         gameManager.Instance.type1Progress++;
@@ -158,6 +175,7 @@ public class DaySystemManager : MonoBehaviour
         if (!string.IsNullOrEmpty(res))
         {
             gameManager.Instance.AddResource(res, 3);
+            gameManager.Instance.UnlockMaterial(res);
         }
         
         gameManager.Instance.type2Progress++;

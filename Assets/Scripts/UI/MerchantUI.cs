@@ -71,31 +71,12 @@ public class MerchantUI : MonoBehaviour
     
     public void BuyIron()
     {
-        int cost = 50;
-        if (gameManager.Instance.RemoveGold(cost))
-        {
-            gameManager.Instance.AddResource("Iron", 1);
-            
-            // Dynamiczne spawnowanie właśnie nabytej sztabki 
-            if (ForgeInventorySpawner.Instance != null)
-                ForgeInventorySpawner.Instance.SpawnNewBoughtMaterial(MetalType.Iron);
-
-            Debug.Log($"Kupiono Żelazo za {cost} złota! Sztabka ląduje na stole.");
-        }
+        Debug.Log("Sklep usunięty - nie można nic kupić.");
     }
 
     public void BuyCopper()
     {
-        int cost = 30;
-        if (gameManager.Instance.RemoveGold(cost))
-        {
-            gameManager.Instance.AddResource("Copper", 1);
-            
-            if (ForgeInventorySpawner.Instance != null)
-                ForgeInventorySpawner.Instance.SpawnNewBoughtMaterial(MetalType.Copper);
-
-            Debug.Log($"Kupiono Miedź za {cost} złota! Sztabka ląduje na stole.");
-        }
+        Debug.Log("Sklep usunięty - nie można nic kupić.");
     }
 
     // Dodaj więcej funkcji pod kolejne surowce lub zrób jedną uniwersalną metodę

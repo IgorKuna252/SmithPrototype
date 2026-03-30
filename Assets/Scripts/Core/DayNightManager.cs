@@ -9,10 +9,13 @@ public class DayNightManager : MonoBehaviour
 
     [Header("Ustawienia Czasu")]
     [Tooltip("Obecny czas w grze (w formacie 0 - 24 godzin)")]
-    [Range(0, 24)] public float currentTime = 8f;
+    [Range(0, 24)] public float currentTime = 18f;
     
     [Tooltip("Ile minut w grze mija podczas 1 sekundy prawdziwego czasu? (10f = bardzo szybko)")]
     public float timeMultipler = 10f; 
+
+    [Tooltip("Czy czas aktualnie płynie?")]
+    public bool isTimeFlowing = false;
 
     [Header("Oświetlenie (Słońce / Księżyc)")]
     public Light directionalLight;
@@ -20,10 +23,12 @@ public class DayNightManager : MonoBehaviour
     public Gradient lightColorGradient;
 
     [Header("Stany i Wydarzenia")]
-    public bool isDay = true;
+    public bool isDay = false; // Startujemy o 18:00 = NOC
     
     public event Action OnDayStarted;    
     public event Action OnNightStarted;  
+    public event Action OnShopOpened;   // Gracz otworzył sklep (tabliczka)
+    public event Action OnShopClosed;   // Gracz zamknął sklep (tabliczka) lub rano
     
     private const float startOfDayHour = 6f;
     private const float startOfNightHour = 18f;
@@ -38,21 +43,75 @@ public class DayNightManager : MonoBehaviour
         Instance = this;
     }
 
+    void Start()
+    {
+        // Wymuszenie poprawnego stanu niezależnie od wartości w Inspektorze
+        currentTime = 18f;
+        isTimeFlowing = false;
+        isDay = false;
+    }
+
+    /// <summary>
+    /// Wywoływane przez tabliczkę "Otwarte" - uruchamia czas i spawnuje klientów
+    /// </summary>
+    public void OpenShop()
+    {
+        if (isTimeFlowing) return; // Już otwarty
+        
+        isTimeFlowing = true;
+        Debug.Log("🔓 Warsztat OTWARTY! Czas ruszył, klienci nadchodzą...");
+        OnShopOpened?.Invoke();
+    }
+
+    /// <summary>
+    /// Wywoływane przez tabliczkę "Zamknięte" lub automatycznie o 6:00 rano
+    /// </summary>
+    public void CloseShop()
+    {
+        if (!isTimeFlowing) return; // Już zamknięty
+        
+        isTimeFlowing = false;
+        Debug.Log("🔒 Warsztat ZAMKNIĘTY! Klienci odchodzą, podsumowanie dnia...");
+        OnShopClosed?.Invoke();
+        
+        // Wyczyść klientów i pokaż panel podsumowania
+        prefabSpawning spawner = FindFirstObjectByType<prefabSpawning>();
+        if (spawner != null) spawner.ClearCurrentQueue();
+        
+        DaySystemManager sys = FindFirstObjectByType<DaySystemManager>();
+        if (sys != null) sys.EndDayButton();
+    }
+
     void Update()
     {
-        UpdateTime();
+        if (isTimeFlowing)
+        {
+            UpdateTime();
+            CheckTimeEvents();
+        }
+        // Oswietlenie musi sie zaktualizować nawet gdy stoimy w miejscu, zeby ustawić słońce na starcie
         UpdateLighting();
-        CheckTimeEvents();
     }
 
     private void UpdateTime()
     {
+        float previousTime = currentTime;
+
         // deltaTime to ułamek sekundy. Mnożymy przez mnożnik czasu i konwertujemy ze stopni (minut) na format 24h
         currentTime += (Time.deltaTime * timeMultipler) / 60f; 
 
         if (currentTime >= 24f)
         {
             currentTime %= 24f;
+        }
+
+        // Sprawdzenie czy zegar dobił z nocy do poranka (6:00)
+        if (previousTime < startOfDayHour && currentTime >= startOfDayHour)
+        {
+            currentTime = startOfDayHour;
+            
+            // CloseShop obsłuży zatrzymanie czasu, usunięcie klientów i panel podsumowania
+            CloseShop();
         }
     }
 

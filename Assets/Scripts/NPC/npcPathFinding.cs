@@ -112,7 +112,6 @@ public class npcPathFinding : MonoBehaviour
         float schemeMatch;
         if (task.triangles == null || task.triangles.Length == 0)
         {
-            // Brak schematu = NPC akceptuje cokolwiek = pełna wypłata
             schemeMatch = 1f;
         }
         else if (evaluator != null && weaponObj != null)
@@ -129,46 +128,52 @@ public class npcPathFinding : MonoBehaviour
             schemeMatch = 0f;
         }
 
-        int baseValue;
-        switch (wpn.metalTier)
-        {
-            case MetalType.Copper:    baseValue = 30;   break;
-            case MetalType.Bronze:    baseValue = 50;   break;
-            case MetalType.Iron:      baseValue = 100;  break;
-            case MetalType.Steel:     baseValue = 250;  break;
-            case MetalType.Gold:      baseValue = 500;  break;
-            case MetalType.Platinum:  baseValue = 1000; break;
-            case MetalType.BlueSteel: baseValue = 2500; break;
-            case MetalType.Vibranium: baseValue = 5000; break;
-            default:                  baseValue = 80;   break;
-        }
+        // Oblicz ilość materiału na podstawie dopasowania
+        float matchPercent = schemeMatch * 100f;
+        int rewardAmount;
+        if (matchPercent >= 80f) rewardAmount = 3;
+        else if (matchPercent >= 40f) rewardAmount = 2;
+        else rewardAmount = 1;
 
-        int finalPayment = Mathf.RoundToInt(baseValue * schemeMatch);
+        // Pobierz wylosowany wcześniej materiał od tego NPC
+        string rewardMaterial = citizenStats.rewardResource;
+        if (string.IsNullOrEmpty(rewardMaterial)) rewardMaterial = "Iron";
 
-        Debug.Log($"[Transakcja] +{finalPayment} G | Schemat: {schemeMatch*100f:F0}% | Metal: {wpn.metalTier}");
+        Debug.Log($"[Transakcja] Schemat: {matchPercent:F0}% | Nagroda: {rewardMaterial} x{rewardAmount}");
 
-        // ZMIENIONE: Używamy teraz SilhouetteDebugUI
         if (SilhouetteDebugUI.Instance != null)
         {
-            // Zatrzymujemy NPC w miejscu (dla pewności)
             agentNPC.velocity = Vector3.zero;
 
-            // Przekazujemy procent, złoto i co ma się stać PO zamknięciu panelu
-            SilhouetteDebugUI.Instance.ShowTransaction(schemeMatch * 100f, finalPayment, () =>
+            SilhouetteDebugUI.Instance.ShowTransaction(matchPercent, rewardMaterial, rewardAmount, () =>
             {
-                // Ten kod wykona się DOPIERO gdy gracz zamknie okno z wynikiem!
-                if (manager != null) manager.AddGold(finalPayment);
+                // Dodaj materiały do EQ gracza
+                if (gameManager.Instance != null)
+                    gameManager.Instance.AddResource(rewardMaterial, rewardAmount);
+
+                // Spawnuj fizyczne obiekty na warsztacie
+                if (ForgeInventorySpawner.Instance != null)
+                {
+                    MetalType metalType;
+                    if (System.Enum.TryParse(rewardMaterial, out metalType))
+                    {
+                        for (int i = 0; i < rewardAmount; i++)
+                            ForgeInventorySpawner.Instance.SpawnNewBoughtMaterial(metalType);
+                    }
+                }
+
                 var spawner = Object.FindFirstObjectByType<prefabSpawning>();
                 if (spawner != null) spawner.OnNPCProcessed();
                 
-                // NPC odchodzi
                 WeaponAccepted();
             });
         }
         else
         {
-            // Fallback gdy brak UI
-            if (manager != null) manager.AddGold(finalPayment);
+            // Fallback bez UI
+            if (gameManager.Instance != null)
+                gameManager.Instance.AddResource(rewardMaterial, rewardAmount);
+
             var spawner = Object.FindFirstObjectByType<prefabSpawning>();
             if (spawner != null) spawner.OnNPCProcessed();
             WeaponAccepted();
