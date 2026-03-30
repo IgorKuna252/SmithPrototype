@@ -1,12 +1,11 @@
 using UnityEngine;
 
-// Zauważ, że dodaliśmy tu interfejs IPickable
 public class Crucible : MonoBehaviour, IPickable
 {
     [Header("Ustawienia Odlewania")]
     public float pourRange = 3f;
 
-    [Header("Odlewanie w stacji (Dokowanie)")]
+    [Header("Odlewanie w stacji")]
     public float tiltSpeed = 100f;
 
     [Header("Zawartość")]
@@ -26,7 +25,6 @@ public class Crucible : MonoBehaviour, IPickable
     private MoldManager currentMold;
     private bool isPouring = false;
     
-    // Zmienna, która mówi nam, czy gracz trzyma ten obiekt
     private bool isHeld = false; 
 
     void Start()

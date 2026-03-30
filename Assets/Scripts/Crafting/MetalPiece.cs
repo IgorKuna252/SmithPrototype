@@ -276,10 +276,8 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
         float eatSpeed = grindSpeed * eatMultiplier * Time.deltaTime;
 
         float perfectThickness = 0.002f;
-
-        // ==========================================
+        
         // FAZA 1 i 2: OSTRZENIE I WŻERANIE
-        // ==========================================
         for (int i = 0; i < vertices.Length; i++)
         {
             if (Mathf.Abs(vertices[i].z - localZPosition) < stoneWidth)
@@ -312,10 +310,8 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
                 }
             }
         }
-
-        // ==========================================
+        
         // FAZA 3: DETEKCJA ODCIĘCIA (AMPUTACJA)
-        // ==========================================
         float maxRemainingWidth = 0f;
         int verticesInZone = 0;
 
@@ -348,10 +344,8 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
             }
             Debug.Log("<color=red>KRYTYCZNE USZKODZENIE! Ostrze przecięte!</color>");
         }
-
-        // ==========================================
+        
         // ZAKOŃCZENIE I ZAPISANIE SIATKI
-        // ==========================================
         if (wasDeformed)
         {
             mesh.vertices = vertices;

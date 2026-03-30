@@ -1,14 +1,15 @@
 using UnityEngine;
 using System;
 
+// Singleton, żeby by łatwo dostępny z innych skryptów powołujących NPC!
 public class DayNightManager : MonoBehaviour
 {
-    // Singleton żeby by łatwo dostępny z innych skryptów powołujących NPC!
+    
     public static DayNightManager Instance { get; private set; }
 
     [Header("Ustawienia Czasu")]
     [Tooltip("Obecny czas w grze (w formacie 0 - 24 godzin)")]
-    [Range(0, 24)] public float currentTime = 8f; // Zaczynamy o 8:00 rano
+    [Range(0, 24)] public float currentTime = 8f;
     
     [Tooltip("Ile minut w grze mija podczas 1 sekundy prawdziwego czasu? (10f = bardzo szybko)")]
     public float timeMultipler = 10f; 
@@ -21,11 +22,9 @@ public class DayNightManager : MonoBehaviour
     [Header("Stany i Wydarzenia")]
     public bool isDay = true;
     
-    // Użyjemy tych Eventów w przyszłości, by skrypty od NPC same wiedziały, kiedy spawać
     public event Action OnDayStarted;    
     public event Action OnNightStarted;  
-
-    // Ramy godzinowe dla dnia i nocy
+    
     private const float startOfDayHour = 6f;
     private const float startOfNightHour = 18f;
 
@@ -53,7 +52,7 @@ public class DayNightManager : MonoBehaviour
 
         if (currentTime >= 24f)
         {
-            currentTime %= 24f; // Wyzerowanie przy północy
+            currentTime %= 24f;
         }
     }
 
@@ -94,7 +93,6 @@ public class DayNightManager : MonoBehaviour
     }
 
     // Ta metoda uruchamia się automatycznie w Edytorze, gdy dodasz ten skrypt do jakiegoś obiektu.
-    // Dzięki temu ustawi fajne domyślne kolory i krzywe od razu!
     private void Reset()
     {
         lightIntensityCurve = new AnimationCurve();
@@ -106,7 +104,6 @@ public class DayNightManager : MonoBehaviour
         lightIntensityCurve.AddKey(0.80f, 0.1f); // 19:30 Wieczór
         lightIntensityCurve.AddKey(1f, 0.1f);    // 00:00 Noc
         
-        // Brak wymogu wygładzania AnimationUtility na rzecz kompatybilności buildów
         lightColorGradient = new Gradient();
         GradientColorKey[] colorKeys = new GradientColorKey[5];
         colorKeys[0] = new GradientColorKey(new Color(0.1f, 0.1f, 0.3f), 0f);    // Niebieskawa Noc

@@ -1,15 +1,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-
+// Singleton, żeby mieć łatwy dostęp do zarządzania zasobami i złotem z innych skryptów!
 public class gameManager : MonoBehaviour
 {
-    // Singleton
     public static gameManager Instance { get; private set; }
 
     public int gold = 500;
 
-    // Event wywoływany gdy złoto się zmieni
+    // Event wywoływany, gdy złoto się zmieni
     public event System.Action OnGoldChanged;
 
     public Dictionary<string, int> inventory = new Dictionary<string, int>();

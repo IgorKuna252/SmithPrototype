@@ -21,11 +21,7 @@ public class MergingTable : MonoBehaviour
     [Header("Mikro-korekta łączenia X (Lewo/Prawo)")]
     public float swordConnectionOffsetX = 0f;    // Boczny offset dla miecza
     public float axeConnectionOffsetX = 0f;      // Boczny offset dla topora
-
-    [Header("Ustawienia Pozycji Części")]
-    public Vector3 handleOffset = new Vector3(0, 0, -0.4f);
-    public Vector3 bladeOffset = Vector3.zero;
-
+    
     [Header("Grip - Pozycja i Rotacja w dłoni NPC")]
     [Tooltip("Dodatkowe przesunięcie pozycji GripPointa miecza (X, Y, Z)")]
     public Vector3 swordGripPositionOffset = Vector3.zero;
@@ -33,9 +29,9 @@ public class MergingTable : MonoBehaviour
     public Vector3 axeGripPositionOffset = Vector3.zero;
 
     [Tooltip("Rotacja GripPointa miecza — dostosuj żeby ostrze celowało do przodu NPC")]
-    public Vector3 swordGripRotation = new Vector3(0f, -90f, -30f);
+    public Vector3 swordGripRotation = new (0f, -90f, -30f);
     [Tooltip("Rotacja GripPointa topora — dostosuj żeby ostrze celowało do przodu NPC")]
-    public Vector3 axeGripRotation = new Vector3(0f, 0f, -90f);
+    public Vector3 axeGripRotation = new (0f, 0f, -90f);
 
     private GameObject mainPlayerCamera;
     private bool isAssemblyMode = false;
@@ -93,7 +89,7 @@ public class MergingTable : MonoBehaviour
         if (rb != null) 
         {
             rb.isKinematic = true;
-            rb.detectCollisions = true; // Ważne: musi mieć kolizje do kucia i podnoszenia!
+            rb.detectCollisions = true;
         }
 
         placedMetal = metal;
@@ -228,7 +224,10 @@ public class MergingTable : MonoBehaviour
             grip.transform.localRotation = Quaternion.Euler(isAxe ? axeGripRotation : swordGripRotation);
 
             // Odejmij surowiec z ekwipunku
-            gameManager.Instance.RemoveResource(metalName, 1);
+            if(gameManager.Instance.RemoveResource(metalName, 1))
+                Debug.Log($"Zużyto 1 {metalName} do stworzenia {weaponName}.");
+            else
+                Debug.LogWarning($"Nie można zużyć {metalName} - brak w ekwipunku!");
 
             placedMetal = null;
             placedWood = null;

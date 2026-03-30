@@ -8,9 +8,7 @@ public class GrindstoneStation : MonoBehaviour
     public GameObject playerObject;
 
     [Header("Ustawienia Kamienia (Tuning)")]
-    [Tooltip("Gdzie fizycznie znajduje się powierzchnia kamienia? (Zwiększaj/Zmniejszaj aż miecz idealnie dotknie tarczy)")]
     public float distanceToStone = 0.1f;
-    [Tooltip("Jak głęboko wcinamy się w kamień podczas kliknięcia (szlifowania)")]
     public float grindBiteDepth = 0.015f;
 
     private MetalPiece currentMetal;
