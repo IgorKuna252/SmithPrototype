@@ -6,6 +6,7 @@ public class BlacksmithInteraction : MonoBehaviour
     public float reachDistance = 3f;
     public Transform holdPosition;
     public Vector3 holdRotation = new Vector3(90f, 0f, 0f);
+    public GameObject playerVisuals;
 
     [Header("Pozycje trzymania w ręku - Typy")]
     public Vector3 swordHoldPosition = Vector3.zero;
@@ -146,6 +147,9 @@ public class BlacksmithInteraction : MonoBehaviour
                 playerMovement.enabled = false;
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
+                
+                if (playerVisuals != null) playerVisuals.SetActive(false);
+                
                 NPCInteractionUI.Instance.Show(npc);
                 return;
             }
@@ -181,6 +185,9 @@ public class BlacksmithInteraction : MonoBehaviour
                     activeTable = table;
                     isInteractingWithTable = true;
                     playerMovement.enabled = false;
+                    
+                    if (playerVisuals != null) playerVisuals.SetActive(false);
+                    
                     table.ToggleAssemblyCamera(playerCamera.gameObject);
                     return;
                 }
@@ -218,11 +225,29 @@ public class BlacksmithInteraction : MonoBehaviour
                     playerMovement.enabled = false;
                     mold.ToggleAssemblyCamera(playerCamera.gameObject);
                     
+                    if (playerVisuals != null) playerVisuals.SetActive(false);
+                    
                     if (heldCrucible != null)
                     {
                         mold.DockCrucible(heldCrucible);
                         ClearHand(); // zapominamy że trzymamy, bo stacja go przechwyciła
                     }
+                    return;
+                }
+            }
+
+            // 7.6. NAPEŁNIANIE TYGLA CZYMŚ Z RĘKI (LUB MAGICZNIE)
+            Crucible targetCrucible = hit.collider.GetComponentInParent<Crucible>();
+            if (targetCrucible != null)
+            {
+                MetalPiece heldMetal = heldItem != null ? heldItem.GetComponent<MetalPiece>() : null;
+                
+                if (heldMetal != null)
+                {
+                    // Wrzucasz metal z ręki prosto do tygla (wypełnia w 100%)
+                    targetCrucible.FillWithMetal(heldMetal.metalTier);
+                    Destroy(heldItem);
+                    ClearHand();
                     return;
                 }
             }
@@ -250,9 +275,9 @@ public class BlacksmithInteraction : MonoBehaviour
                 DropItem();
                 return;
             }
-            }
-            else
-            {
+        }
+        else
+        {
             // ==========================================
             // 11. UPUSZCZANIE W POWIETRZE (Patrzymy w niebo)
             // ==========================================
@@ -272,20 +297,23 @@ public class BlacksmithInteraction : MonoBehaviour
         isInteractingWithTable = false;
         activeTable = null;
         playerMovement.enabled = true;
+        
+        if (playerVisuals != null) playerVisuals.SetActive(true);
     }
 
     public void CloseMoldInteraction()
     {
         if (activeMold != null)
         {
-            // Odbieramy tygiel, jeśli tam jest
-            if (activeMold.dockedCrucible != null)
+            activeMold.ExitAssemblyMode();
+            
+            Crucible pickedCrucible = activeMold.dockedCrucible;
+            if (pickedCrucible != null)
             {
-                Crucible c = activeMold.dockedCrucible;
                 activeMold.UndockCrucible();
                 
-                c.transform.SetParent(null);
-                heldItem = c.gameObject;
+                pickedCrucible.transform.SetParent(null);
+                heldItem = pickedCrucible.gameObject;
                 heldItemRb = heldItem.GetComponent<Rigidbody>();
                 if (heldItemRb != null)
                 {
@@ -297,10 +325,12 @@ public class BlacksmithInteraction : MonoBehaviour
                 heldItem.transform.localPosition = Vector3.zero;
                 heldItem.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
                 
-                c.OnPickUp();
+                pickedCrucible.OnPickUp();
             }
-            activeMold.ExitAssemblyMode();
+            
+            if (playerVisuals != null) playerVisuals.SetActive(true);
         }
+        
         isInteractingWithMold = false;
         activeMold = null;
         playerMovement.enabled = true;
@@ -313,6 +343,8 @@ public class BlacksmithInteraction : MonoBehaviour
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
         NPCInteractionUI.Instance.Hide();
+        
+        if (playerVisuals != null) playerVisuals.SetActive(true);
     }
 
     bool TryPickUp()

@@ -10,8 +10,7 @@ public class Crucible : MonoBehaviour, IPickable
     public float tiltSpeed = 100f;
 
     [Header("Zawartość")]
-    public float currentFill = 0f;
-    public float maxCapacity = 100f;
+    public bool isEmpty = true;
     public MetalType currentMetal;
 
     [Header("Wizualizacja Płynu")]
@@ -47,22 +46,26 @@ public class Crucible : MonoBehaviour, IPickable
     {
         if (isDocked)
         {
-            if (Input.GetMouseButton(0))
+            if (Input.GetMouseButtonDown(0) && isEmpty)
+            {
+                Debug.Log("Tygiel jest pusty! Nie masz co wlewać.");
+            }
+
+            if (Input.GetMouseButton(0) && !isEmpty)
             {
                 currentTilt = Mathf.MoveTowards(currentTilt, -90f, tiltSpeed * Time.deltaTime);
                 if (currentTilt <= -45f && dockedMold != null)
                 {
-                    if (currentFill > 0 && !dockedMold.IsFull())
+                    if (!dockedMold.IsFull())
                     {
                         dockedMold.ReceiveMetal(currentMetal);
                         isPouring = true;
-                        
-                        // Zmniejszamy płyn w tyglu z prędkością napełniania formy (zakładamy 100 w Tyglu vs 1 w Moldzie)
-                        currentFill = Mathf.Max(0, currentFill - (dockedMold.fillSpeed * Time.deltaTime * 100f));
-                        UpdateLiquidVisual();
                     }
                     else
                     {
+                        // Forma w pełni się zapełniła, a my zużyliśmy cały tygiel!
+                        isEmpty = true;
+                        UpdateLiquidVisual();
                         dockedMold.StopReceivingMetal();
                         isPouring = false;
                     }
@@ -101,7 +104,7 @@ public class Crucible : MonoBehaviour, IPickable
             
             if (mold != null)
             {
-                mold.ReceiveMetal();
+                mold.ReceiveMetal(currentMetal);
                 currentMold = mold;
                 isPouring = true;
                 return;
@@ -123,10 +126,10 @@ public class Crucible : MonoBehaviour, IPickable
 
     // --- FUNKCJE POJEMNOŚCI TYGLA ---
 
-    public void AddMetal(MetalType metal, float amount)
+    public void FillWithMetal(MetalType metal)
     {
-        if (currentFill <= 0) currentMetal = metal;
-        currentFill = Mathf.Clamp(currentFill + amount, 0, maxCapacity);
+        isEmpty = false;
+        currentMetal = metal;
         UpdateLiquidVisual();
     }
 
@@ -134,11 +137,10 @@ public class Crucible : MonoBehaviour, IPickable
     {
         if (liquidVisual != null)
         {
-            if (currentFill > 0)
+            if (!isEmpty)
             {
                 liquidVisual.gameObject.SetActive(true);
-                float percent = currentFill / maxCapacity;
-                liquidVisual.localScale = new Vector3(originalLiquidScale.x, originalLiquidScale.y * percent, originalLiquidScale.z);
+                liquidVisual.localScale = originalLiquidScale;
                 
                 if (liquidMat != null) liquidMat.color = new Color(1f, 0.4f, 0f);
             }
