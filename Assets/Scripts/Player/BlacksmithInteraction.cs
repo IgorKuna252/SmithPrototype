@@ -236,7 +236,7 @@ public class BlacksmithInteraction : MonoBehaviour
                 }
             }
 
-            // 7.6. NAPEŁNIANIE TYGLA CZYMŚ Z RĘKI (LUB MAGICZNIE)
+            // 7.6. NAPEŁNIANIE TYGLA CZYMŚ Z RĘKI
             Crucible targetCrucible = hit.collider.GetComponentInParent<Crucible>();
             if (targetCrucible != null)
             {
@@ -244,10 +244,17 @@ public class BlacksmithInteraction : MonoBehaviour
                 
                 if (heldMetal != null)
                 {
-                    // Wrzucasz metal z ręki prosto do tygla (wypełnia w 100%)
-                    targetCrucible.FillWithMetal(heldMetal.metalTier);
-                    Destroy(heldItem);
-                    ClearHand();
+                    if (heldMetal.currentTemperature >= heldMetal.forgingTemperature)
+                    {
+                        // Wrzucasz rozgrzany metal z ręki prosto do tygla
+                        targetCrucible.FillWithMetal(heldMetal.metalTier);
+                        Destroy(heldItem);
+                        ClearHand();
+                    }
+                    else
+                    {
+                        Debug.Log("Metal jest za zimny by włożyć go do tygla! Najpierw go rozgrzej w piecu.");
+                    }
                     return;
                 }
             }
