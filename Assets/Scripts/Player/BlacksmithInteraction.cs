@@ -6,6 +6,7 @@ public class BlacksmithInteraction : MonoBehaviour
     public float reachDistance = 3f;
     public Transform holdPosition;
     public Vector3 holdRotation = new Vector3(90f, 0f, 0f);
+    public GameObject playerVisuals;
 
     [Header("Pozycje trzymania w ręku - Typy")]
     public Vector3 swordHoldPosition = Vector3.zero;
@@ -22,6 +23,10 @@ public class BlacksmithInteraction : MonoBehaviour
     private bool isInteractingWithTable = false;
     private bool isTransactionUIOpen = false;
     private MergingTable activeTable = null;
+    
+    private bool isInteractingWithMold = false;
+    private MoldManager activeMold = null;
+
     [HideInInspector] public WheelController wheel;
 
 
@@ -81,6 +86,20 @@ public class BlacksmithInteraction : MonoBehaviour
                 CloseTableInteraction();
             }
             return; // Blokujemy resztę, żeby gracz nie machał rękami pod stołem
+        }
+
+        // 3. BLOKADA KAMERY FORMY
+        if (isInteractingWithMold)
+        {
+            if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.E))
+            {
+                CloseMoldInteraction();
+            }
+            else if (Input.GetKeyDown(KeyCode.Space))
+            {
+                if (activeMold != null) activeMold.ChangeMold();
+            }
+            return;
         }
 
         // ==========================================
@@ -145,6 +164,9 @@ public class BlacksmithInteraction : MonoBehaviour
                 playerMovement.enabled = false;
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
+                
+                if (playerVisuals != null) playerVisuals.SetActive(false);
+                
                 NPCInteractionUI.Instance.Show(npc);
                 return;
             }
@@ -180,6 +202,9 @@ public class BlacksmithInteraction : MonoBehaviour
                     activeTable = table;
                     isInteractingWithTable = true;
                     playerMovement.enabled = false;
+                    
+                    if (playerVisuals != null) playerVisuals.SetActive(false);
+                    
                     table.ToggleAssemblyCamera(playerCamera.gameObject);
                     return;
                 }
@@ -201,6 +226,54 @@ public class BlacksmithInteraction : MonoBehaviour
                 anvil.EnterForgingMode(heldItem.GetComponent<MetalPiece>());
                 ClearHand();
                 return;
+            }
+
+            // 7.5. FORMY (MOLD MANAGER)
+            MoldManager mold = hit.collider.GetComponentInParent<MoldManager>();
+            if (mold != null)
+            {
+                Crucible heldCrucible = heldItem != null ? heldItem.GetComponent<Crucible>() : null;
+                
+                // Jeśli jesteśmy z pustymi rękami LUB trzymamy tygiel, i forma nie czeka na wyjęcie obiektu
+                if ((heldItem == null || heldCrucible != null) && !mold.IsReadyToExtract())
+                {
+                    activeMold = mold;
+                    isInteractingWithMold = true;
+                    playerMovement.enabled = false;
+                    mold.ToggleAssemblyCamera(playerCamera.gameObject);
+                    
+                    if (playerVisuals != null) playerVisuals.SetActive(false);
+                    
+                    if (heldCrucible != null)
+                    {
+                        mold.DockCrucible(heldCrucible);
+                        ClearHand(); // zapominamy że trzymamy, bo stacja go przechwyciła
+                    }
+                    return;
+                }
+            }
+
+            // 7.6. NAPEŁNIANIE TYGLA CZYMŚ Z RĘKI
+            Crucible targetCrucible = hit.collider.GetComponentInParent<Crucible>();
+            if (targetCrucible != null)
+            {
+                MetalPiece heldMetal = heldItem != null ? heldItem.GetComponent<MetalPiece>() : null;
+                
+                if (heldMetal != null)
+                {
+                    if (heldMetal.currentTemperature >= heldMetal.forgingTemperature)
+                    {
+                        // Wrzucasz rozgrzany metal z ręki prosto do tygla
+                        targetCrucible.FillWithMetal(heldMetal.metalTier);
+                        Destroy(heldItem);
+                        ClearHand();
+                    }
+                    else
+                    {
+                        Debug.Log("Metal jest za zimny by włożyć go do tygla! Najpierw go rozgrzej w piecu.");
+                    }
+                    return;
+                }
             }
 
             // 8. PODNOSZENIE Z ZIEMI (Zawsze najwyższy priorytet, gdy mamy puste ręce!)
@@ -248,6 +321,43 @@ public class BlacksmithInteraction : MonoBehaviour
         isInteractingWithTable = false;
         activeTable = null;
         playerMovement.enabled = true;
+        
+        if (playerVisuals != null) playerVisuals.SetActive(true);
+    }
+
+    public void CloseMoldInteraction()
+    {
+        if (activeMold != null)
+        {
+            activeMold.ExitAssemblyMode();
+            
+            Crucible pickedCrucible = activeMold.dockedCrucible;
+            if (pickedCrucible != null)
+            {
+                activeMold.UndockCrucible();
+                
+                pickedCrucible.transform.SetParent(null);
+                heldItem = pickedCrucible.gameObject;
+                heldItemRb = heldItem.GetComponent<Rigidbody>();
+                if (heldItemRb != null)
+                {
+                    heldItemRb.useGravity = false;
+                    heldItemRb.isKinematic = true;
+                    heldItemRb.detectCollisions = false;
+                }
+                heldItem.transform.SetParent(holdPosition);
+                heldItem.transform.localPosition = Vector3.zero;
+                heldItem.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+                
+                pickedCrucible.OnPickUp();
+            }
+            
+            if (playerVisuals != null) playerVisuals.SetActive(true);
+        }
+        
+        isInteractingWithMold = false;
+        activeMold = null;
+        playerMovement.enabled = true;
     }
 
     public void CloseNPCInteraction()
@@ -257,6 +367,8 @@ public class BlacksmithInteraction : MonoBehaviour
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
         NPCInteractionUI.Instance.Hide();
+        
+        if (playerVisuals != null) playerVisuals.SetActive(true);
     }
 
     bool TryPickUp()

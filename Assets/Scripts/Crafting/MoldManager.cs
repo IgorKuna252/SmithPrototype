@@ -12,8 +12,17 @@ public class MoldSetup
     [HideInInspector] public Material liquidMat;    // Każda forma pamięta swój materiał!
 }
 
-public class MoldManager : MonoBehaviour, IInteractable
+public class MoldManager : MonoBehaviour
 {
+    [Header("Kamera Formy")]
+    public GameObject assemblyCamera;
+    private GameObject mainPlayerCamera;
+    public bool isAssemblyMode = false;
+
+    [Header("Dokowanie Tygla")]
+    public Transform crucibleDockPoint;
+    [HideInInspector] public Crucible dockedCrucible;
+
     [Header("Konfiguracja Form")]
     public List<MoldSetup> molds;
     private int currentMoldIndex = 0;
@@ -27,6 +36,9 @@ public class MoldManager : MonoBehaviour, IInteractable
     private bool isFull = false;
     private bool isCooled = false;
     private float coolTimer = 0f;
+    
+    // Zapamiętany typ metalu z Tygla
+    private MetalType moldedMetal;
 
     void Start()
     {
@@ -96,9 +108,15 @@ public class MoldManager : MonoBehaviour, IInteractable
         }
     }
 
-    public void ReceiveMetal()
+    public bool IsFull() => isFull;
+
+    public void ReceiveMetal(MetalType incomingMetal)
     {
-        if (!isFull && !isCooled) isFilling = true;
+        if (!isFull && !isCooled) 
+        {
+            isFilling = true;
+            moldedMetal = incomingMetal;
+        }
     }
 
     public void StopReceivingMetal()
@@ -114,6 +132,13 @@ public class MoldManager : MonoBehaviour, IInteractable
         {
             MoldSetup activeMold = molds[currentMoldIndex];
             GameObject spawnedItem = Instantiate(activeMold.prefabToSpawn, activeMold.liquidVisual.position, activeMold.liquidVisual.rotation);
+            
+            // Nadpisujemy zmienną w stworzonym przedmiocie danymi z tygla
+            MetalPiece piece = spawnedItem.GetComponent<MetalPiece>();
+            if (piece != null)
+            {
+                piece.metalTier = moldedMetal;
+            }
             
             ResetMold(activeMold);
             return spawnedItem;
@@ -133,22 +158,38 @@ public class MoldManager : MonoBehaviour, IInteractable
         if (mold.liquidMat != null) mold.liquidMat.color = new Color(1f, 0.4f, 0f);
     }
 
-    // Zmień nagłówek metody Interact, aby przyjmowała informację o ręce gracza
-    public bool Interact()
+    // Logika wejścia i wyjścia z kamery
+    public void ToggleAssemblyCamera(GameObject playerCam)
+    {
+        if (isAssemblyMode) return;
+
+        mainPlayerCamera = playerCam; 
+        mainPlayerCamera.SetActive(false);
+        if(assemblyCamera != null) assemblyCamera.SetActive(true);
+        isAssemblyMode = true;
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+    }
+
+    public void ExitAssemblyMode()
+    {
+        if (!isAssemblyMode) return;
+
+        if (mainPlayerCamera != null) mainPlayerCamera.SetActive(true);
+        if(assemblyCamera != null) assemblyCamera.SetActive(false);
+        isAssemblyMode = false;
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+    }
+
+    public bool ChangeMold()
     {
         // 1. BLOKADA: Jeśli wlewasz metal, forma jest pełna lub stygnie - nie przełączaj
         if (isFilling || currentFill > 0 || isCooled) 
         {
             Debug.Log("Nie można zmienić formy: proces odlewania w toku.");
-            return false;
-        }
-
-        // 2. BLOKADA: Sprawdzamy, czy gracz trzyma cokolwiek w ręku
-        // Zakładamy, że masz dostęp do skryptu BlacksmithInteraction.
-        // Jeśli używasz Singletona (Instance), możesz to sprawdzić tak:
-        if (BlacksmithInteraction.Instance != null && BlacksmithInteraction.Instance.IsHoldingItem())
-        {
-            Debug.Log("Nie możesz zmienić formy, trzymając przedmiot!");
             return false;
         }
 
@@ -159,5 +200,19 @@ public class MoldManager : MonoBehaviour, IInteractable
         
         Debug.Log("Zmieniono formę na: " + molds[currentMoldIndex].moldName);
         return true;
+    }
+    public void DockCrucible(Crucible crucible)
+    {
+        dockedCrucible = crucible;
+        crucible.Dock(this, crucibleDockPoint);
+    }
+
+    public void UndockCrucible()
+    {
+        if (dockedCrucible != null)
+        {
+            dockedCrucible.Undock();
+            dockedCrucible = null;
+        }
     }
 }
