@@ -14,7 +14,7 @@ public class MergingTable : MonoBehaviour
     public Transform craftSpawnPoint; 
     public GameObject craftingUI; 
 
-[Header("Mikro-korekta łączenia Z (Przód/Tył)")]
+    [Header("Mikro-korekta łączenia Z (Przód/Tył)")]
     public float swordConnectionOffset = -0.03f; // Offset dla miecza
     public float axeConnectionOffset = -0.05f;   // Offset dla topora
 
@@ -39,7 +39,6 @@ public class MergingTable : MonoBehaviour
 
     private GameObject mainPlayerCamera;
     private bool isAssemblyMode = false;
-    private bool isHandleFlipped = false;
 
     private MetalPiece placedMetal;
     private WoodPiece placedWood;
@@ -49,7 +48,7 @@ public class MergingTable : MonoBehaviour
         if (craftingUI != null) craftingUI.SetActive(false);
     }
 
-public void ToggleAssemblyCamera(GameObject playerCam)
+    public void ToggleAssemblyCamera(GameObject playerCam)
     {
         if (isAssemblyMode) return;
 
@@ -57,14 +56,11 @@ public void ToggleAssemblyCamera(GameObject playerCam)
         mainPlayerCamera.SetActive(false);
         assemblyCamera.SetActive(true);
         isAssemblyMode = true;
-        // assemblyStartTime = Time.time; <-- To też możesz usunąć, jeśli nie masz już Update() w stole
 
         if (craftingUI != null) craftingUI.SetActive(true);
 
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
-        
-        // CAŁKOWICIE USUNIĘTO pętlę wyłączającą skrypty!
     }
 
     public void ExitAssemblyMode()
@@ -74,23 +70,12 @@ public void ToggleAssemblyCamera(GameObject playerCam)
         mainPlayerCamera.SetActive(true);
         assemblyCamera.SetActive(false);
         isAssemblyMode = false;
-        isHandleFlipped = false;
 
         if (craftingUI != null) craftingUI.SetActive(false);
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
-
-        // CAŁKOWICIE USUNIĘTO pętlę włączającą skrypty!
     }
-
-    public void ToggleHandleFlip()
-    {
-        isHandleFlipped = !isHandleFlipped;
-        Debug.Log($"[MergingTable] Rączka od: {(isHandleFlipped ? "góry (przód ostrza)" : "dołu (tył ostrza)")}");
-    }
-
-    public bool IsHandleFlipped() => isHandleFlipped;
 
     public bool HasMetal() => placedMetal != null;
     public bool HasWood() => placedWood != null;
@@ -130,131 +115,125 @@ public void ToggleAssemblyCamera(GameObject playerCam)
         placedWood = wood;
     }
 
-public void CombineItems()
-{
-    if (placedMetal != null && placedWood != null)
+    public void CombineItems()
     {
-        // --- LOGIKA ROZPOZNAWANIA PRZEPISU ---
-        string weaponName = "Zniszczona Broń";
-        bool validRecipe = false;
-        bool isAxe = false;
+        if (placedMetal != null && placedWood != null)
+        {
+            // --- LOGIKA ROZPOZNAWANIA PRZEPISU ---
+            string weaponName = "Zniszczona Broń";
+            bool validRecipe = false;
+            bool isAxe = false;
 
-        // Sprawdzamy czy to Topór
-        if (placedMetal.partType == MetalPiece.MetalPartType.AxeHead &&
-            placedWood.partType == WoodPiece.HandleType.AxeHandle)
-        {
-            weaponName = "Wykuty Topór";
-            validRecipe = true;
-            isAxe = true;
-        }
-        // Sprawdzamy czy to Miecz
-        else if (placedMetal.partType == MetalPiece.MetalPartType.SwordBlade &&
-                 placedWood.partType == WoodPiece.HandleType.SwordHandle)
-        {
-            weaponName = "Wykuty Miecz";
-            validRecipe = true;
-        }
+            // Sprawdzamy czy to Topór
+            if (placedMetal.partType == MetalPiece.MetalPartType.AxeHead &&
+                placedWood.partType == WoodPiece.HandleType.AxeHandle)
+            {
+                weaponName = "Wykuty Topór";
+                validRecipe = true;
+                isAxe = true;
+            }
+            // Sprawdzamy czy to Miecz
+            else if (placedMetal.partType == MetalPiece.MetalPartType.SwordBlade &&
+                     placedWood.partType == WoodPiece.HandleType.SwordHandle)
+            {
+                weaponName = "Wykuty Miecz";
+                validRecipe = true;
+            }
 
-        if (!validRecipe)
-        {
-            Debug.LogWarning("Te części do siebie nie pasują!");
+            if (!validRecipe)
+            {
+                Debug.LogWarning("Te części do siebie nie pasują!");
+                placedMetal = null;
+                placedWood = null;
+                return;
+            }
+
+            // 1. Tworzymy kontener z nazwą konkretnej broni
+            GameObject craftedWeapon = new GameObject(weaponName + "_" + placedMetal.metalTier.ToString());
+            
+            if (craftSpawnPoint != null)
+            {
+                craftedWeapon.transform.position = craftSpawnPoint.position;
+                craftedWeapon.transform.rotation = craftSpawnPoint.rotation;
+            }
+
+            // 2. Podpinanie do rodzica
+            placedWood.transform.SetParent(craftedWeapon.transform);
+            placedMetal.transform.SetParent(craftedWeapon.transform);
+
+            // 3. Pozycjonowanie
+            MeshFilter woodFilter = placedWood.GetComponentInChildren<MeshFilter>();
+            if (woodFilter != null)
+            {
+                float backOfBlade = placedMetal.GetActualBackOfBlade(); // ujemne (min.z * scale)
+                float frontOfHandle = woodFilter.mesh.bounds.max.z * woodFilter.transform.localScale.z;
+
+                float currentOffsetZ = (placedMetal.partType == MetalPiece.MetalPartType.AxeHead)
+                                  ? axeConnectionOffset
+                                  : swordConnectionOffset;
+                float currentOffsetX = (placedMetal.partType == MetalPiece.MetalPartType.AxeHead)
+                                  ? axeConnectionOffsetX
+                                  : swordConnectionOffsetX;
+
+                // Rączka zawsze w tym samym miejscu
+                float targetZ = backOfBlade - frontOfHandle + currentOffsetZ;
+                placedWood.transform.localRotation = Quaternion.identity;
+                placedWood.transform.localPosition = new Vector3(currentOffsetX, 0, targetZ);
+
+                // Ostrze zawsze na pozycji zero i z domyślną rotacją
+                placedMetal.transform.localPosition = Vector3.zero;
+                placedMetal.transform.localRotation = Quaternion.identity;
+
+                Debug.Log($"[MergingTable] backOfBlade: {backOfBlade:F3}, Z rączki: {targetZ:F3}");
+            }
+            placedMetal.ForceCoolDown();
+            
+            placedWood.gameObject.name = "HandlePart";
+            placedMetal.gameObject.name = "MetalPart";
+
+            // Zapamiętaj dane PRZED zniszczeniem komponentów
+            Vector3 gripLocalPos = placedWood.transform.localPosition;
+            MetalType savedMetalTier = placedMetal.metalTier;
+            float savedBladeLength = placedMetal.GetBladeLength();
+            Debug.Log($"[MergingTable] Blade length: {savedBladeLength:F3}");
+            string metalName = savedMetalTier.ToString();
+
+            // Usuwamy fizykę części, by nie gryzła się z fizyką całej broni
+            Destroy(placedMetal.GetComponent<Rigidbody>());
+            Destroy(placedWood.GetComponent<Rigidbody>());
+            Destroy(placedMetal);
+            Destroy(placedWood);
+
+            Rigidbody weaponRb = craftedWeapon.AddComponent<Rigidbody>();
+            weaponRb.mass = 2.5f;
+
+            FinishedObject finishedObj = craftedWeapon.AddComponent<FinishedObject>();
+            finishedObj.weaponType = isAxe ? WeaponType.Axe : WeaponType.Sword;
+            finishedObj.metalTier = savedMetalTier;
+            finishedObj.bladeLength = savedBladeLength;
+            finishedObj.itemName = weaponName + " " + metalName;
+
+            BoxCollider col = craftedWeapon.AddComponent<BoxCollider>();
+            col.size = new Vector3(0.1f, 0.1f, 1f);
+            col.center = new Vector3(0, 0, 0.2f);
+
+            craftedWeapon.AddComponent<WeaponHitbox>();
+
+            GameObject grip = new GameObject("GripPoint");
+            grip.transform.SetParent(craftedWeapon.transform);
+            
+            // Magia: Wybieramy odpowiedni offset z Inspektora w zależności od typu broni
+            Vector3 currentGripOffset = isAxe ? axeGripPositionOffset : swordGripPositionOffset;
+            
+            // Dodajemy ten offset do bazowej pozycji rączki
+            grip.transform.localPosition = gripLocalPos + currentGripOffset;
+            grip.transform.localRotation = Quaternion.Euler(isAxe ? axeGripRotation : swordGripRotation);
+
+            // Odejmij surowiec z ekwipunku
+            gameManager.Instance.RemoveResource(metalName, 1);
+
             placedMetal = null;
             placedWood = null;
-            return;
         }
-
-        // 1. Tworzymy kontener z nazwą konkretnej broni
-        GameObject craftedWeapon = new GameObject(weaponName + "_" + placedMetal.metalTier.ToString());
-        
-        if (craftSpawnPoint != null)
-        {
-            craftedWeapon.transform.position = craftSpawnPoint.position;
-            craftedWeapon.transform.rotation = craftSpawnPoint.rotation;
-        }
-
-        // 2. Podpinanie do rodzica
-        placedWood.transform.SetParent(craftedWeapon.transform);
-        placedMetal.transform.SetParent(craftedWeapon.transform);
-
-        // 3. Pozycjonowanie
-        MeshFilter woodFilter = placedWood.GetComponentInChildren<MeshFilter>();
-        if (woodFilter != null)
-        {
-            float backOfBlade = placedMetal.GetActualBackOfBlade(); // ujemne (min.z * scale)
-            float frontOfHandle = woodFilter.mesh.bounds.max.z * woodFilter.transform.localScale.z;
-
-            float currentOffsetZ = (placedMetal.partType == MetalPiece.MetalPartType.AxeHead)
-                              ? axeConnectionOffset
-                              : swordConnectionOffset;
-            float currentOffsetX = (placedMetal.partType == MetalPiece.MetalPartType.AxeHead)
-                              ? axeConnectionOffsetX
-                              : swordConnectionOffsetX;
-
-            // Rączka zawsze w tym samym miejscu
-            float targetZ = backOfBlade - frontOfHandle + currentOffsetZ;
-            placedWood.transform.localRotation = Quaternion.identity;
-            placedWood.transform.localPosition = new Vector3(currentOffsetX, 0, targetZ);
-
-            // Ostrze zawsze na pozycji zero — 180°Z odwraca je "na drugą stronę"
-            // bez ruszania osi Z, więc tip nadal celuje w górę i blade nie wpada pod rączkę
-            placedMetal.transform.localPosition = Vector3.zero;
-            placedMetal.transform.localRotation = isHandleFlipped
-                ? Quaternion.Euler(0f, 0f, 180f)
-                : Quaternion.identity;
-
-            Debug.Log($"[MergingTable] backOfBlade: {backOfBlade:F3}, Z rączki: {targetZ:F3}, Obrót ostrza: {(isHandleFlipped ? "180°Z" : "0°")}");
-        }
-        // --- FINALIZACJA ---
-        placedMetal.ForceCoolDown();
-        
-        placedWood.gameObject.name = "HandlePart";
-        placedMetal.gameObject.name = "MetalPart";
-
-        // Zapamiętaj dane PRZED zniszczeniem komponentów
-        Vector3 gripLocalPos = placedWood.transform.localPosition;
-        MetalType savedMetalTier = placedMetal.metalTier;
-        float savedBladeLength = placedMetal.GetBladeLength();
-        Debug.Log($"[MergingTable] Blade length: {savedBladeLength:F3}");
-        string metalName = savedMetalTier.ToString();
-
-        // Usuwamy fizykę części, by nie gryzła się z fizyką całej broni
-        Destroy(placedMetal.GetComponent<Rigidbody>());
-        Destroy(placedWood.GetComponent<Rigidbody>());
-        Destroy(placedMetal);
-        Destroy(placedWood);
-
-        Rigidbody weaponRb = craftedWeapon.AddComponent<Rigidbody>();
-        weaponRb.mass = 2.5f;
-
-        FinishedObject finishedObj = craftedWeapon.AddComponent<FinishedObject>();
-        finishedObj.weaponType = isAxe ? WeaponType.Axe : WeaponType.Sword;
-        finishedObj.metalTier = savedMetalTier;
-        finishedObj.bladeLength = savedBladeLength;
-        finishedObj.itemName = weaponName + " " + metalName;
-
-        BoxCollider col = craftedWeapon.AddComponent<BoxCollider>();
-        col.size = new Vector3(0.1f, 0.1f, 1f);
-        col.center = new Vector3(0, 0, 0.2f);
-
-        craftedWeapon.AddComponent<WeaponHitbox>();
-
-        GameObject grip = new GameObject("GripPoint");
-        grip.transform.SetParent(craftedWeapon.transform);
-        
-        // Magia: Wybieramy odpowiedni offset z Inspektora w zależności od typu broni
-        Vector3 currentGripOffset = isAxe ? axeGripPositionOffset : swordGripPositionOffset;
-        
-        // Dodajemy ten offset do bazowej pozycji rączki
-        grip.transform.localPosition = gripLocalPos + currentGripOffset;
-        grip.transform.localRotation = Quaternion.Euler(isAxe ? axeGripRotation : swordGripRotation);
-
-        // Odejmij surowiec z ekwipunku
-        gameManager.Instance.RemoveResource(metalName, 1);
-
-        placedMetal = null;
-        placedWood = null;
     }
-
-}
-
 }

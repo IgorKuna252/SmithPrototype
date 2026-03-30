@@ -69,13 +69,8 @@ public class BlacksmithInteraction : MonoBehaviour
         // 2. BLOKADA KAMERY STOŁU
         if (isInteractingWithTable)
         {
-            // TAB: Przełącz stronę rączki (góra/dół ostrza)
-            if (Input.GetKeyDown(KeyCode.Tab) && activeTable != null)
-            {
-                activeTable.ToggleHandleFlip();
-            }
             // ŁĄCZENIE: Jeśli wciśniesz E (lub Spację) i stół ma obie części -> Łączymy!
-            else if ((Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Space)) && activeTable != null && activeTable.HasMetal() && activeTable.HasWood())
+            if ((Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Space)) && activeTable != null && activeTable.HasMetal() && activeTable.HasWood())
             {
                 activeTable.CombineItems();
                 CloseTableInteraction();
@@ -234,9 +229,9 @@ public class BlacksmithInteraction : MonoBehaviour
                 DropItem();
                 return;
             }
-            }
-            else
-            {
+        }
+        else
+        {
             // ==========================================
             // 11. UPUSZCZANIE W POWIETRZE (Patrzymy w niebo)
             // ==========================================

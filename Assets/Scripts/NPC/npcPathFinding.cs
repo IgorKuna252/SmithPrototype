@@ -211,10 +211,6 @@ public class npcPathFinding : MonoBehaviour
     public GameObject GetWeaponGameObject()
     {
         WeaponSocket socket = GetComponentInChildren<WeaponSocket>();
-        if (socket != null && socket.transform.childCount > 0)
-        {
-            return socket.transform.GetChild(0).gameObject;
-        }
-        return null;
+        return socket?.GetEquippedWeapon();
     }
 }
