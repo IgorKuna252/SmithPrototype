@@ -24,158 +24,271 @@ public class MergingTable : MonoBehaviour
     private MetalPiece placedMetal; 
     private WoodPiece placedWood; 
 
+    private Transform draggedObject;
+    private float dragY;
+    private Vector3 dragOffset;
+    public float snapThreshold = 0.5f;
+
     void Start()
     {
         if (craftingUI != null) craftingUI.SetActive(false);
     }
 
-public void ToggleAssemblyCamera(GameObject playerCam)
+    void Update()
+    {
+        if (!isAssemblyMode) return;
+
+        // Mechanika przeciągania na myszce i łączenia
+        if (Input.GetMouseButtonDown(0))
+        {
+            Ray ray = assemblyCamera.GetComponent<Camera>().ScreenPointToRay(Input.mousePosition);
+            if (Physics.Raycast(ray, out RaycastHit hit))
+            {
+                MetalPiece m = hit.collider.GetComponentInParent<MetalPiece>();
+                WoodPiece w = hit.collider.GetComponentInParent<WoodPiece>();
+
+                if (m != null) draggedObject = m.transform;
+                else if (w != null) draggedObject = w.transform;
+
+                if (draggedObject != null)
+                {
+                    // Chwytamy dokładnie na wysokości osi Y na której leżał, by obiekty się nie krzywiły w pionie
+                    dragY = draggedObject.position.y; 
+                    
+                    Plane dragPlane = new Plane(Vector3.up, new Vector3(0, dragY, 0));
+                    if (dragPlane.Raycast(ray, out float distance))
+                    {
+                        dragOffset = draggedObject.position - ray.GetPoint(distance);
+                    }
+
+                    Rigidbody rb = draggedObject.GetComponent<Rigidbody>();
+                    if (rb != null) 
+                    {
+                        rb.isKinematic = true; 
+                        rb.linearVelocity = Vector3.zero;
+                        rb.angularVelocity = Vector3.zero;
+                    }
+                }
+            }
+        }
+        else if (Input.GetMouseButton(0) && draggedObject != null)
+        {
+            // Płynne ciągnięcie nad stołem w osi XZ
+            Ray ray = assemblyCamera.GetComponent<Camera>().ScreenPointToRay(Input.mousePosition);
+            Plane dragPlane = new Plane(Vector3.up, new Vector3(0, dragY, 0));
+            if (dragPlane.Raycast(ray, out float distance))
+            {
+                Vector3 targetPos = ray.GetPoint(distance) + dragOffset;
+                draggedObject.position = new Vector3(targetPos.x, dragY, targetPos.z);
+            }
+
+            // Obracanie przy pomocy scrolla myszy (obrót na stole wokół osi Y)
+            float scroll = Input.mouseScrollDelta.y;
+            if (scroll != 0)
+            {
+                draggedObject.Rotate(Vector3.up, scroll * 15f, Space.World);
+            }
+        }
+        else if (Input.GetMouseButtonUp(0) && draggedObject != null)
+        {
+            // Upuszczenie elementu łagodnie
+            Rigidbody rb = draggedObject.GetComponent<Rigidbody>();
+            if (rb != null) 
+            {
+                rb.isKinematic = false;
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+
+            CheckCombination(draggedObject);
+            draggedObject = null;
+        }
+    }
+
+    public void ToggleAssemblyCamera(GameObject playerCam)
     {
         if (isAssemblyMode) return;
-
         mainPlayerCamera = playerCam; 
         mainPlayerCamera.SetActive(false);
         assemblyCamera.SetActive(true);
         isAssemblyMode = true;
-        // assemblyStartTime = Time.time; <-- To też możesz usunąć, jeśli nie masz już Update() w stole
 
         if (craftingUI != null) craftingUI.SetActive(true);
-
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
-        
-        // CAŁKOWICIE USUNIĘTO pętlę wyłączającą skrypty!
     }
 
     public void ExitAssemblyMode()
     {
         if (!isAssemblyMode) return;
 
+        // Jeśli wyszliśmy, puść obiekt
+        if (draggedObject != null)
+        {
+            Rigidbody rb = draggedObject.GetComponent<Rigidbody>();
+            if (rb != null) rb.isKinematic = false;
+            draggedObject = null;
+        }
+
         mainPlayerCamera.SetActive(true);
         assemblyCamera.SetActive(false);
         isAssemblyMode = false;
 
         if (craftingUI != null) craftingUI.SetActive(false);
-
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
-
-        // CAŁKOWICIE USUNIĘTO pętlę włączającą skrypty!
     }
 
-    public bool HasMetal() => placedMetal != null;
-    public bool HasWood() => placedWood != null;
-
-    public void ClearMetal() { placedMetal = null; }
-    public void ClearWood() { placedWood = null; }
-
-    public void PlaceMetal(MetalPiece metal)
+    public void DropItemOntoTable(Transform item, Vector3 hitPoint)
     {
-        metal.transform.SetParent(ingotPreview.parent, true);
-        metal.transform.position = ingotPreview.position;
-        metal.transform.rotation = ingotPreview.rotation;
+        // Puszczamy nową sztabkę z dużym marginesem przestrzeni
+        item.SetParent(null); 
+        item.position = hitPoint + Vector3.up * 0.15f;
+        
+        Rigidbody rb = item.GetComponent<Rigidbody>();
+        if (rb == null) rb = item.gameObject.AddComponent<Rigidbody>();
 
-        Rigidbody rb = metal.GetComponent<Rigidbody>();
         if (rb != null) 
         {
-            rb.isKinematic = true;
-            rb.detectCollisions = true; // Ważne: musi mieć kolizje do kucia i podnoszenia!
-        }
-
-        placedMetal = metal;
-    }
-
-    public void PlaceWood(WoodPiece wood)
-    {
-        wood.transform.SetParent(handlePreview.parent, true);
-        wood.transform.position = handlePreview.position;
-        wood.transform.rotation = handlePreview.rotation;
-
-        Rigidbody rb = wood.GetComponent<Rigidbody>();
-        if (rb != null) 
-        {
-            rb.isKinematic = true;
+            rb.isKinematic = false;
+            rb.useGravity = true;
             rb.detectCollisions = true;
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.interpolation = RigidbodyInterpolation.Interpolate;
         }
-
-        placedWood = wood;
     }
 
-    public void CombineItems()
+    private void CheckCombination(Transform droppedObj)
     {
-        if (placedMetal != null && placedWood != null)
+        Collider[] myCols = droppedObj.GetComponentsInChildren<Collider>();
+        if (myCols.Length == 0) return;
+
+        System.Collections.Generic.List<Transform> partsToCombine = new System.Collections.Generic.List<Transform>();
+        partsToCombine.Add(droppedObj);
+
+        // Pobieramy wszystko w promieniu obszaru roboczego
+        Collider[] candidates = Physics.OverlapSphere(droppedObj.position, 1.5f);
+        
+        foreach (Collider candCol in candidates)
         {
-            string weaponName = "Wykuta Broń";
+            // Pomijamy własne wnętrze sklejki
+            if (candCol.transform == droppedObj || candCol.transform.IsChildOf(droppedObj)) continue;
 
-            // 1. Tworzymy kontener
-            GameObject craftedWeapon = new GameObject(weaponName + "_" + placedMetal.metalTier.ToString());
-            
-            if (craftSpawnPoint != null)
+            // Upewniamy się, czy fizyczne siatki REALNIE na siebie wpadają (lub leżą tak blisko, że to łączenie)
+            bool isTouching = false;
+            foreach (Collider myCol in myCols)
             {
-                craftedWeapon.transform.position = craftSpawnPoint.position;
-                craftedWeapon.transform.rotation = craftSpawnPoint.rotation;
+                if (myCol.bounds.Intersects(candCol.bounds))
+                {
+                    // Liczy precyzyjniej niż sześcian otaczający (Bounding Box), szuka punktów wspólnych mniejszych niż 5cm!
+                    Vector3 closestDrop = myCol.ClosestPoint(candCol.bounds.center);
+                    Vector3 closestCand = candCol.ClosestPoint(closestDrop);
+                    if (Vector3.Distance(closestDrop, closestCand) < 0.05f)
+                    {
+                        isTouching = true;
+                        break;
+                    }
+                }
             }
 
-            // 2. Podpinanie do rodzica
-            placedWood.transform.SetParent(craftedWeapon.transform);
-            placedMetal.transform.SetParent(craftedWeapon.transform);
-
-            placedWood.transform.localRotation = Quaternion.identity;
-            placedMetal.transform.localRotation = Quaternion.identity;
-
-            // 3. Pozycjonowanie
-            placedMetal.transform.localPosition = Vector3.zero;
-
-            MeshFilter woodFilter = placedWood.GetComponentInChildren<MeshFilter>();
-            if (woodFilter != null)
+            if (isTouching)
             {
-                float backOfBlade = placedMetal.GetActualBackOfBlade(); 
-                float frontOfHandle = woodFilter.mesh.bounds.max.z * woodFilter.transform.localScale.z;
+                Transform rootPart = null;
+                if (candCol.GetComponentInParent<MetalPiece>()) rootPart = candCol.GetComponentInParent<MetalPiece>().transform;
+                else if (candCol.GetComponentInParent<WoodPiece>()) rootPart = candCol.GetComponentInParent<WoodPiece>().transform;
+                else if (candCol.GetComponentInParent<FinishedObject>()) rootPart = candCol.GetComponentInParent<FinishedObject>().transform;
 
-                float currentOffsetZ = -0.04f; 
-                float currentOffsetX = 0f;     
-
-                float targetZ = backOfBlade - frontOfHandle + currentOffsetZ;
-                
-                placedWood.transform.localPosition = new Vector3(currentOffsetX, 0, targetZ);
-                
-                Debug.Log($"[Dynamiczny Pivot Z] Tył ostrza: {backOfBlade}. Przesuwam rączkę na X: {currentOffsetX}, Z: {targetZ}");
+                // Dodaj tylko, jeśli fizycznie coś dotknęliśmy obok i jeszcze nie jest na liście w fazie montażu
+                if (rootPart != null && !partsToCombine.Contains(rootPart))
+                {
+                    partsToCombine.Add(rootPart);
+                }
             }
-
-            // --- FINALIZACJA ---
-            placedMetal.ForceCoolDown();
-
-            Vector3 gripLocalPos = placedWood.transform.localPosition;
-            string metalName = placedMetal.metalTier.ToString();
-
-            // Usuwamy stare komponenty wejściowe
-            Destroy(placedMetal.GetComponent<Rigidbody>());
-            Destroy(placedWood.GetComponent<Rigidbody>());
-            Destroy(placedMetal);
-            Destroy(placedWood);
-
-            Rigidbody weaponRb = craftedWeapon.AddComponent<Rigidbody>();
-            weaponRb.mass = 2.5f;
-
-            FinishedObject finishedObj = craftedWeapon.AddComponent<FinishedObject>();
-
-            BoxCollider col = craftedWeapon.AddComponent<BoxCollider>();
-            col.size = new Vector3(0.1f, 0.1f, 1f);
-            col.center = new Vector3(0, 0, 0.2f);
-
-            GameObject grip = new GameObject("GripPoint");
-            grip.transform.SetParent(craftedWeapon.transform);
-            
-            grip.transform.localPosition = gripLocalPos + gripPositionOffset;
-            grip.transform.localRotation = Quaternion.Euler(gripRotation);
-
-            // Odejmujemy surowiec z ekwipunku jeśli istnieje
-            if (gameManager.Instance != null && gameManager.Instance.inventory.ContainsKey(metalName)) {
-                gameManager.Instance.RemoveResource(metalName, 1);
-            }
-
-            placedMetal = null;
-            placedWood = null;
         }
+
+        // Fuzja dokonuje się wyłącznie wtedy gdy obiekty mocno naruszą swoją osobistą przestrzeń
+        if (partsToCombine.Count > 1)
+        {
+            CustomCombine(partsToCombine);
+        }
+    }
+
+    private void CustomCombine(System.Collections.Generic.List<Transform> parts)
+    {
+        string weaponName = "Sklejona_Wariacja_" + Random.Range(100, 999);
+        GameObject craftedWeapon = new GameObject(weaponName);
+        craftedWeapon.transform.position = parts[0].position; // Środkiem nowej broni będzie upuszczony bloczek
+
+        Vector3 gripLocalPos = Vector3.zero;
+
+        foreach (Transform part in parts)
+        {
+            part.SetParent(craftedWeapon.transform, true); 
+
+            // Kasujemy ich niezależne siły dociążające
+            Rigidbody rb = part.GetComponent<Rigidbody>();
+            if (rb != null) Destroy(rb);
+            
+            FinishedObject oldPart = part.GetComponent<FinishedObject>();
+            if (oldPart != null) Destroy(oldPart);
+
+            // Odpinamy kowalskie cechy by stały się martwym komponentem broni
+            MetalPiece metal = part.GetComponent<MetalPiece>();
+            if (metal != null) 
+            {
+                metal.ForceCoolDown();
+                Destroy(metal);
+            }
+
+            WoodPiece wood = part.GetComponent<WoodPiece>();
+            if (wood != null)
+            {
+                // Powrót do pierwotnej niezawodnej metody - bierzemy punkt Pivotu drewna (najlepsze do trzymania)
+                gripLocalPos = part.localPosition;
+                Destroy(wood);
+            }
+            else
+            {
+                // Ważne: Jeśli dokładamy materiał do JUŻ sklejonej broni z poprzedniej akcji,
+                // jej skrypt WoodPiece został nadpisany. Posiada ona własny stary "GripPoint".
+                // Musimy go ukraść, przeliczyć na nowy układ osi i przepisać wyżej!
+                Transform oldGrip = part.Find("GripPoint");
+                if (oldGrip != null)
+                {
+                    gripLocalPos = craftedWeapon.transform.InverseTransformPoint(oldGrip.position);
+                    Destroy(oldGrip.gameObject); // Niszczymy starego kandydata rączki (i tak powstanie nowy)
+                }
+            }
+
+            FinishedObject oldWeapon = part.GetComponent<FinishedObject>();
+            if (oldWeapon != null)
+            {
+                // Jeśli dołączamy kawałek metalu do już sklejonej wcześniej broni: usuwamy stary system trzymania
+                Destroy(oldWeapon);
+                foreach (Transform child in part)
+                {
+                    if (child.name == "GripPoint") Destroy(child.gameObject);
+                }
+            }
+        }
+
+        // Cała wariacja otrzymuje JEDEN wspólny silnik fizyczny
+        Rigidbody weaponRb = craftedWeapon.AddComponent<Rigidbody>();
+        weaponRb.mass = 1.5f * parts.Count; // Waży tym więcej, im więcej syfu nakleisz
+        weaponRb.interpolation = RigidbodyInterpolation.Interpolate;
+
+        // UWAGA: Nie dodajemy tu sztucznego BoxCollidera! Fizyka Unity sama zbierze MeshCollidery od każdego dziecka
+        // i spakuje je w jedno perfekcyjnie zniekształcone ciało, idealnie uderzające np. koślawą stroną w stół.
+
+        FinishedObject finishedObj = craftedWeapon.AddComponent<FinishedObject>();
+
+        // Punkt złapania w powietrzu do ręki
+        GameObject grip = new GameObject("GripPoint");
+        grip.transform.SetParent(craftedWeapon.transform);
+        grip.transform.localPosition = gripLocalPos + gripPositionOffset;
+        grip.transform.localRotation = Quaternion.Euler(gripRotation);
+
+        Debug.Log($"[Drag&Drop Sandbox] Posklejano idealnie {parts.Count} swobodnie rzuconych części w 1 warianką kombinację!");
     }
 }

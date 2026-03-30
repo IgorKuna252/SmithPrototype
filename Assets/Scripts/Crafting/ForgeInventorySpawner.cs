@@ -84,26 +84,18 @@ public class ForgeInventorySpawner : MonoBehaviour
         var gm = gameManager.Instance;
         if (gm == null || handleSpawnArea == null) return;
 
-        int totalIngots = 0;
-        foreach (var kvp in gm.inventory)
-        {
-            if (System.Enum.TryParse<MetalType>(kvp.Key, out _)) totalIngots += kvp.Value;
-        }
+        int swordHandles = gm.inventory.ContainsKey("SwordHandle") ? gm.inventory["SwordHandle"] : 0;
+        int axeHandles = gm.inventory.ContainsKey("AxeHandle") ? gm.inventory["AxeHandle"] : 0;
 
-        for (int i = 0; i < totalIngots; i++)
-        {
-            SpawnHandleInternal();
-        }
+        for (int i = 0; i < swordHandles; i++) SpawnHandleInternal(true);
+        for (int i = 0; i < axeHandles; i++) SpawnHandleInternal(false);
     }
 
-    /// <summary>
-    /// Używaj tej metody do DODAWANIA nowej sztabki w trakcie działania gry (np. ze Sklepu).
-    /// </summary>
     public void SpawnNewBoughtMaterial(MetalType metalType)
     {
-        // Spawnuje sztabkę i automatycznie dorzuca na stół po jednym rodzaju drewna (ponieważ tak założyłeś mechanikę w Start)
+        // Spawnuje sztabkę i automatycznie dorzuca na stół po jednym rodzaju drewna
         SpawnIngotInternal(metalType, true);
-        SpawnHandleInternal();
+        SpawnHandleInternal(true);
     }
 
     private void SpawnIngotInternal(MetalType metalType, bool playDropEffect)
@@ -125,21 +117,20 @@ public class ForgeInventorySpawner : MonoBehaviour
         currentIngotIndex++;
     }
 
-    private void SpawnHandleInternal()
+    private void SpawnHandleInternal(bool isSword)
     {
-        if (swordHandlePrefab != null)
+        if (isSword && swordHandlePrefab != null)
         {
             Vector3 posSword = GetGridPosition(handleSpawnArea, currentHandleIndex);
             GameObject objS = Instantiate(swordHandlePrefab, posSword, handleSpawnArea.rotation);
-            objS.name = $"Rękojeść_Miecza_Sklep_{currentHandleIndex + 1}";
+            objS.name = $"Rękojeść_Miecza_{currentHandleIndex + 1}";
             currentHandleIndex++;
         }
-
-        if (axeHandlePrefab != null)
+        else if (!isSword && axeHandlePrefab != null)
         {
             Vector3 posAxe = GetGridPosition(handleSpawnArea, currentHandleIndex);
             GameObject objA = Instantiate(axeHandlePrefab, posAxe, handleSpawnArea.rotation);
-            objA.name = $"Trzonek_Siekiery_Sklep_{currentHandleIndex + 1}";
+            objA.name = $"Trzonek_Siekiery_{currentHandleIndex + 1}";
             currentHandleIndex++;
         }
     }

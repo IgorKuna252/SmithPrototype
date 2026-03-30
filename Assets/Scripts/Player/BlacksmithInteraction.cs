@@ -33,21 +33,15 @@ public class BlacksmithInteraction : MonoBehaviour
     void Update()
     {
         // 2. BLOKADA KAMERY STOŁU 
-        if (isInteractingWithTable)
-        {
-            // ŁĄCZENIE: Jeśli wciśniesz E (lub Spację) i stół ma obie części -> Łączymy!
-            if ((Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Space)) && activeTable != null && activeTable.HasMetal() && activeTable.HasWood())
+            if (isInteractingWithTable)
             {
-                activeTable.CombineItems();
-                CloseTableInteraction();
+                // WYJŚCIE: Jeśli wciśniesz ESC lub E -> Wracasz do swobodnego chodzenia
+                if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.E))
+                {
+                    CloseTableInteraction();
+                }
+                return; // Blokujemy resztę, żeby gracz nie machał rękami pod stołem
             }
-            // WYJŚCIE: Jeśli wciśniesz ESC (albo E, gdy brakuje części) -> Po prostu wychodzisz
-            else if (Input.GetKeyDown(KeyCode.Escape) || (Input.GetKeyDown(KeyCode.E) && (!activeTable.HasMetal() || !activeTable.HasWood())))
-            {
-                CloseTableInteraction();
-            }
-            return; // Blokujemy resztę, żeby gracz nie machał rękami pod stołem
-        }
 
         // ==========================================
         // GŁÓWNY KLAWISZ 'E' - ROBI WSZYSTKO W ŚWIECIE
@@ -72,6 +66,7 @@ public class BlacksmithInteraction : MonoBehaviour
         Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
         if (Physics.Raycast(ray, out RaycastHit hit, reachDistance))
         {
+            Debug.Log($"[Raycast Test] Gracz patrzy na obiekt: {hit.collider.gameObject.name}");
 
             // 3. ZMIANA SCENY
             SceneTransition sceneTransition = hit.collider.GetComponent<SceneTransition>();
@@ -92,11 +87,16 @@ public class BlacksmithInteraction : MonoBehaviour
             {
                 if (heldItem != null)
                 {
-                    // Jeśli trzymasz rzecz -> Połóż na stół pod klawiszem E
+                    // Jeśli trzymasz rzecz -> Połóż na stół pod klawiszem E, bez ograniczeń ilości
                     MetalPiece metal = heldItem.GetComponent<MetalPiece>();
                     WoodPiece wood = heldItem.GetComponent<WoodPiece>();
-                    if (metal != null && !table.HasMetal()) { table.PlaceMetal(metal); ClearHand(); return; }
-                    if (wood != null && !table.HasWood()) { table.PlaceWood(wood); ClearHand(); return; }
+                    
+                    if (metal != null || wood != null) 
+                    { 
+                        table.DropItemOntoTable(heldItem.transform, hit.point); 
+                        ClearHand(); 
+                        return; 
+                    }
                 }
                 else
                 {
@@ -125,6 +125,24 @@ public class BlacksmithInteraction : MonoBehaviour
                 anvil.EnterForgingMode(heldItem.GetComponent<MetalPiece>());
                 ClearHand();
                 return;
+            }
+
+            // 7.5 PIEC
+            FurnaceStation furnace = hit.collider.GetComponentInParent<FurnaceStation>();
+            if (furnace != null)
+            {
+                // Jeśli niczego nie trzymamy lub trzymamy metal - wchodzimy. (Z zabezpieczeniem czy trzymamy coś dziwnego - jeśli dziwnego, nie wchodzimy)
+                if (heldItem == null) 
+                {
+                    furnace.EnterFurnaceMode(null);
+                    return;
+                }
+                else if (heldItem.GetComponent<MetalPiece>() != null)
+                {
+                    furnace.EnterFurnaceMode(heldItem.GetComponent<MetalPiece>());
+                    ClearHand();
+                    return;
+                }
             }
 
             // 8. PODNOSZENIE Z ZIEMI (Zawsze najwyższy priorytet, gdy mamy puste ręce!)
@@ -192,6 +210,14 @@ public class BlacksmithInteraction : MonoBehaviour
             else if (wood != null) targetObj = wood.gameObject;
             else if (finished != null) targetObj = finished.gameObject;
             else if (crucible != null) targetObj = crucible.gameObject;
+            
+            // NOWOŚĆ: Wyciąganie rudy uwięzionej W PIECU za jego colliderem
+            FurnaceStation furnace = hit.collider.GetComponentInParent<FurnaceStation>();
+            if (furnace != null && furnace.metalSocket != null && targetObj == null)
+            {
+                MetalPiece metalInside = furnace.metalSocket.GetComponentInChildren<MetalPiece>();
+                if (metalInside != null) targetObj = metalInside.gameObject;
+            }
 
             if (mold != null && mold.IsReadyToExtract()) targetObj = mold.ExtractItem();
 
@@ -201,12 +227,7 @@ public class BlacksmithInteraction : MonoBehaviour
                 WeaponRack rack = targetObj.GetComponentInParent<WeaponRack>();
                 if (rack != null) rack.TakeWeapon();
 
-                MergingTable mt = targetObj.GetComponentInParent<MergingTable>();
-                if (mt != null)
-                {
-                    if (metal != null) mt.ClearMetal();
-                    if (wood != null) mt.ClearWood();
-                }
+                // Skasowano sztuczne odpinanie ze stołu - obiekty po prostu leżą
             }
             else
             {
@@ -221,33 +242,60 @@ public class BlacksmithInteraction : MonoBehaviour
             if (targetObj != null)
             {
                 targetObj.transform.SetParent(null);
-                heldItem = targetObj;
-                heldItemRb = heldItem.GetComponent<Rigidbody>();
+                heldItem = targetObj.gameObject; // lub targetObj jesli to transform
+                
+                // Morderstwo fizyki: Zamiast usypiać Rigidbody, zabijamy go na czas trzymania broni! 
+                // Zagnieżdżone w graczu (który też ma Rigidbody) powodują przeciążenia i bugi przy bieganiu!
+                Rigidbody[] rbs = heldItem.GetComponentsInChildren<Rigidbody>();
+                foreach (var rb in rbs) Destroy(rb);
+                heldItemRb = null;
 
-                if (heldItemRb != null)
+                // GWARANCJA LEKKOŚCI: Sztywno wyłączamy MeshCollidery wszystkich dzieci!
+                foreach (Collider col in heldItem.GetComponentsInChildren<Collider>())
                 {
-                    heldItemRb.useGravity = false;
-                    heldItemRb.isKinematic = true;
-                    heldItemRb.detectCollisions = false;
+                    col.enabled = false;
                 }
 
                 heldItem.transform.SetParent(holdPosition);
 
-                FinishedObject heldFinished = heldItem.GetComponentInParent<FinishedObject>();
-                if (heldFinished != null)
-                {
-                    heldItem.transform.localPosition = Vector3.zero;
-                    heldItem.transform.localRotation = Quaternion.Euler(holdRotation);
-                }
-                else if (heldItem.GetComponent<Crucible>() != null)
+                if (heldItem.GetComponent<Crucible>() != null)
                 {
                     heldItem.transform.localPosition = Vector3.zero;
                     heldItem.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
                 }
                 else
                 {
-                    heldItem.transform.localPosition = Vector3.zero;
+                    // Ustawiamy docelową rotację dłoni na wejściu
                     heldItem.transform.localRotation = Quaternion.Euler(holdRotation);
+
+                    // Szukamy specyficznego klejonego punktu dłoni (np. na drewnianej rączce broni)
+                    Transform gripPoint = heldItem.transform.Find("GripPoint");
+                    
+                    if (gripPoint != null)
+                    {
+                        // Przesuwamy całą bryłę złączoną tak, żeby punkt rączki wpadł dokładnie w środek ekranu (holdPosition)
+                        Vector3 offset = heldItem.transform.position - gripPoint.position;
+                        heldItem.transform.position = holdPosition.position + offset;
+                    }
+                    else
+                    {
+                        // Wyśrodkowanie geometryczne - szuka siatek wszystkich dzieci by utworzyć wyśrodkowany masyw
+                        Renderer[] rends = heldItem.GetComponentsInChildren<Renderer>();
+                        if (rends.Length > 0)
+                        {
+                            Bounds totalBounds = rends[0].bounds;
+                            for (int i = 1; i < rends.Length; i++) 
+                            {
+                                totalBounds.Encapsulate(rends[i].bounds);
+                            }
+                            Vector3 centerOffset = heldItem.transform.position - totalBounds.center;
+                            heldItem.transform.position = holdPosition.position + centerOffset;
+                        }
+                        else
+                        {
+                            heldItem.transform.localPosition = Vector3.zero;
+                        }
+                    }
                 }
 
                 targetObj.GetComponent<IPickable>()?.OnPickUp();
@@ -280,8 +328,12 @@ public class BlacksmithInteraction : MonoBehaviour
                 MetalPiece heldMetal = heldItem.GetComponent<MetalPiece>();
                 WoodPiece heldWood = heldItem.GetComponent<WoodPiece>();
 
-                if (heldMetal != null && !table.HasMetal()) { table.PlaceMetal(heldMetal); ClearHand(); return; }
-                else if (heldWood != null && !table.HasWood()) { table.PlaceWood(heldWood); ClearHand(); return; }
+                if (heldMetal != null || heldWood != null) 
+                { 
+                    table.DropItemOntoTable(heldItem.transform, hit.point); 
+                    ClearHand(); 
+                    return; 
+                }
             }
         }
         DropItem();
@@ -293,8 +345,11 @@ public class BlacksmithInteraction : MonoBehaviour
 
         heldItem.transform.SetParent(null);
 
+        if (heldItemRb == null) heldItemRb = heldItem.AddComponent<Rigidbody>();
+
         if (heldItemRb != null)
         {
+            heldItemRb.interpolation = RigidbodyInterpolation.Interpolate;
             heldItemRb.isKinematic = false;
             heldItemRb.useGravity = true;
             heldItemRb.detectCollisions = true;
@@ -307,5 +362,17 @@ public class BlacksmithInteraction : MonoBehaviour
         ClearHand();
     }
 
-    void ClearHand() { heldItem = null; heldItemRb = null; }
+    void ClearHand() 
+    { 
+        if (heldItem != null)
+        {
+            // Przywracamy fizykę kolizji dla wszystkich sklejonych części po wypuszczeniu z dłoni
+            foreach (Collider col in heldItem.GetComponentsInChildren<Collider>())
+            {
+                col.enabled = true;
+            }
+        }
+        heldItem = null; 
+        heldItemRb = null; 
+    }
 }

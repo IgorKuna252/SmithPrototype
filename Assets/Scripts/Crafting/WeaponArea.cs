@@ -12,21 +12,6 @@ public class WeaponArea : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (table == null) return;
-
-        MetalPiece metal = other.GetComponentInParent<MetalPiece>();
-        if (metal != null && !table.HasMetal())
-        {
-            table.PlaceMetal(metal);
-            Debug.Log($"[WeaponArea] Metal przekazany na stół: {metal.gameObject.name}");
-            return;
-        }
-
-        WoodPiece wood = other.GetComponentInParent<WoodPiece>();
-        if (wood != null && !table.HasWood())
-        {
-            table.PlaceWood(wood);
-            Debug.Log($"[WeaponArea] Rączka przekazana na stół: {wood.gameObject.name}");
-        }
+        // Stare automatyczne zatrzaskiwanie broni zostało wyłączone z racji Drag&Drop. Area zostaje pusta.
     }
 }

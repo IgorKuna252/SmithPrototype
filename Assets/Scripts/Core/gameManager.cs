@@ -10,6 +10,10 @@ public class gameManager : MonoBehaviour
     // Słownik z aktualnymi surowcami w ekwipunku
 
     public Dictionary<string, int> inventory = new Dictionary<string, int>();
+    public List<GameObject> savedRackWeapons = new List<GameObject>();
+
+    [Header("System Dni")]
+    public int currentDay = 1;
 
     private void Awake()
     {
@@ -24,14 +28,11 @@ public class gameManager : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
         
-        inventory["Copper"] = 1;
-        inventory["Bronze"] = 1;
-        inventory["Iron"] = 1;
-        inventory["Steel"] = 1;
-        inventory["Gold"] = 1;
-        inventory["Platinum"] = 1;
-        inventory["BlueSteel"] = 1;
-        inventory["Vibranium"] = 1;
+        // Wartości początkowe
+        inventory["Copper"] = 3;
+        inventory["Bronze"] = 3;
+        inventory["Iron"] = 3;
+        inventory["SwordHandle"] = 9;
     }
 
 
@@ -53,8 +54,9 @@ public class gameManager : MonoBehaviour
             return false;
         }
 
-        inventory[name] -= amount;
-        Debug.Log($"Zużyto {amount} {name}. Pozostało: {inventory[name]}");
+        // PULA NIELIMITOWANA (Faza 1)
+        // inventory[name] -= amount; 
+        Debug.Log($"Crafting bez zużycia ({name}). Zasoby testowe.");
         return true;
     }
     

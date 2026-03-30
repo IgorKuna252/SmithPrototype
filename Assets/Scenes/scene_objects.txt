@@ -1,0 +1,90 @@
+WallObj (4)
+Axe
+m_EditorClassIdentifier: Assembly-CSharp::updaterMainUI
+MergingTable
+Slot1 (2)
+Cylinder12
+m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+Slot1 (1)
+AnvilRoot
+MoldManager
+podstawa
+Cylinder42
+Crosshair
+m_EditorClassIdentifier: Assembly-CSharp::WeaponRack
+m_EditorClassIdentifier: Assembly-CSharp::WheelController
+Sword
+anchor1 (2)
+Directional Light
+m_EditorClassIdentifier: Assembly-CSharp::TaskManager
+Cylinder31
+m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.EventSystems.EventSystem
+m_EditorClassIdentifier: 
+MoldTable
+MainBoard
+WallObj (2)
+GameManager
+m_EditorClassIdentifier: Assembly-CSharp::MoldManager
+MetalSlot
+AxeFix
+m_EditorClassIdentifier: Assembly-CSharp::AnvilStation
+Walls
+SwordFix
+Particle System
+CanvasBoard
+m_EditorClassIdentifier: Assembly-CSharp::DayNightManager
+PlacingArea
+Leg1
+Stations
+CrucibleParent
+FinalObject
+nogaL
+SnapPoint
+anchor1 (3)
+m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalCameraData
+m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.GraphicRaycaster
+nogaP
+ForgeInventorySpawner
+Molds
+m_EditorClassIdentifier: Assembly-CSharp::Crucible
+Cylinder11
+PlanningBoard
+Slot1 (3)
+Stand
+m_EditorClassIdentifier: '::'
+HandleSlot
+WallObj (1)
+Cylinder32
+m_EditorClassIdentifier: Assembly-CSharp::MergingTable
+anchor1
+Camera
+Slot1
+m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+HandleSpawnPoint
+m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.UI.InputSystemUIInputModule
+TimeManager
+TextBoard1
+Leg2
+m_EditorClassIdentifier: Unity.AI.Navigation::Unity.AI.Navigation.NavMeshSurface
+m_EditorClassIdentifier: Assembly-CSharp::ForgeInventorySpawner
+gora
+TextBoard
+IngotSpawnPoint
+TextBoard2
+Cylinder21
+MergingCamera
+CameraSocket
+Player
+m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
+Cylinder41
+WallObj (3)
+TextBoard3
+Main Camera
+EventSystem
+PlayerUI
+Cylinder22
+HoldPosition
+Plane
+Table
+anchor1 (1)
+Cube

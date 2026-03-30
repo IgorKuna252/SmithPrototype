@@ -75,6 +75,12 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
         mesh = meshFilter.mesh;
         vertices = mesh.vertices;
 
+        // BARDZO WAŻNE: Czyścimy widmo ze starych bloków z Inspektora (OnValidate), które zamrażały kolor "na twardo" i blokowały nagrzewanie!
+        if (meshRenderer != null)
+        {
+            meshRenderer.SetPropertyBlock(null);
+        }
+
         SetBaseColor(); // Ustawiamy startowy kolor
     }
 
@@ -388,16 +394,12 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
 
     void OnTriggerStay(Collider other)
     {
-        if (other.CompareTag("Forge"))
-        {
-            isInForge = true;
-            if (currentTemperature < maxTemperature) currentTemperature += 250f * Time.deltaTime; // Zostawiłem szybkie nagrzewanie!
-        }
+        // Usunięto stare automatyczne grzanie przez Trigger. Teraz zarządza tym Minigra w FurnaceStation.
     }
 
     void OnTriggerExit(Collider other)
     {
-        if (other.CompareTag("Forge")) isInForge = false;
+        // Puste
     }
 
     // --- SYSTEM KOLORÓW ---
@@ -419,15 +421,33 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
 
     void UpdateVisuals()
     {
+        // Sprawdzamy postęp temperatury
         float tempNormalized = Mathf.Clamp01((currentTemperature - 20f) / (maxTemperature - 20f));
 
-        Color hotColor = new Color(1f, 0.2f, 0f);
+        // Ten sam płomień co w piecu
+        Color hotColor = new Color(0.8f, 0.25f, 0f);
         Color currentColor = Color.Lerp(baseColdColor, hotColor, tempNormalized);
 
-        MaterialPropertyBlock block = new MaterialPropertyBlock();
-        meshRenderer.GetPropertyBlock(block);
-        block.SetColor("_Color", currentColor);
-        meshRenderer.SetPropertyBlock(block);
+        // Kuloodporna zmiana - bezpośrednio na materiale! (Instancjonuje go, by ominąć ewentualne blokady globalne)
+        Material mat = meshRenderer.material;
+        
+        // Twarda modyfikacja głównego koloru uderzając po wszystkich znanych flagach silnika
+        mat.color = currentColor; 
+        if (mat.HasProperty("_Color")) mat.SetColor("_Color", currentColor);
+        if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", currentColor);
+
+        // Zapalenie emisji
+        if (mat.HasProperty("_EmissionColor")) 
+        {
+            mat.EnableKeyword("_EMISSION"); 
+            mat.SetColor("_EmissionColor", currentColor * (1f + tempNormalized * 4f)); 
+        }
+
+        // Pokaż wynik pierwszych zmian z logu w konsoli gdy metal już wyjdzie poza letnią wodę
+        if (tempNormalized > 0.5f && tempNormalized < 0.55f)
+        {
+            Debug.Log($"[MetalPiece] Nagrzałem się w ponad połowie!! Moja obecna temp: {currentTemperature}");
+        }
     }
 
 
