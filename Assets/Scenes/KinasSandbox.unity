@@ -1385,12 +1385,14 @@ MonoBehaviour:
     moldGroupParent: {fileID: 283829807}
     liquidVisual: {fileID: 904835339}
     prefabToSpawn: {fileID: 1530310511402982332, guid: 36dd3bbfdd2e8ad438782f65e3eb7f46, type: 3}
+    targetShape: 1
     originalScale: {x: 0, y: 0, z: 0}
     liquidMat: {fileID: 0}
   - moldName: Axe
     moldGroupParent: {fileID: 328602019}
     liquidVisual: {fileID: 583066681}
     prefabToSpawn: {fileID: 671440143542520099, guid: aace0f7ac7168b04980ea698cbe6c780, type: 3}
+    targetShape: 2
     originalScale: {x: 0, y: 0, z: 0}
     liquidMat: {fileID: 0}
   fillSpeed: 0.5
@@ -8394,15 +8396,15 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 828906596}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -8.24, y: 0, z: -2.5}
+  m_LocalRotation: {x: 0, y: -0.7071068, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: -7.43, y: 0, z: -2.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 338484222}
   - {fileID: 1404081211}
   m_Father: {fileID: 343749769}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: -90, z: 0}
 --- !u!1 &863597162
 GameObject:
   m_ObjectHideFlags: 0
@@ -11452,11 +11454,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 10fed19c4430f3f49a0dbbecf6551e32, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: 7.52
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 10fed19c4430f3f49a0dbbecf6551e32, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: 3.68
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 10fed19c4430f3f49a0dbbecf6551e32, type: 3}
       propertyPath: m_LocalPosition.z
