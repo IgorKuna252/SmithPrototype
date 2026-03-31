@@ -63,9 +63,10 @@ public class DaySystemManager : MonoBehaviour
         if (crucibleObject == null) crucibleObject = GameObject.Find("CrucibleParent");
         if (moldManagerObject == null) moldManagerObject = GameObject.Find("MoldManager");
 
-        // Tymczasowe całkowite wyłączenie pieców odlewniczych (wiaderko itp) 
-        if (crucibleObject != null) crucibleObject.SetActive(false);
-        if (moldManagerObject != null) moldManagerObject.SetActive(false);
+        // Tymczasowe całkowite wyłączenie pieców odlewniczych (wiaderko itp) na 1 dzień 
+        // (ZAKOMENTOWANE NA CZAS TESTÓW - żeby stół nie znikał przy włączaniu gry!)
+        // if (crucibleObject != null) crucibleObject.SetActive(false);
+        // if (moldManagerObject != null) moldManagerObject.SetActive(false);
     }
 
     public void EndDayButton()
