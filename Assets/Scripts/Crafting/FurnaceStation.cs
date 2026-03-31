@@ -135,7 +135,8 @@ public class FurnaceStation : MonoBehaviour
         var playerMovement = UnityEngine.Object.FindFirstObjectByType<PlayerMovement>();
         if (playerMovement != null) playerMovement.enabled = false;
 
-        BlacksmithInteraction.Instance.enabled = false;
+        if (BlacksmithInteraction.Instance != null)
+            BlacksmithInteraction.Instance.enabled = false;
         isMinigameActive = true;
     }
 
@@ -164,8 +165,9 @@ public class FurnaceStation : MonoBehaviour
         var playerMovement = UnityEngine.Object.FindFirstObjectByType<PlayerMovement>();
         if (playerMovement != null) playerMovement.enabled = true;
 
-        BlacksmithInteraction.Instance.enabled = true;
-        
+        if (BlacksmithInteraction.Instance != null)
+            BlacksmithInteraction.Instance.enabled = true;
+
         // Zostawiamy metal w piecu, by gracz go wziął starym sposobem z celownika!
         currentMetal = null; 
     }

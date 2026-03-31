@@ -41,14 +41,7 @@ public class DayNightManager : MonoBehaviour
             return;
         }
         Instance = this;
-    }
-
-    void Start()
-    {
-        // Wymuszenie poprawnego stanu niezależnie od wartości w Inspektorze
-        currentTime = 18f;
-        isTimeFlowing = false;
-        isDay = false;
+        isDay = currentTime >= startOfDayHour && currentTime < startOfNightHour;
     }
 
     /// <summary>

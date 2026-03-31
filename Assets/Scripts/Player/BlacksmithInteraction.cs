@@ -150,8 +150,8 @@ public class BlacksmithInteraction : MonoBehaviour
                     ClearHand();
 
                     npcPathFinding npcPath = socket.GetComponent<npcPathFinding>() ?? socket.GetComponentInParent<npcPathFinding>();
-                    if (npcPath != null && npcPath.IsTaskFulfilled())
-                        npcPath.WeaponAccepted();
+                    if (npcPath != null)
+                        npcPath.ProcessTransaction();
 
                     return;
                 }

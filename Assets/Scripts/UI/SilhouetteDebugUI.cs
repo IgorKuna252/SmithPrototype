@@ -91,13 +91,22 @@ public class SilhouetteDebugUI : MonoBehaviour
         _onCloseCallback = null;
     }
 
-    public void ShowTransaction(float matchPercentage, string rewardMaterial, int rewardAmount, System.Action onCloseCallback)
+    public void ShowTransaction(float matchPercentage, string rewardMaterial, int rewardAmount, bool noScheme, System.Action onCloseCallback)
     {
         _onCloseCallback = onCloseCallback;
 
+        bool hideImages = noScheme;
+        if (ImgScheme  != null) ImgScheme.gameObject.SetActive(!hideImages);
+        if (ImgWeapon  != null) ImgWeapon.gameObject.SetActive(!hideImages);
+        if (ImgOverlay != null) ImgOverlay.gameObject.SetActive(!hideImages);
+
         if (Label != null)
         {
-            Label.text = $"Dopasowanie: <color=#00DA33>{matchPercentage:F0}%</color>\n" +
+            string matchLine = noScheme
+                ? "<color=#00DA33>Każda broń jest dobra!</color>"
+                : $"Dopasowanie: <color=#00DA33>{matchPercentage:F0}%</color>";
+
+            Label.text = $"{matchLine}\n" +
                          $"Otrzymujesz: <color=#FFD700>{rewardMaterial} x{rewardAmount}</color>";
         }
 

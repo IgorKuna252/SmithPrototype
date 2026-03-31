@@ -36,17 +36,19 @@ public class WeaponSocket : MonoBehaviour
 
     void ApplyHoldTransform(GameObject weapon, FinishedObject finishedObj)
     {
-        Vector3 holdPos = weaponHoldPosition;
         Quaternion holdRot = Quaternion.Euler(weaponHoldRotation);
-
         weapon.transform.localRotation = holdRot;
 
-        // Kompensacja dłuższego ostrza
-        float defaultLength = 0.5f;
-        float extra = finishedObj.bladeLength - defaultLength;
-        Vector3 handleShift = holdRot * new Vector3(0f, 0f, extra * 0.15f);
-
-        weapon.transform.localPosition = holdPos + handleShift;
+        Transform grip = weapon.transform.Find("GripPoint");
+        if (grip != null)
+        {
+            // Przesuń broń tak żeby GripPoint trafił dokładnie w kość dłoni
+            weapon.transform.localPosition = weaponHoldPosition - holdRot * grip.localPosition;
+        }
+        else
+        {
+            weapon.transform.localPosition = weaponHoldPosition;
+        }
     }
 
     public void EquipWeapon(GameObject weapon)

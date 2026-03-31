@@ -39,6 +39,10 @@ public class NPCInteractionUI : MonoBehaviour
         currentNPC = npc;
         panel.SetActive(true);
 
+        npc.StopAllCoroutines();
+        UnityEngine.AI.NavMeshAgent agent = npc.GetComponent<UnityEngine.AI.NavMeshAgent>();
+        if (agent != null) { agent.ResetPath(); agent.isStopped = true; }
+
         AssignedTask task = npc.GetComponent<ExiledCitizen>()?.GetAssignedTask();
         WeaponData wpn = npc.GetWeaponData();
         ExiledCitizen citizen = npc.GetComponent<ExiledCitizen>();
@@ -76,6 +80,13 @@ public class NPCInteractionUI : MonoBehaviour
     {
         panel.SetActive(false);
         if (weaponWheel != null) weaponWheel.SetWheel(false);
+
+        if (currentNPC != null)
+        {
+            UnityEngine.AI.NavMeshAgent agent = currentNPC.GetComponent<UnityEngine.AI.NavMeshAgent>();
+            if (agent != null) agent.isStopped = false;
+        }
+
         currentNPC = null;
     }
 }

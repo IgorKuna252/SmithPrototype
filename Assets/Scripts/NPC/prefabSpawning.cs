@@ -22,10 +22,13 @@ public class prefabSpawning : MonoBehaviour
 
     void Start()
     {
-        // Klienci pojawiają się TYLKO gdy gracz otworzy warsztat (tabliczka)
         if (DayNightManager.Instance != null)
         {
-            DayNightManager.Instance.OnShopOpened += SpawnNightCustomers;
+            DayNightManager.Instance.OnNightStarted += SpawnNightCustomers;
+
+            // Jeśli gra startuje już w nocy - spawnuj od razu
+            if (!DayNightManager.Instance.isDay)
+                SpawnNightCustomers();
         }
         else
         {
@@ -37,7 +40,7 @@ public class prefabSpawning : MonoBehaviour
     {
         if (DayNightManager.Instance != null)
         {
-            DayNightManager.Instance.OnShopOpened -= SpawnNightCustomers;
+            DayNightManager.Instance.OnNightStarted -= SpawnNightCustomers;
         }
     }
 
@@ -81,7 +84,7 @@ public class prefabSpawning : MonoBehaviour
 
             GameObject obj = Instantiate(customerPrefab, queuePositions[i], Quaternion.Euler(0, -90, 0));
             obj.name = $"Klient_Nocny_{i + 1}";
-
+            
             SetupCitizenData(obj);
             npcQueue.Add(obj);
         }

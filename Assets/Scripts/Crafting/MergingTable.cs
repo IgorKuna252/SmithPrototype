@@ -282,6 +282,7 @@ public class MergingTable : MonoBehaviour
 
                 // Powrót do pierwotnej niezawodnej metody - bierzemy punkt Pivotu drewna (najlepsze do trzymania)
                 gripLocalPos = part.localPosition;
+                part.name = "HandlePart";
                 Destroy(wood);
             }
             else

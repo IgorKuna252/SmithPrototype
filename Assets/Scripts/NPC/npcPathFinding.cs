@@ -109,8 +109,9 @@ public class npcPathFinding : MonoBehaviour
             if (scheme != null) scheme.SetTriangles(task.triangles);
         }
 
+        bool noScheme = task.triangles == null || task.triangles.Length == 0;
         float schemeMatch;
-        if (task.triangles == null || task.triangles.Length == 0)
+        if (noScheme)
         {
             schemeMatch = 1f;
         }
@@ -143,9 +144,12 @@ public class npcPathFinding : MonoBehaviour
 
         if (SilhouetteDebugUI.Instance != null)
         {
+            StopAllCoroutines();
+            agentNPC.ResetPath();
             agentNPC.velocity = Vector3.zero;
+            agentNPC.isStopped = true;
 
-            SilhouetteDebugUI.Instance.ShowTransaction(matchPercent, rewardMaterial, rewardAmount, () =>
+            SilhouetteDebugUI.Instance.ShowTransaction(matchPercent, rewardMaterial, rewardAmount, noScheme, () =>
             {
                 // Dodaj materiały do EQ gracza
                 if (gameManager.Instance != null)
@@ -164,8 +168,12 @@ public class npcPathFinding : MonoBehaviour
 
                 var spawner = Object.FindFirstObjectByType<prefabSpawning>();
                 if (spawner != null) spawner.OnNPCProcessed();
-                
-                WeaponAccepted();
+
+                if (this != null)
+                {
+                    agentNPC.isStopped = false;
+                    WeaponAccepted(0f);
+                }
             });
         }
         else

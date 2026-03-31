@@ -14,14 +14,14 @@ public class InventoryUI : MonoBehaviour
         var inv = gameManager.Instance.inventory;
         
         // Opcja 1: Zwykłe użycie 
-        invText.text = $"Zasoby:" +
-                       $"Copper: {inv["Copper"]}" +
-                       $"Bronze: {inv["Bronze"]}" +
-                       $"Iron: {inv["Iron"]}" +
-                       $"Steel: {inv["Steel"]}" +
-                       $"Gold: {inv["Gold"]}" +
-                       $"Platinum: {inv["Platinum"]}" +
-                       $"BlueSteel: {inv["BlueSteel"]}" +
+        invText.text = $"Zasoby:\n" +
+                       $"Copper: {inv["Copper"]}\n" +
+                       $"Bronze: {inv["Bronze"]}\n" +
+                       $"Iron: {inv["Iron"]}\n" +
+                       $"Steel: {inv["Steel"]}\n" +
+                       $"Gold: {inv["Gold"]}\n" +
+                       $"Platinum: {inv["Platinum"]}\n" +
+                       $"BlueSteel: {inv["BlueSteel"]}\n" +
                        $"Vibranium: {inv["Vibranium"]}";
     }
 }

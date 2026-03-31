@@ -27,8 +27,12 @@ public class ShopSignInteractable : MonoBehaviour, IInteractable
 
     void Start()
     {
-        // Upewnij się że tabliczka pokazuje prawidłowy stan na starcie
-        isOpen = false;
+        if (DayNightManager.Instance != null)
+        {
+            isOpen = !DayNightManager.Instance.isDay;
+            DayNightManager.Instance.OnNightStarted += () => { isOpen = true; UpdateSignVisual(); };
+            DayNightManager.Instance.OnDayStarted  += () => { isOpen = false; UpdateSignVisual(); };
+        }
         UpdateSignVisual();
     }
 
