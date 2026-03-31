@@ -7,10 +7,6 @@ public class prefabSpawning : MonoBehaviour
     [SerializeField] GameObject customerPrefab;
     [SerializeField] int customerCount = 5;
 
-    [Header("Kupiec (Dzień)")]
-    [Tooltip("Póki co możesz dać tu prefab zwykłego klienta, później zrobimy mu Osobny Skrypt i GUI Kupca")]
-    [SerializeField] GameObject merchantPrefab;
-
     [Header("Punkty Poruszania")]
     [SerializeField] Transform spawnObject;
     [SerializeField] Transform targetNPCReject;
@@ -24,11 +20,7 @@ public class prefabSpawning : MonoBehaviour
     {
         if (DayNightManager.Instance != null)
         {
-            DayNightManager.Instance.OnNightStarted += SpawnNightCustomers;
-
-            // Jeśli gra startuje już w nocy - spawnuj od razu
-            if (!DayNightManager.Instance.isDay)
-                SpawnNightCustomers();
+            DayNightManager.Instance.OnShopOpened += SpawnNightCustomers;
         }
         else
         {
@@ -40,7 +32,7 @@ public class prefabSpawning : MonoBehaviour
     {
         if (DayNightManager.Instance != null)
         {
-            DayNightManager.Instance.OnNightStarted -= SpawnNightCustomers;
+            DayNightManager.Instance.OnShopOpened -= SpawnNightCustomers;
         }
     }
 
