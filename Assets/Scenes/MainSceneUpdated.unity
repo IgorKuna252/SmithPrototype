@@ -18985,6 +18985,9 @@ MonoBehaviour:
   ImgOverlay: {fileID: 784448689}
   Label: {fileID: 509326284}
   CloseButton: {fileID: 1119509720}
+  LabelScheme: {fileID: 266739758}
+  LabelWeapon: {fileID: 2032775645}
+  LabelOverlay: {fileID: 1175422156}
 --- !u!4 &1854902372
 Transform:
   m_ObjectHideFlags: 0

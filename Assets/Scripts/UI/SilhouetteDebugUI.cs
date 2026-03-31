@@ -21,6 +21,11 @@ public class SilhouetteDebugUI : MonoBehaviour
     public TextMeshProUGUI   Label;
     public Button            CloseButton;
 
+    [Header("Napisy pod obrazkami (opcjonalne)")]
+    public TextMeshProUGUI   LabelScheme;
+    public TextMeshProUGUI   LabelWeapon;
+    public TextMeshProUGUI   LabelOverlay;
+
     private BlacksmithInteraction _blacksmith;
     private System.Action _onCloseCallback;
 
@@ -96,9 +101,12 @@ public class SilhouetteDebugUI : MonoBehaviour
         _onCloseCallback = onCloseCallback;
 
         bool hideImages = noScheme;
-        if (ImgScheme  != null) ImgScheme.gameObject.SetActive(!hideImages);
-        if (ImgWeapon  != null) ImgWeapon.gameObject.SetActive(!hideImages);
-        if (ImgOverlay != null) ImgOverlay.gameObject.SetActive(!hideImages);
+        if (ImgScheme   != null) ImgScheme.gameObject.SetActive(!hideImages);
+        if (ImgWeapon   != null) ImgWeapon.gameObject.SetActive(!hideImages);
+        if (ImgOverlay  != null) ImgOverlay.gameObject.SetActive(!hideImages);
+        if (LabelScheme != null) LabelScheme.gameObject.SetActive(!hideImages);
+        if (LabelWeapon != null) LabelWeapon.gameObject.SetActive(!hideImages);
+        if (LabelOverlay!= null) LabelOverlay.gameObject.SetActive(!hideImages);
 
         if (Label != null)
         {
