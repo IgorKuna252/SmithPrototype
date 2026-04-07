@@ -53,9 +53,15 @@ public class npcPathFinding : MonoBehaviour
             {
                 agentNPC.velocity = Vector3.zero;
 
-                // Członek drużyny patrzy w kierunku acceptObject
+                // NPC patrzy W STRONĘ acceptObject (okienka), nie kopiuje jego rotacji
                 if (acceptObject != null)
-                    transform.rotation = Quaternion.Slerp(transform.rotation, acceptObject.rotation, Time.deltaTime * 5f);
+                {
+                    Vector3 dir = acceptObject.position - transform.position;
+                    dir.y = 0f;
+                    if (dir.sqrMagnitude > 0.001f)
+                        transform.rotation = Quaternion.Slerp(transform.rotation,
+                            Quaternion.LookRotation(dir), Time.deltaTime * 5f);
+                }
             }
         }
 

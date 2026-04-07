@@ -85,10 +85,23 @@ public class ForgeShapeEvaluator : MonoBehaviour
         DestroyImmediate(tempCanvasObj);
 
         // ZDJĘCIE 2: WYKUTY METAL
-        // Obrót: ostrze biegnie wzdłuż Z, kamera patrzy w +Z → widzimy tylko przekrój.
-        // Euler(-90, 0, 90): Z→X (długość poziomo), X→Y (szerokość pionowo), Y→Z (grubość = głębokość, niewidoczna)
+        // Ostrze biegnie wzdłuż lokalnego Z MetalPiece. Ustawiamy rotację ROOTA tak,
+        // żeby to MetalPiece (nie root) wypadł dokładnie na Euler(-90,0,0) w świecie —
+        // bo root ma identity, ale dziecko MetalPiece ma własną localRotation z montażu.
         forgedMetal.transform.position = hiddenPosition;
-        forgedMetal.transform.rotation = Quaternion.Euler(-90f, 0f, 0f);
+
+        Quaternion desiredBladeFacing = Quaternion.Euler(-90f, 0f, 0f);
+        MetalPiece metalChild = forgedMetal.GetComponentInChildren<MetalPiece>();
+        if (metalChild != null)
+        {
+            // relativeRot = obrót MetalPiece względem roota (cały łańcuch localRotation od roota do dziecka)
+            Quaternion relativeRot = Quaternion.Inverse(forgedMetal.transform.rotation) * metalChild.transform.rotation;
+            forgedMetal.transform.rotation = desiredBladeFacing * Quaternion.Inverse(relativeRot);
+        }
+        else
+        {
+            forgedMetal.transform.rotation = desiredBladeFacing;
+        }
         ChangeLayerRecursive(forgedMetal.transform, tempLayer);
 
         // Zastępujemy materiały unlit białym — żeby cienie i podświetlenia z nierówności
