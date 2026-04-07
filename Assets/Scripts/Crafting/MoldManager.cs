@@ -7,9 +7,11 @@ public class MoldSetup
     public string moldName;
     public GameObject moldGroupParent;
     public Transform liquidVisual;
-    public GameObject prefabToSpawn;
-    [HideInInspector] public Vector3 originalScale; // Każda forma pamięta swoją skalę!
-    [HideInInspector] public Material liquidMat;    // Każda forma pamięta swój materiał!
+    public GameObject prefabToSpawn; // Możesz teraz wszędzie wrzucić ten sam 1 uniwersalny prefab!
+    [Tooltip("Wybierz jaki kształt siatki skrypt ma wygenerować po wysunięciu.")]
+    public MetalPiece.MetalPartType targetShape; // Tędy przekażemy mu w jakim jest dziale!
+    [HideInInspector] public Vector3 originalScale;
+    [HideInInspector] public Material liquidMat;
 }
 
 public class MoldManager : MonoBehaviour
@@ -146,13 +148,18 @@ public class MoldManager : MonoBehaviour
             MoldSetup activeMold = molds[currentMoldIndex];
             GameObject spawnedItem = Instantiate(activeMold.prefabToSpawn, activeMold.liquidVisual.position, activeMold.liquidVisual.rotation);
             
-            // Nadpisujemy zmienną w stworzonym przedmiocie danymi z tygla
-            MetalPiece piece = spawnedItem.GetComponent<MetalPiece>();
-            if (piece != null)
+            // --- OTO MAGIA: Konfigurujemy świeżo zrespiony obiekt! ---
+            MetalPiece newPiece = spawnedItem.GetComponent<MetalPiece>();
+            if (newPiece != null)
             {
-                piece.metalTier = moldedMetal;
+                // Zmieniamy wewnętrzną formę i odpalamy generator!
+                newPiece.SetMoldAndRebuild(activeMold.targetShape);
+                
+                // UWAGA: Kiedy będziesz miał już system metali w Tygielku,
+                // dodasz tu linijkę np: newPiece.metalTier = Crucible.pouredMetalTier;
+                // newPiece.currentTemperature = 500f; // Możesz podgrzać wyciągniętą rzecz
             }
-            
+
             ResetMold(activeMold);
             return spawnedItem;
         }

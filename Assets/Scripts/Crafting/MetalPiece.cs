@@ -5,23 +5,27 @@ using System.Linq;
 public enum MetalType { Copper, Bronze, Iron, Steel, Gold, Platinum, BlueSteel, Vibranium }
 public enum HitType { Lengthen, Widen }
 
-// --- EWOLUCJA: 6-punktowy profil (Niezależne krawędzie i środek!) ---
+// 6punktowy profil
 [System.Serializable]
 public class MetalProfile
 {
-    public float z;               // Pozycja na długości
-    public float leftX;           // Lewa krawędź (ujemna)
-    public float rightX;          // Prawa krawędź (dodatnia)
+    public float z;
+    public float leftX;
+    public float rightX;
 
-    public float centerHalfHeight; // Grubość na samym środku miecza (Rdzeń)
-    public float leftHalfHeight;   // Grubość lewej krawędzi (Do ostrzenia!)
-    public float rightHalfHeight;  // Grubość prawej krawędzi (Do ostrzenia!)
+    public float centerHalfHeight;
+    public float leftHalfHeight;
+    public float rightHalfHeight;
+
+    //pauza dla lepszego szlifowania
+    public float leftEdgeIntegrity;
+    public float rightEdgeIntegrity;
 }
 
 [RequireComponent(typeof(MeshFilter), typeof(MeshCollider), typeof(MeshRenderer))]
 public class MetalPiece : MonoBehaviour, IInteractable, IPickable
 {
-    public enum MetalPartType { SwordBlade, AxeHead }
+    public enum MetalPartType { Ingot, SwordMold, AxeMold }
     public MetalPartType partType;
 
     [Header("Dane dla Stołu Montażowego")]
@@ -42,9 +46,10 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
 
     [Header("Narzędzia")]
     public float minThickness = 0.005f;
-    public float grindSpeed = 0.05f;
+    public float grindSpeed = 0.09f;
     public float sharpenMultiplier = 20f;
-    public float eatMultiplier = 0.8f;
+    public float eatMultiplier = 0.07f;
+    public float safetyPauseSeconds = 1.5f;
 
     [Header("Młotek (Tuning)")]
     public float hammerRadius = 0.15f;   // Promień rażenia młotka
@@ -60,7 +65,7 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
     private bool isInForge = false;
     private Color baseColdColor;
 
-    void Start()
+    void Awake()
     {
         meshRenderer = GetComponent<MeshRenderer>();
         meshFilter = GetComponent<MeshFilter>();
@@ -85,21 +90,100 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
     private void InitializeSpine()
     {
         metalSpine.Clear();
-        float startZ = -startLength / 2f;
-        float segmentLength = startLength / initialSegments;
 
-        for (int i = 0; i <= initialSegments; i++)
+        float length = startLength;
+        float width = startWidth;
+        float thickness = startThickness;
+        int segments = initialSegments;
+
+        // --- DEFINIUJEMY WŁAŚCIWOŚCI STARTOWE BAZUJĄC NA FORMIE (MOLD) ---
+        switch (partType)
         {
+            case MetalPartType.Ingot:
+                // Zwykła Sztabka - gruby, krótki i zwarty blok (bardzo bazowy)
+                length = 0.35f;
+                width = 0.1f;
+                thickness = 0.08f;
+                segments = 15;
+                break;
+
+            case MetalPartType.SwordMold:
+                // Foremka miecza - długa wstążka
+                length = 1.1f;    // Odrobinkę dłuższa sztaba ogólna
+                width = 0.15f;    // Szerszy miecz!
+                thickness = 0.065f; // Wyraźnie pogrubiony
+                segments = 40;
+                break;
+
+            case MetalPartType.AxeMold:
+                // Foremka siekiery - krótka, ale od razu wyprofilowana w szerszy, asymetryczny blok (w X)
+                length = 0.35f;
+                width = 0.25f;  // Dużo szersza, by było miejsce na zakucie ostrza
+                thickness = 0.06f;
+                segments = 15;
+                break;
+        }
+
+        float startZ = -length / 2f;
+        float segmentLength = length / segments;
+
+        for (int i = 0; i <= segments; i++)
+        {
+            float t = (float)i / segments; // Postęp długości od 0.0 (dół) do 1.0 (góra formy)
+
+            float currentZ = startZ + (i * segmentLength);
+            float leftX = -width / 2f;
+            float rightX = width / 2f;
+            float halfThickness = thickness / 2f;
+
+            // --- PROCEDURALNE KSZTAŁTOWANIE BRYŁ ODLANYCH ---
+            if (partType == MetalPartType.SwordMold)
+            {
+                // Miecz: Szpic zaczyna się o wiele wcześniej, tworząc znacznie dłuższe ostrze tnące
+                if (t > 0.70f) // Z 85% zeszło na 70% (ostatnie 30% długości zwęży się płynnie w szpic)
+                {
+                    float taper = 1f - ((t - 0.70f) / 0.30f); // Wartość schodzi od 1.0 do 0.0
+                    leftX *= taper;     
+                    rightX *= taper;    
+                    halfThickness *= (0.15f + 0.85f * taper); 
+                }
+            }
+            else if (partType == MetalPartType.AxeMold)
+            {
+                // Siekiera: Obrócona na drugą stronę
+                // Teraz twardy ucinany obuch jest pod prawą dłonią (płaski)
+                rightX = 0.05f; 
+                
+                // A brzuch siekiery celuje potężnie na lewo
+                float bowCurve = Mathf.Sin(t * Mathf.PI); 
+                leftX = -0.03f - (0.22f * bowCurve);
+                
+                // Modyfikacja grubości na podobnych zasadach
+                halfThickness = (thickness / 2f) * (0.6f + 0.4f * bowCurve);
+            }
+
             metalSpine.Add(new MetalProfile
             {
-                z = startZ + (i * segmentLength),
-                leftX = -startWidth / 2f,
-                rightX = startWidth / 2f,
-                centerHalfHeight = startThickness / 2f,
-                leftHalfHeight = startThickness / 2f,
-                rightHalfHeight = startThickness / 2f
+                z = currentZ,
+                leftX = leftX,
+                rightX = rightX,
+                centerHalfHeight = halfThickness,
+                leftHalfHeight = halfThickness,
+                rightHalfHeight = halfThickness,
+                leftEdgeIntegrity = 1f,
+                rightEdgeIntegrity = 1f
             });
         }
+    }
+
+    // Dodana funkcja dla Twojego 'Mold Table':
+    public void SetMoldAndRebuild(MetalPartType newMoldType)
+    {
+        partType = newMoldType;
+        InitializeSpine();
+        BuildMeshFromSpine();
+        
+        // Zależnie jak robisz chłodzenie, być może warto przywrócić mu temperaturę przy wyjmowaniu z formy?
     }
 
     public void BuildMeshFromSpine()
@@ -174,11 +258,33 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
 
         mesh.vertices = vertices;
         mesh.triangles = triangles;
+        
+        // NOWOŚĆ: Wymuszenie twardych krawędzi (Flat Shading) PRZED obliczaniem odbić
+        FlatShading(mesh);
+
         mesh.RecalculateNormals();
         mesh.RecalculateBounds();
 
         meshFilter.mesh = mesh;
         meshCollider.sharedMesh = mesh;
+    }
+
+    // Dodana funkcja, która rozbija połączoną siatkę uwalniając cienie spod wygładzania Unity
+    private void FlatShading(Mesh targetMesh)
+    {
+        Vector3[] oldVerts = targetMesh.vertices;
+        int[] triangles = targetMesh.triangles;
+        Vector3[] newVerts = new Vector3[triangles.Length];
+        
+        for (int i = 0; i < triangles.Length; i++)
+        {
+            newVerts[i] = oldVerts[triangles[i]];
+            // Przypisanie unikalnego wierzchołka dla KAŻDEGO rogu KAŻDEGO trójkąta!
+            triangles[i] = i; 
+        }
+        
+        targetMesh.vertices = newVerts;
+        targetMesh.triangles = triangles;
     }
 
     // =================================================================
@@ -193,56 +299,66 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
         float localZ = localHit.z;
         float localX = localHit.x;
 
-        if (metalSpine.Count > 0)
-        {
-            float minZ = metalSpine[0].z;
-            float maxZ = metalSpine[metalSpine.Count - 1].z;
-            localZ = Mathf.Clamp(localZ, minZ, maxZ);
-        }
+        // UWAGA: Usunąłem tutaj 'Mathf.Clamp'! 
+        // Teraz młotek uderza DOKŁADNIE tam gdzie myszka. Nie ma magnesowania do krawędzi.
 
         bool wasDeformed = false;
 
-        // TUNING SIŁY (Możesz to też wystawić do Inspektora)
-        float powerSquish = 0.007f; // ZMNIEJSZONE: Metal wolniej się spłaszcza (ok. 20-30 uderzeń do min)
-        float powerStretch = 0.04f; // ZWIĘKSZONE: Metal mocniej ucieka na długość/szerokość
+        float powerSquish = 0.005f;
+        float powerWiden = 0.015f;
+        float powerLengthen = 0.035f;
+
+        float swordCenterZ = 0f;
+        if (metalSpine.Count > 0)
+        {
+            swordCenterZ = (metalSpine[0].z + metalSpine[metalSpine.Count - 1].z) / 2f;
+        }
 
         for (int i = 0; i < metalSpine.Count; i++)
         {
+            // Prawdziwa odległość od faktycznego kliknięcia myszką
             float distZ = Mathf.Abs(metalSpine[i].z - localZ);
             float profileCenterX = (metalSpine[i].leftX + metalSpine[i].rightX) / 2f;
             float distX = Mathf.Abs(profileCenterX - localX);
             float trueDistance = Mathf.Sqrt(distZ * distZ + distX * distX);
 
+            // Jeśli uderzyłeś w powietrze (np. za sztabą), trueDistance będzie większe niż hammerRadius
+            // i ten if po prostu zignoruje uderzenie!
             if (trueDistance < hammerRadius)
             {
-                // Obliczamy opór: im cieńszy metal, tym trudniej go dalej zgnieść
-                float currentThickness = metalSpine[i].centerHalfHeight * 2f;
-                float resistance = Mathf.Clamp01((currentThickness - minThickness) / 0.02f);
+                float force = 1f - (trueDistance / hammerRadius);
+                float targetY = minThickness / 2f;
 
-                if (resistance > 0.01f)
+                // 1. SPŁASZCZANIE W DÓŁ
+                if (metalSpine[i].centerHalfHeight > targetY)
                 {
-                    float force = (1f - (trueDistance / hammerRadius)) * resistance;
-                    float targetY = minThickness / 2f;
-
-                    // 1. SPŁASZCZANIE (Bardzo subtelne)
                     metalSpine[i].centerHalfHeight = Mathf.MoveTowards(metalSpine[i].centerHalfHeight, targetY, powerSquish * force);
                     metalSpine[i].leftHalfHeight = Mathf.MoveTowards(metalSpine[i].leftHalfHeight, targetY, powerSquish * force);
                     metalSpine[i].rightHalfHeight = Mathf.MoveTowards(metalSpine[i].rightHalfHeight, targetY, powerSquish * force);
+                    wasDeformed = true;
+                }
 
-                    // 2. WYDŁUŻANIE / POSZERZANIE (Agresywne)
-                    if (hitType == HitType.Widen)
+                // 2. ASYMETRYCZNE ROZBIJANIE NA BOKI
+                if (hitType == HitType.Widen)
+                {
+                    if (localX < profileCenterX)
                     {
-                        metalSpine[i].leftX -= powerStretch * force;
-                        metalSpine[i].rightX += powerStretch * force;
+                        metalSpine[i].leftX -= powerWiden * force;
+                        metalSpine[i].rightX += powerWiden * force * 0.2f;
                     }
-                    else if (hitType == HitType.Lengthen)
+                    else
                     {
-                        float pushDirection = Mathf.Sign(metalSpine[i].z - localZ);
-                        if (pushDirection == 0) pushDirection = (i > metalSpine.Count / 2) ? 1f : -1f;
+                        metalSpine[i].rightX += powerWiden * force;
+                        metalSpine[i].leftX -= powerWiden * force * 0.2f;
+                    }
+                    wasDeformed = true;
+                }
+                // 3. WYDŁUŻANIE
+                else if (hitType == HitType.Lengthen)
+                {
+                    float pushDirection = (metalSpine[i].z >= swordCenterZ) ? 1f : -1f;
 
-                        // Przesuwamy kręgi znacznie mocniej
-                        metalSpine[i].z += pushDirection * powerStretch * force;
-                    }
+                    metalSpine[i].z += pushDirection * powerLengthen * force;
                     wasDeformed = true;
                 }
             }
@@ -257,6 +373,7 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
         return wasDeformed;
     }
 
+    // NOWOŚĆ: Automatyczne dodawanie nowych kręgów po rozciągnięciu
     // NOWOŚĆ: Automatyczne dodawanie nowych kręgów po rozciągnięciu
     private void SubdivideSpine()
     {
@@ -277,7 +394,11 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
                     rightX = (p1.rightX + p2.rightX) / 2f,
                     centerHalfHeight = (p1.centerHalfHeight + p2.centerHalfHeight) / 2f,
                     leftHalfHeight = (p1.leftHalfHeight + p2.leftHalfHeight) / 2f,
-                    rightHalfHeight = (p1.rightHalfHeight + p2.rightHalfHeight) / 2f
+                    rightHalfHeight = (p1.rightHalfHeight + p2.rightHalfHeight) / 2f,
+
+                    // --- POPRAWKA BŁĘDU: Uśredniamy barierę sąsiadów, zamiast zostawiać 0! ---
+                    leftEdgeIntegrity = (p1.leftEdgeIntegrity + p2.leftEdgeIntegrity) / 2f,
+                    rightEdgeIntegrity = (p1.rightEdgeIntegrity + p2.rightEdgeIntegrity) / 2f
                 };
 
                 metalSpine.Insert(i + 1, mid);
@@ -295,6 +416,10 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
         float baseSharpenSpeed = grindSpeed * sharpenMultiplier * 0.01f * Time.deltaTime;
         float baseEatSpeed = grindSpeed * eatMultiplier * Time.deltaTime;
 
+        // NOWOŚĆ: Szybkość zjadania pauzy. 1f oznacza około 1 sekundę piłowania w jednym miejscu
+        // zanim kamień zacznie wżerać się w szerokość!
+        float integrityDrainSpeed = (1f / safetyPauseSeconds) * Time.deltaTime;
+
         for (int i = 0; i < metalSpine.Count; i++)
         {
             float distance = Mathf.Abs(metalSpine[i].z - localZPosition);
@@ -304,16 +429,23 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
                 float forceMultiplier = distance < coreWidth ? 1f : 1f - ((distance - coreWidth) / (falloffRadius - coreWidth));
                 float curSharpenSpeed = baseSharpenSpeed * forceMultiplier;
                 float curEatSpeed = baseEatSpeed * forceMultiplier;
+                float curIntegrityDrain = integrityDrainSpeed * forceMultiplier;
 
                 if (!isFlipped) // PRAWA KRAWĘDŹ
                 {
-                    // 1. Najpierw OSTRZENIE (Ścina do płaskiego zera na brzegu, robi trójkąt!)
+                    // ETAP 1: OSTRZENIE (Ścina góra-dół)
                     if (metalSpine[i].rightHalfHeight > 0.001f)
                     {
                         metalSpine[i].rightHalfHeight = Mathf.MoveTowards(metalSpine[i].rightHalfHeight, 0f, curSharpenSpeed);
                         wasDeformed = true;
                     }
-                    // 2. Potem WŻERANIE (Kiedy jest już ostre jak brzytwa)
+                    // ETAP 2: PAUZA BEZPIECZEŃSTWA (Zbiera niewidzialne punkty, wizualnie nic się nie psuje!)
+                    else if (metalSpine[i].rightEdgeIntegrity > 0f)
+                    {
+                        metalSpine[i].rightEdgeIntegrity -= curIntegrityDrain;
+                        wasDeformed = true; // Zmieniamy dane, więc odświeżamy siatkę
+                    }
+                    // ETAP 3: WŻERANIE (Bariera pękła, kamień zjada szerokość miecza - idealne do ząbków)
                     else if (metalSpine[i].rightX > 0f)
                     {
                         metalSpine[i].rightX = Mathf.MoveTowards(metalSpine[i].rightX, 0f, curEatSpeed);
@@ -322,13 +454,19 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
                 }
                 else // LEWA KRAWĘDŹ
                 {
-                    // 1. Najpierw OSTRZENIE
+                    // ETAP 1: OSTRZENIE
                     if (metalSpine[i].leftHalfHeight > 0.001f)
                     {
                         metalSpine[i].leftHalfHeight = Mathf.MoveTowards(metalSpine[i].leftHalfHeight, 0f, curSharpenSpeed);
                         wasDeformed = true;
                     }
-                    // 2. Potem WŻERANIE
+                    // ETAP 2: PAUZA BEZPIECZEŃSTWA
+                    else if (metalSpine[i].leftEdgeIntegrity > 0f)
+                    {
+                        metalSpine[i].leftEdgeIntegrity -= curIntegrityDrain;
+                        wasDeformed = true;
+                    }
+                    // ETAP 3: WŻERANIE
                     else if (metalSpine[i].leftX < 0f)
                     {
                         metalSpine[i].leftX = Mathf.MoveTowards(metalSpine[i].leftX, 0f, curEatSpeed);
@@ -345,7 +483,6 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
             {
                 if (Mathf.Abs(metalSpine[i].z - localZPosition) < coreWidth)
                 {
-                    // Jeśli Prawy styk spotkał się z Lewym, miecz przerwany!
                     if (metalSpine[i].rightX <= metalSpine[i].leftX + 0.005f)
                     {
                         Debug.Log("<color=red>AMPUTACJA! Miecz przecięty!</color>");
@@ -385,31 +522,61 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
     public void OnDrop() { }
     public void ForceCoolDown() { currentTemperature = 20f; isInForge = false; UpdateVisuals(); }
 
-    void SetBaseColor()
+    private void SetBaseColor()
     {
-        switch (metalTier)
+        baseColdColor = new Color(0.15f, 0.15f, 0.15f); // Ciemniejszy, głęboki szary (Dark Iron/Steel)
+
+        if (meshRenderer != null)
         {
-            case MetalType.Copper: baseColdColor = new Color(0.8f, 0.4f, 0.2f); break;
-            case MetalType.Iron: baseColdColor = new Color(0.5f, 0.5f, 0.5f); break;
-            default: baseColdColor = Color.gray; break;
+            // CAŁKOWICIE ODZINAMY SIĘ OD ORYGINALNEGO KOLORU (CZERWONEGO) PREFABU:
+            // Szukamy standardowego shadera, by zapewnić poprawne działanie odbić i emisji.
+            Shader litShader = Shader.Find("Universal Render Pipeline/Lit");
+            if (litShader == null) litShader = Shader.Find("Standard");
+            
+            if (litShader != null)
+            {
+                Material freshMetallicMat = new Material(litShader);
+                
+                // Ustawiamy właściwości twardego materiału szarości i przypinamy na stałe do obiektu
+                if (freshMetallicMat.HasProperty("_Color")) freshMetallicMat.SetColor("_Color", baseColdColor);
+                if (freshMetallicMat.HasProperty("_BaseColor")) freshMetallicMat.SetColor("_BaseColor", baseColdColor);
+                
+                meshRenderer.material = freshMetallicMat;
+            }
         }
     }
 
-    void UpdateVisuals()
+    private void UpdateVisuals()
     {
-        if (meshRenderer == null) return;
-        float tempNormalized = Mathf.Clamp01((currentTemperature - 20f) / (maxTemperature - 20f));
+        if (meshRenderer == null || meshRenderer.material == null) return;
+        
+        float t = Mathf.Clamp01((currentTemperature - 20f) / (maxTemperature - 20f));
+        
+        // Zgodnie z oryginałem - oryginalny gorący i stara matematyka
         Color hotColor = new Color(0.8f, 0.25f, 0f);
-        Color currentColor = Color.Lerp(baseColdColor, hotColor, tempNormalized);
+        Color targetColor = Color.Lerp(baseColdColor, hotColor, t);
 
         Material mat = meshRenderer.material;
-        mat.color = currentColor;
-        if (mat.HasProperty("_Color")) mat.SetColor("_Color", currentColor);
+        
+        mat.color = targetColor; // Dopiska z oryginału dla niektórych starych shaderów
+        if (mat.HasProperty("_Color")) mat.SetColor("_Color", targetColor);
+        if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", targetColor);
 
         if (mat.HasProperty("_EmissionColor"))
         {
             mat.EnableKeyword("_EMISSION");
-            mat.SetColor("_EmissionColor", currentColor * (1f + tempNormalized * 4f));
+            // Znaczące osłabienie emisji: t=0 daje czystą czerń (brak świecenia w cieniu), a t=1 daje łagodne x1.5 podbicie zamiast starego x5.
+            mat.SetColor("_EmissionColor", targetColor * (t * 1.5f));
+        }
+    }
+
+    // reset bariery
+    public void ResetEdgeIntegrity()
+    {
+        for (int i = 0; i < metalSpine.Count; i++)
+        {
+            metalSpine[i].leftEdgeIntegrity = 1f;
+            metalSpine[i].rightEdgeIntegrity = 1f;
         }
     }
 }
