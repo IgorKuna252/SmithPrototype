@@ -103,6 +103,12 @@ public class GrindstoneStation : MonoBehaviour
         float scroll = Input.mouseScrollDelta.y;
         bladeSlidePosition += scroll * 0.015f;
 
+        //reset bariery po przesunieciu
+        if (Mathf.Abs(scroll) > 0.01f)
+        {
+            currentMetal.ResetEdgeIntegrity();
+        }
+
         // Zabezpieczenie limitów przesuwania (czytamy to z naszej nowej matematycznej listy "metalSpine")
         if (currentMetal.metalSpine.Count > 0)
         {
