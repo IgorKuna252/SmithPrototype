@@ -293,56 +293,66 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
         float localZ = localHit.z;
         float localX = localHit.x;
 
-        if (metalSpine.Count > 0)
-        {
-            float minZ = metalSpine[0].z;
-            float maxZ = metalSpine[metalSpine.Count - 1].z;
-            localZ = Mathf.Clamp(localZ, minZ, maxZ);
-        }
+        // UWAGA: Usunąłem tutaj 'Mathf.Clamp'! 
+        // Teraz młotek uderza DOKŁADNIE tam gdzie myszka. Nie ma magnesowania do krawędzi.
 
         bool wasDeformed = false;
 
-        // TUNING SIŁY (Możesz to też wystawić do Inspektora)
-        float powerSquish = 0.007f; // ZMNIEJSZONE: Metal wolniej się spłaszcza (ok. 20-30 uderzeń do min)
-        float powerStretch = 0.01f; // ZWIĘKSZONE: Metal mocniej ucieka na długość/szerokość
+        float powerSquish = 0.005f;
+        float powerWiden = 0.015f;
+        float powerLengthen = 0.035f;
+
+        float swordCenterZ = 0f;
+        if (metalSpine.Count > 0)
+        {
+            swordCenterZ = (metalSpine[0].z + metalSpine[metalSpine.Count - 1].z) / 2f;
+        }
 
         for (int i = 0; i < metalSpine.Count; i++)
         {
+            // Prawdziwa odległość od faktycznego kliknięcia myszką
             float distZ = Mathf.Abs(metalSpine[i].z - localZ);
             float profileCenterX = (metalSpine[i].leftX + metalSpine[i].rightX) / 2f;
             float distX = Mathf.Abs(profileCenterX - localX);
             float trueDistance = Mathf.Sqrt(distZ * distZ + distX * distX);
 
+            // Jeśli uderzyłeś w powietrze (np. za sztabą), trueDistance będzie większe niż hammerRadius
+            // i ten if po prostu zignoruje uderzenie!
             if (trueDistance < hammerRadius)
             {
-                // Obliczamy opór: im cieńszy metal, tym trudniej go dalej zgnieść
-                float currentThickness = metalSpine[i].centerHalfHeight * 2f;
-                float resistance = Mathf.Clamp01((currentThickness - minThickness) / 0.02f);
+                float force = 1f - (trueDistance / hammerRadius);
+                float targetY = minThickness / 2f;
 
-                if (resistance > 0.01f)
+                // 1. SPŁASZCZANIE W DÓŁ
+                if (metalSpine[i].centerHalfHeight > targetY)
                 {
-                    float force = (1f - (trueDistance / hammerRadius)) * resistance;
-                    float targetY = minThickness / 2f;
-
-                    // 1. SPŁASZCZANIE (Bardzo subtelne)
                     metalSpine[i].centerHalfHeight = Mathf.MoveTowards(metalSpine[i].centerHalfHeight, targetY, powerSquish * force);
                     metalSpine[i].leftHalfHeight = Mathf.MoveTowards(metalSpine[i].leftHalfHeight, targetY, powerSquish * force);
                     metalSpine[i].rightHalfHeight = Mathf.MoveTowards(metalSpine[i].rightHalfHeight, targetY, powerSquish * force);
+                    wasDeformed = true;
+                }
 
-                    // 2. WYDŁUŻANIE / POSZERZANIE (Agresywne)
-                    if (hitType == HitType.Widen)
+                // 2. ASYMETRYCZNE ROZBIJANIE NA BOKI
+                if (hitType == HitType.Widen)
+                {
+                    if (localX < profileCenterX)
                     {
-                        metalSpine[i].leftX -= powerStretch * force;
-                        metalSpine[i].rightX += powerStretch * force;
+                        metalSpine[i].leftX -= powerWiden * force;
+                        metalSpine[i].rightX += powerWiden * force * 0.2f;
                     }
-                    else if (hitType == HitType.Lengthen)
+                    else
                     {
-                        float pushDirection = Mathf.Sign(metalSpine[i].z - localZ);
-                        if (pushDirection == 0) pushDirection = (i > metalSpine.Count / 2) ? 1f : -1f;
+                        metalSpine[i].rightX += powerWiden * force;
+                        metalSpine[i].leftX -= powerWiden * force * 0.2f;
+                    }
+                    wasDeformed = true;
+                }
+                // 3. WYDŁUŻANIE
+                else if (hitType == HitType.Lengthen)
+                {
+                    float pushDirection = (metalSpine[i].z >= swordCenterZ) ? 1f : -1f;
 
-                        // Przesuwamy kręgi znacznie mocniej
-                        metalSpine[i].z += pushDirection * powerStretch * force;
-                    }
+                    metalSpine[i].z += pushDirection * powerLengthen * force;
                     wasDeformed = true;
                 }
             }
