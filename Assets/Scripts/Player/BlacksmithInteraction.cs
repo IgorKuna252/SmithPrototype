@@ -25,9 +25,7 @@ public class BlacksmithInteraction : MonoBehaviour
     private bool isInteractingWithMold = false;
     private MoldManager activeMold = null;
 
-    [HideInInspector] public WheelController wheel;
-
-
+    public WheelController wheel;
     public Canvas playerUI;
     
     public static BlacksmithInteraction Instance;
@@ -38,6 +36,9 @@ public class BlacksmithInteraction : MonoBehaviour
     {
         playerCamera = GetComponentInChildren<Camera>();
         playerMovement = GetComponent<PlayerMovement>();
+
+        if (wheel == null && playerUI != null)
+            wheel = playerUI.GetComponent<WheelController>();
 
         if (playerVisuals == null)
         {
@@ -221,8 +222,10 @@ public class BlacksmithInteraction : MonoBehaviour
             GrindstoneStation station = hit.collider.GetComponent<GrindstoneStation>();
             if (station != null && heldItem != null && heldItem.GetComponent<MetalPiece>())
             {
-                station.EnterGrindingMode(heldItem.GetComponent<MetalPiece>());
+                MetalPiece grindMetal = heldItem.GetComponent<MetalPiece>();
+                station.EnterGrindingMode(grindMetal);
                 ClearHand();
+                ShowMetalPreview(grindMetal);
                 return;
             }
 
@@ -230,8 +233,10 @@ public class BlacksmithInteraction : MonoBehaviour
             AnvilStation anvil = hit.collider.GetComponentInParent<AnvilStation>();
             if (anvil != null && heldItem != null && heldItem.GetComponent<MetalPiece>())
             {
-                anvil.EnterForgingMode(heldItem.GetComponent<MetalPiece>());
+                MetalPiece forgeMetal = heldItem.GetComponent<MetalPiece>();
+                anvil.EnterForgingMode(forgeMetal);
                 ClearHand();
+                ShowMetalPreview(forgeMetal);
                 return;
             }
 
@@ -335,6 +340,16 @@ public class BlacksmithInteraction : MonoBehaviour
     }
 
     public bool IsHoldingItem() { return heldItem != null; }
+
+    public void ShowMetalPreview(MetalPiece metal)
+    {
+        if (wheel == null || metal == null) return;
+        MeshFilter mf = metal.GetComponent<MeshFilter>();
+        float bladeLength = (mf != null) ? mf.mesh.bounds.size.z : metal.startLength;
+        WeaponData preview = new WeaponData("Podgląd", metal.metalTier, bladeLength);
+        wheel.SetWheel(true);
+        wheel.UpdateWheel(preview.GetNormalizedDamage(), preview.GetNormalizedSpeed(), preview.GetNormalizedAoE());
+    }
 
     public void CloseTableInteraction()
     {
@@ -547,6 +562,15 @@ public class BlacksmithInteraction : MonoBehaviour
                 }
 
                 targetObj.GetComponent<IPickable>()?.OnPickUp();
+
+                FinishedObject pickedWeapon = heldItem.GetComponent<FinishedObject>();
+                if (wheel != null && pickedWeapon != null)
+                {
+                    WeaponData wpn = new WeaponData(pickedWeapon.name, pickedWeapon.metalTier, pickedWeapon.bladeLength);
+                    wheel.SetWheel(true);
+                    wheel.UpdateWheel(wpn.GetNormalizedDamage(), wpn.GetNormalizedSpeed(), wpn.GetNormalizedAoE());
+                }
+
                 return true;
             }
         }
@@ -639,8 +663,8 @@ public class BlacksmithInteraction : MonoBehaviour
         ClearHand();
     }
 
-    void ClearHand() 
-    { 
+    void ClearHand()
+    {
         if (heldItem != null)
         {
             // Przywracamy fizykę kolizji dla wszystkich sklejonych części po wypuszczeniu z dłoni
@@ -649,7 +673,8 @@ public class BlacksmithInteraction : MonoBehaviour
                 col.enabled = true;
             }
         }
-        heldItem = null; 
-        heldItemRb = null; 
+        heldItem = null;
+        heldItemRb = null;
+        if (wheel != null) wheel.SetWheel(false);
     }
 }

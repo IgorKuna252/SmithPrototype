@@ -132,7 +132,7 @@ public class FurnaceStation : MonoBehaviour
         Cursor.visible = true;
 
         // Zatrzymanie chodzenia ręcznego
-        var playerMovement = UnityEngine.Object.FindFirstObjectByType<PlayerMovement>(); // Zmieniono na zoptymalizowaną wersję FindFirstObjectByType jeśli używasz Unity 2023+
+        var playerMovement = UnityEngine.Object.FindFirstObjectByType<PlayerMovement>();
         if (playerMovement != null) playerMovement.enabled = false;
 
         if (BlacksmithInteraction.Instance != null)

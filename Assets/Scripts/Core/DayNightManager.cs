@@ -10,12 +10,18 @@ public class DayNightManager : MonoBehaviour
     [Header("Ustawienia Czasu")]
     [Tooltip("Obecny czas w grze (w formacie 0 - 24 godzin)")]
     [Range(0, 24)] public float currentTime = 18f;
-    
+
     [Tooltip("Ile minut w grze mija podczas 1 sekundy prawdziwego czasu? (10f = bardzo szybko)")]
-    public float timeMultipler = 10f; 
+    public float timeMultipler = 10f;
+
+    [Tooltip("Mnożnik przyspieszenia czasu gdy gracz zamyka sklep (przewijanie do nocy)")]
+    public float fastForwardMultiplier = 120f;
 
     [Tooltip("Czy czas aktualnie płynie?")]
     public bool isTimeFlowing = false;
+
+    [Tooltip("Czy czas aktualnie jest przewijany do nocy?")]
+    public bool isFastForwarding = false;
 
     [Header("Oświetlenie (Słońce / Księżyc)")]
     public Light directionalLight;
@@ -45,32 +51,44 @@ public class DayNightManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Wywoływane przez tabliczkę "Otwarte" - uruchamia czas i spawnuje klientów
+    /// Wywoływane przez tabliczkę gdy gracz otwiera sklep.
+    /// Jeśli jest dzień (6-18), czas przyspiesza do 18:00, potem leci normalnie do 6:00.
     /// </summary>
     public void OpenShop()
     {
-        if (isTimeFlowing) return; // Już otwarty
-        
+        if (isTimeFlowing) return;
+
         isTimeFlowing = true;
-        Debug.Log("🔓 Warsztat OTWARTY! Czas ruszył, klienci nadchodzą...");
+
+        // Jeśli jesteśmy w ciągu dnia — przewiń do nocy
+        if (currentTime >= startOfDayHour && currentTime < startOfNightHour)
+        {
+            isFastForwarding = true;
+            Debug.Log("[DayNight] Zamykamy dzień — przewijam czas do nocy...");
+        }
+        else
+        {
+            Debug.Log("[DayNight] Warsztat OTWARTY! Czas ruszył.");
+        }
+
         OnShopOpened?.Invoke();
     }
 
     /// <summary>
-    /// Wywoływane przez tabliczkę "Zamknięte" lub automatycznie o 6:00 rano
+    /// Wywoływane przez tabliczkę "Zamknięte", przerwanie fast-forward, lub automatycznie o 6:00 rano.
     /// </summary>
     public void CloseShop()
     {
-        if (!isTimeFlowing) return; // Już zamknięty
-        
+        if (!isTimeFlowing && !isFastForwarding) return;
+
+        isFastForwarding = false;
         isTimeFlowing = false;
-        Debug.Log("🔒 Warsztat ZAMKNIĘTY! Klienci odchodzą, podsumowanie dnia...");
+        Debug.Log("[DayNight] Warsztat ZAMKNIĘTY.");
         OnShopClosed?.Invoke();
-        
-        // Wyczyść klientów i pokaż panel podsumowania
+
         prefabSpawning spawner = FindFirstObjectByType<prefabSpawning>();
         if (spawner != null) spawner.ClearCurrentQueue();
-        
+
         DaySystemManager sys = FindFirstObjectByType<DaySystemManager>();
         if (sys != null) sys.EndDayButton();
     }
@@ -90,20 +108,24 @@ public class DayNightManager : MonoBehaviour
     {
         float previousTime = currentTime;
 
-        // deltaTime to ułamek sekundy. Mnożymy przez mnożnik czasu i konwertujemy ze stopni (minut) na format 24h
-        currentTime += (Time.deltaTime * timeMultipler) / 60f; 
+        float activeMultiplier = isFastForwarding ? fastForwardMultiplier : timeMultipler;
+        currentTime += (Time.deltaTime * activeMultiplier) / 60f;
 
         if (currentTime >= 24f)
-        {
             currentTime %= 24f;
+
+        // Przewijanie zakończone — dotarliśmy do nocy
+        if (isFastForwarding && currentTime >= startOfNightHour)
+        {
+            currentTime = startOfNightHour;
+            isFastForwarding = false;
+            Debug.Log("[DayNight] Nastała noc! Czas wrócił do normalnej prędkości.");
         }
 
-        // Sprawdzenie czy zegar dobił z nocy do poranka (6:00)
+        // Zegar dobił z nocy do poranka (6:00) — zamknij sklep
         if (previousTime < startOfDayHour && currentTime >= startOfDayHour)
         {
             currentTime = startOfDayHour;
-            
-            // CloseShop obsłuży zatrzymanie czasu, usunięcie klientów i panel podsumowania
             CloseShop();
         }
     }
@@ -133,13 +155,13 @@ public class DayNightManager : MonoBehaviour
         if (isCurrentlyDay && !isDay)
         {
             isDay = true;
-            Debug.Log("🌞 Nastał Nowy Dzień! Tablica zadań odświeżona.");
+            Debug.Log("[Dzień] Nastał Nowy Dzień! Tablica zadań odświeżona.");
             OnDayStarted?.Invoke();
         }
         else if (!isCurrentlyDay && isDay)
         {
             isDay = false;
-            Debug.Log("🌙 Nastała Noc! Czas na odpoczynek przy piecu.");
+            Debug.Log("[Noc] Nastała Noc! Czas na odpoczynek przy piecu.");
             OnNightStarted?.Invoke();
         }
     }

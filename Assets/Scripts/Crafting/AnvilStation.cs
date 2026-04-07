@@ -242,6 +242,8 @@ public class AnvilStation : MonoBehaviour
                 hitSparks.transform.position = hitPoint;
                 hitSparks.Play();
             }
+
+            BlacksmithInteraction.Instance?.ShowMetalPreview(currentMetal);
         }
     }
 
@@ -267,8 +269,12 @@ public class AnvilStation : MonoBehaviour
         if (playerMovement != null) playerMovement.enabled = true;
         if (BlacksmithInteraction.Instance != null) BlacksmithInteraction.Instance.enabled = true;
 
-        if (BlacksmithInteraction.Instance != null && BlacksmithInteraction.Instance.playerVisuals != null)
-            BlacksmithInteraction.Instance.playerVisuals.SetActive(true);
+        if (BlacksmithInteraction.Instance != null)
+        {
+            if (BlacksmithInteraction.Instance.playerVisuals != null)
+                BlacksmithInteraction.Instance.playerVisuals.SetActive(true);
+            BlacksmithInteraction.Instance.wheel?.SetWheel(false);
+        }
 
         if (mainCamera != null)
         {

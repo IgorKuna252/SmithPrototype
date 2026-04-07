@@ -47,17 +47,19 @@ public class ShopSignInteractable : MonoBehaviour, IInteractable
             return false;
         }
 
+        var mgr = DayNightManager.Instance;
+
         if (!isOpen)
         {
-            // OTWIERAMY warsztat
+            // OTWIERAMY warsztat — jeśli dzień, czas przyspieszy do nocy
             isOpen = true;
-            DayNightManager.Instance.OpenShop();
+            mgr.OpenShop();
         }
         else
         {
-            // ZAMYKAMY warsztat
+            // ZAMYKAMY — przerywa też fast-forward jeśli aktywny
             isOpen = false;
-            DayNightManager.Instance.CloseShop();
+            mgr.CloseShop();
         }
 
         UpdateSignVisual();

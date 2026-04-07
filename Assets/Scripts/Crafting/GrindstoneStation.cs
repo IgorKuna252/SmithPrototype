@@ -165,5 +165,7 @@ public class GrindstoneStation : MonoBehaviour
         }
 
         if (sparksEffect != null && sparksEffect.isPlaying) sparksEffect.Stop();
+
+        BlacksmithInteraction.Instance?.wheel?.SetWheel(false);
     }
 }

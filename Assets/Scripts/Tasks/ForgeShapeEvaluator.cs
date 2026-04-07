@@ -91,7 +91,26 @@ public class ForgeShapeEvaluator : MonoBehaviour
         forgedMetal.transform.rotation = Quaternion.Euler(-90f, 0f, 0f);
         ChangeLayerRecursive(forgedMetal.transform, tempLayer);
 
+        // Zastępujemy materiały unlit białym — żeby cienie i podświetlenia z nierówności
+        // meshu nie były liczone jako piksele broni (artefakty oświetlenia = fałszywy nadmiar)
+        Material silhouetteMat = new Material(Shader.Find("Unlit/Color"));
+        silhouetteMat.color = Color.white;
+        var renderers = forgedMetal.GetComponentsInChildren<Renderer>();
+        var originalMaterials = new Material[renderers.Length][];
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            originalMaterials[i] = renderers[i].sharedMaterials;
+            var mats = new Material[renderers[i].sharedMaterials.Length];
+            for (int j = 0; j < mats.Length; j++) mats[j] = silhouetteMat;
+            renderers[i].sharedMaterials = mats;
+        }
+
         forgedSilhouette = CaptureCameraToTexture(tempCam, resolution, resolution);
+
+        // Przywracamy oryginalne materiały
+        for (int i = 0; i < renderers.Length; i++)
+            renderers[i].sharedMaterials = originalMaterials[i];
+        Destroy(silhouetteMat);
 
         int weaponPixels = CountWhitePixels(forgedSilhouette);
         Debug.Log($"[ForgeShapeEvaluator] Broń: {weaponPixels} białych px");

@@ -20,6 +20,11 @@ public class WheelController : MonoBehaviour
 
     // Tę metodę możesz wywołać z dowolnego miejsca, podając wartości w procentach (np. 30, 50, 20)
 
+    void Awake()
+    {
+        wheelContainer.SetActive(false);
+    }
+
     public void SetWheel(bool isOn)
     {
         wheelContainer.SetActive(isOn);
@@ -27,34 +32,29 @@ public class WheelController : MonoBehaviour
     
     public void UpdateWheel(float damagePct, float speedPct, float aoePct)
     {
-        // 1. Proporcjonalny podzial kola — pelne kolo zawsze, staty zabieraja sobie miejsce
-        float total = damagePct + speedPct + aoePct;
-        if (total <= 0f) total = 1f;
+        // Każdy stat zajmuje stały wycinek 1/3 koła (120°).
+        // Wypełniony kolor jest wycentrowany w tej 1/3 — czarne tło
+        // widoczne symetrycznie po obu stronach kolorowego segmentu.
+        const float segment = 1f / 3f;
 
-        float damageFill = damagePct / total;
-        float speedFill  = speedPct  / total;
-        float aoeFill    = aoePct    / total;
+        damageImage.fillAmount = (damagePct / 100f) * segment;
+        speedImage.fillAmount  = (speedPct  / 100f) * segment;
+        aoeImage.fillAmount    = (aoePct    / 100f) * segment;
 
-        // 2. Ustawienie wielkości kawałków koła
-        damageImage.fillAmount = damageFill;
-        speedImage.fillAmount = speedFill;
-        aoeImage.fillAmount = aoeFill;
+        // Środki poszczególnych 1/3 (zgodnie z zegarem od góry): 60°, 180°, 300°
+        // Segment zaczyna się w: środek - połowa wypełnionego kąta
+        float damageHalf = (damagePct / 100f) * 60f;
+        float speedHalf  = (speedPct  / 100f) * 60f;
+        float aoeHalf    = (aoePct    / 100f) * 60f;
 
-        // 3. Obroty kół (Czerwony na 12:00)
-        damageImage.rectTransform.localEulerAngles = Vector3.zero;
-        speedImage.rectTransform.localEulerAngles = new Vector3(0, 0, -damageFill * 360f);
-        aoeImage.rectTransform.localEulerAngles = new Vector3(0, 0, -(damageFill + speedFill) * 360f);
+        damageImage.rectTransform.localEulerAngles = new Vector3(0, 0, -(60f  - damageHalf));
+        speedImage.rectTransform.localEulerAngles  = new Vector3(0, 0, -(180f - speedHalf));
+        aoeImage.rectTransform.localEulerAngles    = new Vector3(0, 0, -(300f - aoeHalf));
 
-        // 4. Obliczenie kątów dla środków każdego "kawałka"
-        // Mnożymy przez 360, aby uzyskać stopnie. Dzielimy przez 2, aby trafić w sam środek kawałka.
-        float damageIconAngle = (damageFill * 360f) / 2f;
-        float speedIconAngle = (damageFill * 360f) + ((speedFill * 360f) / 2f);
-        float aoeIconAngle = ((damageFill + speedFill) * 360f) + ((aoeFill * 360f) / 2f);
-
-        // 5. Ustawienie pozycji ikon
-        PositionIcon(damageIcon, damageIconAngle);
-        PositionIcon(speedIcon, speedIconAngle);
-        PositionIcon(aoeIcon, aoeIconAngle);
+        // Ikony zawsze w centrum swojego segmentu (60°, 180°, 300°)
+        PositionIcon(damageIcon, 60f);
+        PositionIcon(speedIcon,  180f);
+        PositionIcon(aoeIcon,    300f);
     }
 
     // Funkcja pomocnicza przesuwająca ikonę
