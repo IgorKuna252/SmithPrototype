@@ -6,8 +6,8 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/KinasSandbox.unity
-    guid: 7ca4bb7c3bdf5c54e8e993d7882cdc80
+    path: Assets/Scenes/MainSceneNew.unity
+    guid: fbff8328107dd214592302a9ee86d22d
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0
