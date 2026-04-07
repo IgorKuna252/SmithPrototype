@@ -35,11 +35,12 @@ public class npcPathFinding : MonoBehaviour
         if (agentNPC == null) return;
 
         {
-            // Gdy dotarł do celu — zatrzymaj
+            // Gdy dotarł do celu — zatrzymaj i oddaj kontrolę rotacji skryptowi
             if (!agentNPC.pathPending && agentNPC.hasPath && agentNPC.remainingDistance <= agentNPC.stoppingDistance)
             {
                 agentNPC.ResetPath();
                 agentNPC.velocity = Vector3.zero;
+                agentNPC.updateRotation = false; // Skrypt przejmuje obrót → patrzenie w okienko
 
                 // Jeśli celem, do którego właśnie doszliśmy, były drzwi wyjściowe (rejectObject) - wracamy do domu i znikamy z gry!
                 if (rejectObject != null && Vector3.Distance(transform.position, rejectObject.position) <= 2.5f)
