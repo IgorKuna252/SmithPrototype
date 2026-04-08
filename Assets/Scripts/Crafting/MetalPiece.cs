@@ -48,7 +48,7 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
     public float minThickness = 0.005f;
     public float grindSpeed = 0.09f;
     public float sharpenMultiplier = 20f;
-    public float eatMultiplier = 0.07f;
+    public float eatMultiplier = 0.03f;
     public float safetyPauseSeconds = 1.5f;
 
     [Header("Młotek (Tuning)")]
@@ -578,5 +578,74 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
             metalSpine[i].leftEdgeIntegrity = 1f;
             metalSpine[i].rightEdgeIntegrity = 1f;
         }
+    }
+
+    // NOWOŚĆ: Ukośny Pilnik (Zachowuje i wygładza skosy/szpice!)
+    public void SmoothPerfectEdge(float localZPosition, bool isFlipped)
+    {
+        float fileRadius = 0.15f; // Powiększyłem zasięg, żeby łapał fajne, długie skosy
+        float smoothForce = 15f * Time.deltaTime; // Prasuje dużo szybciej!
+        bool wasDeformed = false;
+
+        // Szukamy granic działania pilnika na osi Z
+        float minZ = localZPosition - fileRadius;
+        float maxZ = localZPosition + fileRadius;
+
+        // Zmienne do zapisania prawdziwych punktów na krawędziach pilnika
+        float startX = 0f;
+        float endX = 0f;
+        float actualMinZ = float.MaxValue;
+        float actualMaxZ = float.MinValue;
+
+        // 1. ZNAJDUJEMY SKRAJNE PUNKTY (Góra i dół obszaru szlifowania)
+        for (int i = 0; i < metalSpine.Count; i++)
+        {
+            float z = metalSpine[i].z;
+            if (z >= minZ && z <= maxZ)
+            {
+                if (z < actualMinZ)
+                {
+                    actualMinZ = z;
+                    startX = isFlipped ? metalSpine[i].leftX : metalSpine[i].rightX;
+                }
+                if (z > actualMaxZ)
+                {
+                    actualMaxZ = z;
+                    endX = isFlipped ? metalSpine[i].leftX : metalSpine[i].rightX;
+                }
+            }
+        }
+
+        if (actualMinZ == float.MaxValue) return; // Zabezpieczenie
+
+        // 2. PRASUJEMY DO IDEALNEJ LINI UKOŚNEJ (DIAGONALNEJ)
+        for (int i = 0; i < metalSpine.Count; i++)
+        {
+            float z = metalSpine[i].z;
+            if (z >= actualMinZ && z <= actualMaxZ)
+            {
+                // Obliczamy "procent" dystansu między początkiem a końcem pilnika (0.0 do 1.0)
+                float t = Mathf.InverseLerp(actualMinZ, actualMaxZ, z);
+
+                // Wyliczamy idealny punkt X na skośnej linii
+                float targetDiagonalX = Mathf.Lerp(startX, endX, t);
+
+                // Im bliżej środka pilnika, tym mocniej działa
+                float distance = Mathf.Abs(z - localZPosition);
+                float force = 1f - (distance / fileRadius);
+
+                if (!isFlipped)
+                {
+                    metalSpine[i].rightX = Mathf.Lerp(metalSpine[i].rightX, targetDiagonalX, smoothForce * force);
+                }
+                else
+                {
+                    metalSpine[i].leftX = Mathf.Lerp(metalSpine[i].leftX, targetDiagonalX, smoothForce * force);
+                }
+                wasDeformed = true;
+            }
+        }
+
+        if (wasDeformed) BuildMeshFromSpine();
     }
 }

@@ -8,9 +8,7 @@ public class GrindstoneStation : MonoBehaviour
     public GameObject playerObject;
 
     [Header("Ustawienia Kamienia (Tuning)")]
-    [Tooltip("Gdzie fizycznie znajduje się powierzchnia kamienia?")]
-    public float distanceToStone = 0.1f;
-    [Tooltip("Jak głęboko wcinamy się w kamień podczas kliknięcia (szlifowania)")]
+    public float distanceToStone = 0.15f;
     public float grindBiteDepth = 0.015f;
 
     private MetalPiece currentMetal;
@@ -99,22 +97,20 @@ public class GrindstoneStation : MonoBehaviour
         float targetRotationZ = isFlipped ? 180f : 0f;
         currentMetal.transform.localRotation = Quaternion.Lerp(currentMetal.transform.localRotation, Quaternion.Euler(0, 0, targetRotationZ), Time.deltaTime * 8f);
 
-        // --- PŁYNNE PRZESUWANIE ---
+        // Płynne przesuwanie i chłodzenie
         float scroll = Input.mouseScrollDelta.y;
         bladeSlidePosition += scroll * 0.015f;
 
-        //reset bariery po przesunieciu
+        // Jeśli ruszamy rolką, resetujemy barierę zniszczenia!
         if (Mathf.Abs(scroll) > 0.01f)
         {
             currentMetal.ResetEdgeIntegrity();
         }
 
-        // Zabezpieczenie limitów przesuwania (czytamy to z naszej nowej matematycznej listy "metalSpine")
+        // Limity
         if (currentMetal.metalSpine.Count > 0)
         {
-            // Ostatni punkt z listy to czubek miecza
             float minLimit = -currentMetal.metalSpine[currentMetal.metalSpine.Count - 1].z - 0.05f;
-            // Pierwszy punkt to rączka
             float maxLimit = -currentMetal.metalSpine[0].z + 0.05f;
             bladeSlidePosition = Mathf.Clamp(bladeSlidePosition, minLimit, maxLimit);
         }
@@ -122,18 +118,32 @@ public class GrindstoneStation : MonoBehaviour
         float currentEdgeWidth = currentMetal.GetEdgeWidthAt(-bladeSlidePosition, isFlipped);
         float hoverX = distanceToStone - currentEdgeWidth;
 
+        // --- OBSŁUGA SZLIFOWANIA (Z SHIFTEM) ---
         if (Input.GetMouseButton(0))
         {
-            currentMetal.GrindPerfectEdge(-bladeSlidePosition, isFlipped);
+            // Zmiana działania w zależności od klawisza SHIFT
+            if (Input.GetKey(KeyCode.LeftShift))
+            {
+                // TRYB PILNIKA: Prasuje nierówności do płaskiej linii (Świetne do ostrzy)
+                currentMetal.SmoothPerfectEdge(-bladeSlidePosition, isFlipped);
 
-            currentDip = Mathf.Lerp(currentDip, hoverX + grindBiteDepth, Time.deltaTime * 15f);
+                // Kamień wciska się trochę słabiej w modelu 3D dla odróżnienia wizualnego
+                currentDip = Mathf.Lerp(currentDip, hoverX + (grindBiteDepth * 0.5f), Time.deltaTime * 15f);
+            }
+            else
+            {
+                // TRYB NORMALNY: Standardowe, punktowe zjadanie krawędzi i wżeranie się w głąb
+                currentMetal.GrindPerfectEdge(-bladeSlidePosition, isFlipped);
+
+                // Głębokie wcięcie w model 3D
+                currentDip = Mathf.Lerp(currentDip, hoverX + grindBiteDepth, Time.deltaTime * 15f);
+            }
 
             if (sparksEffect != null && !sparksEffect.isPlaying) sparksEffect.Play();
         }
         else
         {
             currentDip = Mathf.Lerp(currentDip, hoverX, Time.deltaTime * 15f);
-
             if (sparksEffect != null && sparksEffect.isPlaying) sparksEffect.Stop();
         }
 
@@ -165,7 +175,5 @@ public class GrindstoneStation : MonoBehaviour
         }
 
         if (sparksEffect != null && sparksEffect.isPlaying) sparksEffect.Stop();
-
-        BlacksmithInteraction.Instance?.wheel?.SetWheel(false);
     }
 }
