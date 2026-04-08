@@ -22251,14 +22251,14 @@ MonoBehaviour:
     moldGroupParent: {fileID: 1588876870}
     liquidVisual: {fileID: 1971010668}
     prefabToSpawn: {fileID: 1530310511402982332, guid: 36dd3bbfdd2e8ad438782f65e3eb7f46, type: 3}
-    targetShape: 0
+    targetShape: 1
     originalScale: {x: 0, y: 0, z: 0}
     liquidMat: {fileID: 0}
   - moldName: Axe
     moldGroupParent: {fileID: 1972490097}
     liquidVisual: {fileID: 1339307575}
     prefabToSpawn: {fileID: 671440143542520099, guid: aace0f7ac7168b04980ea698cbe6c780, type: 3}
-    targetShape: 0
+    targetShape: 2
     originalScale: {x: 0, y: 0, z: 0}
     liquidMat: {fileID: 0}
   fillSpeed: 0.5
