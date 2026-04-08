@@ -115,6 +115,14 @@ public class AnvilStation : MonoBehaviour
             hammerObject.SetActive(true);
             isSwinging = false;
         }
+
+        StationUIManager.Instance.ShowInstructions(
+        "<b>KOWADŁO</b>\n" +
+        "LPM - Uderzenie młotem\n" +
+        "PPM - Obrót młotka (Długość/Szerokość)\n" +
+        "SCROLL - Przesuwanie metalu\n" +
+        "E - Wyjście"
+        );
     }
 
     private void HandleForgingMinigame()
@@ -285,5 +293,7 @@ public class AnvilStation : MonoBehaviour
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+
+        StationUIManager.Instance.HideInstructions();
     }
 }

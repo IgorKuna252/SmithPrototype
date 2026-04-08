@@ -82,6 +82,16 @@ public class GrindstoneStation : MonoBehaviour
         }
 
         if (playerObject != null) playerObject.SetActive(false);
+
+        // Wyświetlamy instrukcje specyficzne dla Szlifierki
+        StationUIManager.Instance.ShowInstructions(
+            "<b>SZLIFIERKA</b>\n" +
+            "LPM - Szlifowanie / Wżeranie\n" +
+            "LPM + SHIFT - Równanie (Pilnik)\n" +
+            "SCROLL - Przesuwanie miecza\n" +
+            "PPM - Odwrócenie ostrza\n" +
+            "E - Wyjście"
+        );
     }
 
     private void HandleGrindingMinigame()
@@ -175,5 +185,8 @@ public class GrindstoneStation : MonoBehaviour
         }
 
         if (sparksEffect != null && sparksEffect.isPlaying) sparksEffect.Stop();
+
+        // Ukrywamy instrukcje przy wyjściu
+        StationUIManager.Instance.HideInstructions();
     }
 }
