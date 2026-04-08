@@ -197,6 +197,13 @@ public class MoldManager : MonoBehaviour
 
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
+
+        StationUIManager.Instance.ShowInstructions(
+            "<b>ODLEWNIA</b>\n" +
+            "Przytrzymaj LPM - Rozlanie metalu z tygla\n" +
+            "PPM - Zmiana odlewu\n" +
+            "E - Wyjście (Odlew wyciąga się tak jak podnosi itemy)"
+        );
     }
 
     public void ExitAssemblyMode()
@@ -209,6 +216,8 @@ public class MoldManager : MonoBehaviour
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+
+        StationUIManager.Instance.HideInstructions();
     }
 
     public bool ChangeMold()

@@ -59,7 +59,7 @@ public class FurnaceStation : MonoBehaviour
         }
 
         // Wyjście z minigry
-        if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.E))
+        if (Input.GetKeyDown(KeyCode.E))
         {
             ExitFurnaceMode();
         }
@@ -131,6 +131,12 @@ public class FurnaceStation : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
+        StationUIManager.Instance.ShowInstructions(
+            "<b>PIEC</b>\n" +
+            "LPM (na ekranie) - Pompuj miech\n" +
+            "E - Wyjście"
+        );
+
         // Zatrzymanie chodzenia ręcznego
         var playerMovement = UnityEngine.Object.FindFirstObjectByType<PlayerMovement>();
         if (playerMovement != null) playerMovement.enabled = false;
@@ -164,6 +170,8 @@ public class FurnaceStation : MonoBehaviour
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+
+        StationUIManager.Instance.HideInstructions();
 
         var playerMovement = UnityEngine.Object.FindFirstObjectByType<PlayerMovement>();
         if (playerMovement != null) playerMovement.enabled = true;

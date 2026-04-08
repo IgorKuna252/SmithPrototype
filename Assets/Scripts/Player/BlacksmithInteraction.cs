@@ -86,15 +86,15 @@ public class BlacksmithInteraction : MonoBehaviour
         // 1. BLOKADA NPC
         if (isInteractingWithNPC)
         {
-            if (Input.GetKeyDown(KeyCode.Escape)) CloseNPCInteraction();
+            if (Input.GetKeyDown(KeyCode.E)) CloseNPCInteraction();
             return;
         }
 
         // 2. BLOKADA KAMERY STOŁU
         if (isInteractingWithTable)
         {
-            // WYJŚCIE: Jeśli wciśniesz ESC lub E -> Wracasz do swobodnego chodzenia
-            if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.E))
+            // WYJŚCIE: Tylko klawisz E -> Wracasz do swobodnego chodzenia
+            if (Input.GetKeyDown(KeyCode.E))
             {
                 CloseTableInteraction();
             }
@@ -104,7 +104,7 @@ public class BlacksmithInteraction : MonoBehaviour
         // 3. BLOKADA KAMERY FORMY
         if (isInteractingWithMold)
         {
-            if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.E))
+            if (Input.GetKeyDown(KeyCode.E))
             {
                 CloseMoldInteraction();
             }

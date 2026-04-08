@@ -118,6 +118,13 @@ public class MergingTable : MonoBehaviour
         if (craftingUI != null) craftingUI.SetActive(true);
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
+
+        StationUIManager.Instance.ShowInstructions(
+            "<b>STÓŁ MONTAŻOWY</b>\n" +
+            "LPM - Chwyć i przeciągnij część\n" +
+            "SCROLL - Obróć trzymaną część\n" +
+            "E - Wyjście"
+        );
     }
 
     public void ExitAssemblyMode()
@@ -135,6 +142,8 @@ public class MergingTable : MonoBehaviour
         mainPlayerCamera.SetActive(true);
         assemblyCamera.SetActive(false);
         isAssemblyMode = false;
+
+        StationUIManager.Instance.HideInstructions();
 
         // --- USUWANIE Z EQ ---
         if (pendingDeductions.Count > 0 && gameManager.Instance != null)
