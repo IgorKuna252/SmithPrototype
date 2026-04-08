@@ -34,6 +34,9 @@ public class BlacksmithInteraction : MonoBehaviour
     
     public static BlacksmithInteraction Instance;
 
+    /// <summary>Czy gracz jest w jakiejkolwiek interakcji (stół, NPC, forma, transakcja)?</summary>
+    public bool IsBusy => isInteractingWithTable || isInteractingWithNPC || isInteractingWithMold || isTransactionUIOpen;
+
     void Awake() { Instance = this; }
 
     void Start()

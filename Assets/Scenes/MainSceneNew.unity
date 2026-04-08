@@ -7516,6 +7516,7 @@ MonoBehaviour:
   uiShapeObject: {fileID: 809699317}
   uiToWorldScale: 0.01
   overspillPenalty: 1
+  silhouetteShader: {fileID: 10755, guid: 0000000000000000f000000000000000, type: 0}
 --- !u!4 &574898698
 Transform:
   m_ObjectHideFlags: 0

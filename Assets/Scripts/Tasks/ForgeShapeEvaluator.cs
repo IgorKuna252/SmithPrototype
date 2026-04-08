@@ -18,6 +18,9 @@ public class ForgeShapeEvaluator : MonoBehaviour
     [Range(0f, 2f)]
     public float overspillPenalty = 1.0f;
 
+    [Header("Shader sylwetki (przypisz 'Unlit/Color' z listy shaderów)")]
+    [SerializeField] Shader silhouetteShader;
+
     // Subskrybuj żeby otrzymać znormalizowane tekstury do debugowania (schemat, broń, nakładka)
     public event Action<Texture2D, Texture2D, Texture2D> OnDebugReady;
 
@@ -106,7 +109,18 @@ public class ForgeShapeEvaluator : MonoBehaviour
 
         // Zastępujemy materiały unlit białym — żeby cienie i podświetlenia z nierówności
         // meshu nie były liczone jako piksele broni (artefakty oświetlenia = fałszywy nadmiar)
-        Material silhouetteMat = new Material(Shader.Find("Unlit/Color"));
+        Shader shader = silhouetteShader != null ? silhouetteShader : Shader.Find("Unlit/Color");
+        if (shader == null)
+        {
+            Debug.LogError("[ForgeShapeEvaluator] Nie znaleziono shadera Unlit/Color! Przypisz go w Inspectorze.");
+            // Przywróć pozycję i warstwę, żeby nie zostać z czarnym ekranem
+            forgedMetal.transform.position = originalPos;
+            forgedMetal.transform.rotation = originalRot;
+            ChangeLayerRecursive(forgedMetal.transform, originalLayer);
+            DestroyImmediate(tempCamObj);
+            return 0f;
+        }
+        Material silhouetteMat = new Material(shader);
         silhouetteMat.color = Color.white;
         var renderers = forgedMetal.GetComponentsInChildren<Renderer>();
         var originalMaterials = new Material[renderers.Length][];
