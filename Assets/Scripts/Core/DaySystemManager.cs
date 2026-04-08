@@ -135,14 +135,12 @@ public class DaySystemManager : MonoBehaviour
         }
         else if (p == 1)
         {
-            gameManager.Instance.AddResource("SwordHandle", 3);
-            gameManager.Instance.UnlockMaterial("SwordHandle");
+            gameManager.Instance.AddResource("AxeHandle", 3);
+            gameManager.Instance.UnlockMaterial("AxeHandle");
         }
         else if (p == 2)
         {
             gameManager.Instance.unlockedAxeMold = true;
-            gameManager.Instance.AddResource("AxeHandle", 3);
-            gameManager.Instance.UnlockMaterial("AxeHandle");
         }
         else
         {

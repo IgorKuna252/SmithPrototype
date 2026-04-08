@@ -3,7 +3,8 @@ using System.Collections.Generic;
 
 /// <summary>
 /// Spawnuje sztabki metali i uchwyty na podstawie gameManager.inventory.
-/// Umieść na scenie MainScene i przypisz prefaby + pozycje spawnu w inspektorze.
+/// Przedmioty rozmieszczane są w siatce 4x4 (skrzynka). Gdy jest ich więcej niż 16,
+/// kolejne nakładają się (stackują) na poprzednich z lekkim offsetem w górę.
 /// </summary>
 public class ForgeInventorySpawner : MonoBehaviour
 {
@@ -23,13 +24,15 @@ public class ForgeInventorySpawner : MonoBehaviour
     [SerializeField] GameObject swordHandlePrefab;
     [SerializeField] GameObject axeHandlePrefab;
 
-    [Header("Pozycje spawnu")]
+    [Header("Pozycje spawnu (środki skrzynek)")]
     [SerializeField] Transform ingotSpawnArea;
     [SerializeField] Transform handleSpawnArea;
-    [SerializeField] float spacing = 0.3f;
-    [SerializeField] int maxPerRow = 4;
 
-    // Przechowujemy indeksy, by nowe materiały nie zepsuły siatki upadając na stare
+    [Header("Siatka skrzynki")]
+    [SerializeField] int gridSize = 4;
+    [SerializeField] float spacing = 0.08f;
+    [SerializeField] float stackHeight = 0.05f;
+
     private int currentIngotIndex = 0;
     private int currentHandleIndex = 0;
 
@@ -73,7 +76,6 @@ public class ForgeInventorySpawner : MonoBehaviour
 
             for (int i = 0; i < kvp.Value; i++)
             {
-                // Wywołujemy naszą nową, dynamiczną metodę, ale omijamy logikę doliczania rękojeści (zrobi to Start)
                 SpawnIngotInternal(metalType, false);
             }
         }
@@ -93,7 +95,6 @@ public class ForgeInventorySpawner : MonoBehaviour
 
     public void SpawnNewBoughtMaterial(MetalType metalType)
     {
-        // Spawnuje sztabkę i automatycznie dorzuca na stół po jednym rodzaju drewna
         SpawnIngotInternal(metalType, true);
         SpawnHandleInternal(true);
     }
@@ -103,9 +104,8 @@ public class ForgeInventorySpawner : MonoBehaviour
         GameObject prefab = GetIngotPrefab(metalType);
         if (prefab == null) return;
 
-        Vector3 pos = GetGridPosition(ingotSpawnArea, currentIngotIndex);
-        
-        // Jeśli kupujemy ze sklepu w trakcie gry, podnieśmy go wyżej, żeby ładnie i realistycznie "spadł" na biurko
+        Vector3 pos = GetCratePosition(ingotSpawnArea, currentIngotIndex);
+
         if (playDropEffect) pos += Vector3.up * 0.5f;
 
         GameObject obj = Instantiate(prefab, pos, ingotSpawnArea.rotation);
@@ -121,14 +121,14 @@ public class ForgeInventorySpawner : MonoBehaviour
     {
         if (isSword && swordHandlePrefab != null)
         {
-            Vector3 posSword = GetGridPosition(handleSpawnArea, currentHandleIndex);
+            Vector3 posSword = GetCratePosition(handleSpawnArea, currentHandleIndex);
             GameObject objS = Instantiate(swordHandlePrefab, posSword, handleSpawnArea.rotation);
             objS.name = $"Rękojeść_Miecza_{currentHandleIndex + 1}";
             currentHandleIndex++;
         }
         else if (!isSword && axeHandlePrefab != null)
         {
-            Vector3 posAxe = GetGridPosition(handleSpawnArea, currentHandleIndex);
+            Vector3 posAxe = GetCratePosition(handleSpawnArea, currentHandleIndex);
             GameObject objA = Instantiate(axeHandlePrefab, posAxe, handleSpawnArea.rotation);
             objA.name = $"Trzonek_Siekiery_{currentHandleIndex + 1}";
             currentHandleIndex++;
@@ -136,16 +136,25 @@ public class ForgeInventorySpawner : MonoBehaviour
     }
 
     /// <summary>
-    /// Oblicza pozycję w siatce na podstawie indeksu.
-    /// Rozmieszcza obiekty w rzędach (wzdłuż right) i kolumnach (wzdłuż forward).
+    /// Oblicza pozycję w siatce 4x4 (skrzynka).
+    /// Gdy elementów jest więcej niż gridSize*gridSize (16), kolejne stackują się
+    /// na tych samych pozycjach XZ z offsetem w górę.
     /// </summary>
-    Vector3 GetGridPosition(Transform origin, int index)
+    Vector3 GetCratePosition(Transform origin, int index)
     {
-        int col = index % maxPerRow;
-        int row = index / maxPerRow;
+        int cellCount = gridSize * gridSize;
+        int cellIndex = index % cellCount;
+        int layer = index / cellCount;
+
+        int col = cellIndex % gridSize;
+        int row = cellIndex / gridSize;
+
+        // Centrujemy siatkę wokół origin (offset = -połowa szerokości siatki)
+        float halfGrid = (gridSize - 1) * spacing * 0.5f;
 
         return origin.position
-            + origin.right * (col * spacing)
-            + origin.forward * (row * spacing);
+            + origin.right   * (col * spacing - halfGrid)
+            + origin.forward * (row * spacing - halfGrid)
+            + origin.up      * (layer * stackHeight);
     }
 }
