@@ -248,6 +248,8 @@ public class MergingTable : MonoBehaviour
 
         Vector3 gripLocalPos = Vector3.zero;
 
+        MetalType combinedMetalTier = ResolveCombinedMetalTier(parts);
+
         foreach (Transform part in parts)
         {
             part.SetParent(craftedWeapon.transform, true); 
@@ -319,10 +321,10 @@ public class MergingTable : MonoBehaviour
         weaponRb.mass = 1.5f * parts.Count; // Waży tym więcej, im więcej syfu nakleisz
         weaponRb.interpolation = RigidbodyInterpolation.Interpolate;
 
-        // UWAGA: Nie dodajemy tu sztucznego BoxCollidera! Fizyka Unity sama zbierze MeshCollidery od każdego dziecka
-        // i spakuje je w jedno perfekcyjnie zniekształcone ciało, idealnie uderzające np. koślawą stroną w stół.
+        // MeshCollidery na dzieciach = fizyka na stole; SwingHitVolume (trigger + WeaponHitbox) w osi ostrza ustawia SetupWeaponCombatRoot.
 
         FinishedObject finishedObj = craftedWeapon.AddComponent<FinishedObject>();
+        finishedObj.metalTier = combinedMetalTier;
 
         // Punkt złapania w powietrzu do ręki
         GameObject grip = new GameObject("GripPoint");
@@ -330,6 +332,99 @@ public class MergingTable : MonoBehaviour
         grip.transform.localPosition = gripLocalPos + gripPositionOffset;
         grip.transform.localRotation = Quaternion.Euler(gripRotation);
 
+        Vector3 gripLocalForStats = grip.transform.localPosition;
+        EstimateBladeReachFromRenderers(craftedWeapon.transform, gripLocalForStats, out float bladeLen, out Vector3 bladeDirLocal);
+        finishedObj.bladeLength = bladeLen;
+        SetupWeaponCombatRoot(craftedWeapon, gripLocalForStats, bladeLen, bladeDirLocal);
+
         Debug.Log($"[Drag&Drop Sandbox] Posklejano idealnie {parts.Count} swobodnie rzuconych części w 1 warianką kombinację!");
+    }
+
+    static MetalType ResolveCombinedMetalTier(System.Collections.Generic.List<Transform> parts)
+    {
+        foreach (Transform p in parts)
+        {
+            MetalPiece m = p.GetComponentInChildren<MetalPiece>();
+            if (m != null) return m.metalTier;
+        }
+        foreach (Transform p in parts)
+        {
+            FinishedObject fo = p.GetComponentInChildren<FinishedObject>();
+            if (fo != null) return fo.metalTier;
+        }
+        return MetalType.Iron;
+    }
+
+    static void EstimateBladeReachFromRenderers(Transform weaponRoot, Vector3 gripLocal, out float bladeLen, out Vector3 bladeDirLocal)
+    {
+        Vector3 gripWorld = weaponRoot.TransformPoint(gripLocal);
+        Renderer[] rs = weaponRoot.GetComponentsInChildren<Renderer>();
+        bladeLen = 0.6f;
+        bladeDirLocal = Vector3.up;
+        if (rs == null || rs.Length == 0) return;
+
+        float maxSq = 0f;
+        Vector3 farWorld = gripWorld;
+        foreach (Renderer r in rs)
+        {
+            if (r == null) continue;
+            Bounds b = r.bounds;
+            Vector3 c0 = b.min, c1 = b.max;
+            Vector3[] corners =
+            {
+                new Vector3(c0.x, c0.y, c0.z), new Vector3(c1.x, c0.y, c0.z),
+                new Vector3(c0.x, c1.y, c0.z), new Vector3(c1.x, c1.y, c0.z),
+                new Vector3(c0.x, c0.y, c1.z), new Vector3(c1.x, c0.y, c1.z),
+                new Vector3(c0.x, c1.y, c1.z), new Vector3(c1.x, c1.y, c1.z),
+            };
+            foreach (Vector3 c in corners)
+            {
+                float sq = (c - gripWorld).sqrMagnitude;
+                if (sq > maxSq)
+                {
+                    maxSq = sq;
+                    farWorld = c;
+                }
+            }
+        }
+
+        bladeLen = Mathf.Clamp(Mathf.Sqrt(maxSq), 0.2f, 3.5f);
+        Vector3 worldBlade = farWorld - gripWorld;
+        if (worldBlade.sqrMagnitude > 1e-8f)
+        {
+            bladeDirLocal = weaponRoot.InverseTransformDirection(worldBlade.normalized);
+            if (bladeDirLocal.sqrMagnitude < 1e-6f) bladeDirLocal = Vector3.up;
+            else bladeDirLocal.Normalize();
+        }
+    }
+
+    static void SetupWeaponCombatRoot(GameObject craftedWeapon, Vector3 gripLocal, float bladeLength, Vector3 bladeDirLocal)
+    {
+        float len = Mathf.Max(bladeLength, 0.35f);
+        Vector3 bladeDir = bladeDirLocal.sqrMagnitude > 1e-6f ? bladeDirLocal.normalized : Vector3.up;
+
+        Transform oldVol = craftedWeapon.transform.Find("SwingHitVolume");
+        if (oldVol != null) Destroy(oldVol.gameObject);
+
+        BoxCollider rootTrigger = craftedWeapon.GetComponent<BoxCollider>();
+        if (rootTrigger != null && rootTrigger.isTrigger) Destroy(rootTrigger);
+
+        WeaponHitbox hitOnRoot = craftedWeapon.GetComponent<WeaponHitbox>();
+        if (hitOnRoot != null) Destroy(hitOnRoot);
+
+        GameObject vol = new GameObject("SwingHitVolume");
+        vol.transform.SetParent(craftedWeapon.transform, false);
+        vol.transform.localRotation = Quaternion.FromToRotation(Vector3.up, bladeDir);
+        vol.transform.localPosition = gripLocal + bladeDir * (len * 0.48f);
+
+        BoxCollider box = vol.AddComponent<BoxCollider>();
+        box.isTrigger = true;
+        box.size = new Vector3(0.14f, len * 0.92f, 0.14f);
+        box.center = Vector3.zero;
+
+        vol.AddComponent<WeaponHitbox>();
+
+        if (craftedWeapon.GetComponent<WeaponSwing>() == null)
+            craftedWeapon.AddComponent<WeaponSwing>();
     }
 }

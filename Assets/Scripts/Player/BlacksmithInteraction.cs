@@ -10,6 +10,10 @@ public class BlacksmithInteraction : MonoBehaviour
     public GameObject playerVisuals;
 
     [Header("Pozycje trzymania w ręku")]
+    [Tooltip("Skończona broń (FinishedObject): przesunięcie punktu Grip względem holdPosition, w osach kamery (X=prawo, Y=góra, Z=przed obiektyw). (0,0,0) = dokładnie na środku celownika jak u kolegów.")]
+    public Vector3 craftedWeaponGripOffsetCameraSpace = new Vector3(0.25f, -0.08f, 0.18f);
+    [Tooltip("Rotacja skończonej broni względem holdPosition (stopnie Euler). Domyślnie jak dotąd: miecz w dłoni.")]
+    public Vector3 craftedWeaponHoldRotationEuler = new Vector3(-90f, 0f, 90f);
 
     public Camera playerCamera;
     private GameObject heldItem;
@@ -519,7 +523,7 @@ public class BlacksmithInteraction : MonoBehaviour
                     // leżeć z tą samą rotacją, co domyślny uchwyt drewna wyżej.
                     if (heldItem.GetComponent<FinishedObject>() != null)
                     {
-                        heldItem.transform.localRotation = Quaternion.Euler(-90f, 0f, 90f);
+                        heldItem.transform.localRotation = Quaternion.Euler(craftedWeaponHoldRotationEuler);
                     }
                     else
                     {
@@ -536,9 +540,17 @@ public class BlacksmithInteraction : MonoBehaviour
                     
                     if (gripPoint != null)
                     {
-                        // Przesuwamy całą bryłę złączoną tak, żeby punkt rączki wpadł dokładnie w środek ekranu (holdPosition)
+                        // Grip na holdPosition (+ opcjonalnie obok celownika dla skończonej broni)
                         Vector3 offset = heldItem.transform.position - gripPoint.position;
-                        heldItem.transform.position = holdPosition.position + offset;
+                        Vector3 target = holdPosition.position + offset;
+                        if (heldItem.GetComponent<FinishedObject>() != null && playerCamera != null)
+                        {
+                            Vector3 o = craftedWeaponGripOffsetCameraSpace;
+                            target += playerCamera.transform.right * o.x
+                                + playerCamera.transform.up * o.y
+                                + playerCamera.transform.forward * o.z;
+                        }
+                        heldItem.transform.position = target;
                     }
                     else
                     {
