@@ -182,6 +182,8 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
         partType = newMoldType;
         InitializeSpine();
         BuildMeshFromSpine();
+        SetBaseColor(); // Ustawiamy od nowa materiał na bazie metalTier
+        UpdateVisuals(); // Przerysowujemy ze zaktualizowanym kolorem bazowym i aktualną temperaturą
         
         // Zależnie jak robisz chłodzenie, być może warto przywrócić mu temperaturę przy wyjmowaniu z formy?
     }
@@ -522,9 +524,21 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
     public void OnDrop() { }
     public void ForceCoolDown() { currentTemperature = 20f; isInForge = false; UpdateVisuals(); }
 
-    private void SetBaseColor()
+    public void SetBaseColor()
     {
-        baseColdColor = new Color(0.15f, 0.15f, 0.15f); // Ciemniejszy, głęboki szary (Dark Iron/Steel)
+        // 1. Przypisujemy kolor docelowy w zależności od wybranego Tieru
+        switch (metalTier)
+        {
+            case MetalType.Copper: baseColdColor = new Color(0.8f, 0.4f, 0.2f); break;
+            case MetalType.Bronze: baseColdColor = new Color(0.7f, 0.5f, 0.1f); break;
+            case MetalType.Iron: baseColdColor = new Color(0.15f, 0.15f, 0.15f); break;
+            case MetalType.Steel: baseColdColor = new Color(0.35f, 0.35f, 0.4f); break;
+            case MetalType.Gold: baseColdColor = new Color(1.0f, 0.8f, 0.0f); break;
+            case MetalType.Platinum: baseColdColor = new Color(0.9f, 0.9f, 0.95f); break;
+            case MetalType.BlueSteel: baseColdColor = new Color(0.2f, 0.3f, 0.5f); break;
+            case MetalType.Vibranium: baseColdColor = new Color(0.5f, 0.2f, 0.8f); break;
+            default: baseColdColor = new Color(0.15f, 0.15f, 0.15f); break;
+        }
 
         if (meshRenderer != null)
         {
@@ -545,6 +559,7 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
             }
         }
     }
+
 
     private void UpdateVisuals()
     {

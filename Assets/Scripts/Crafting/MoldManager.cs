@@ -80,6 +80,12 @@ public class MoldManager : MonoBehaviour
 
     void Update()
     {
+        // DEBUG: Spawnowanie rzędu sztabek testowych
+        if (Input.GetKeyDown(KeyCode.F6))
+        {
+            SpawnDebugIngots();
+        }
+
         if (isFilling && !isFull)
         {
             MoldSetup activeMold = molds[currentMoldIndex];
@@ -152,12 +158,13 @@ public class MoldManager : MonoBehaviour
             MetalPiece newPiece = spawnedItem.GetComponent<MetalPiece>();
             if (newPiece != null)
             {
+                // Przekazujemy jaki to metal:
+                newPiece.metalTier = moldedMetal;
+                // Wyciągnięty przedmiot jest wciąż gorący, gotowy do kucia:
+                newPiece.currentTemperature = 500f; 
+                
                 // Zmieniamy wewnętrzną formę i odpalamy generator!
                 newPiece.SetMoldAndRebuild(activeMold.targetShape);
-                
-                // UWAGA: Kiedy będziesz miał już system metali w Tygielku,
-                // dodasz tu linijkę np: newPiece.metalTier = Crucible.pouredMetalTier;
-                // newPiece.currentTemperature = 500f; // Możesz podgrzać wyciągniętą rzecz
             }
 
             ResetMold(activeMold);
@@ -251,5 +258,29 @@ public class MoldManager : MonoBehaviour
             dockedCrucible.Undock();
             dockedCrucible = null;
         }
+    }
+
+    private void SpawnDebugIngots()
+    {
+        if (molds.Count == 0 || molds[0].prefabToSpawn == null) return;
+        
+        MetalType[] allMetals = (MetalType[])System.Enum.GetValues(typeof(MetalType));
+        // Pozycja nad formą, przesunięta do przodu
+        Vector3 startPos = transform.position + Vector3.up * 1.5f + Vector3.forward * 1f;
+
+        for (int i = 0; i < allMetals.Length; i++)
+        {
+            Vector3 pos = startPos + Vector3.right * (i * 0.4f);
+            GameObject spawned = Instantiate(molds[0].prefabToSpawn, pos, Quaternion.identity);
+            
+            MetalPiece piece = spawned.GetComponent<MetalPiece>();
+            if (piece != null)
+            {
+                piece.metalTier = allMetals[i];
+                piece.currentTemperature = 20f; // Zimne na start
+                piece.SetMoldAndRebuild(MetalPiece.MetalPartType.Ingot); 
+            }
+        }
+        Debug.Log("DEBUG: Zrespiono wszystkie rodzaje metali (sztabki)!");
     }
 }
