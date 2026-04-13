@@ -118,12 +118,9 @@ public class GrindstoneStation : MonoBehaviour
         }
 
         // Limity
-        if (currentMetal.metalSpine.Count > 0)
-        {
-            float minLimit = -currentMetal.metalSpine[currentMetal.metalSpine.Count - 1].z - 0.05f;
-            float maxLimit = -currentMetal.metalSpine[0].z + 0.05f;
-            bladeSlidePosition = Mathf.Clamp(bladeSlidePosition, minLimit, maxLimit);
-        }
+        float minLimit = -currentMetal.gridExtents.z;
+        float maxLimit = currentMetal.gridExtents.z;
+        bladeSlidePosition = Mathf.Clamp(bladeSlidePosition, minLimit, maxLimit);
 
         float currentEdgeWidth = currentMetal.GetEdgeWidthAt(-bladeSlidePosition, isFlipped);
         float hoverX = distanceToStone - currentEdgeWidth;

@@ -352,7 +352,7 @@ public class BlacksmithInteraction : MonoBehaviour
     {
         if (wheel == null || metal == null) return;
         MeshFilter mf = metal.GetComponent<MeshFilter>();
-        float bladeLength = (mf != null) ? mf.mesh.bounds.size.z : metal.startLength;
+        float bladeLength = (mf != null) ? mf.mesh.bounds.size.z : metal.gridExtents.z * 2f;
         WeaponData preview = new WeaponData("Podgląd", metal.metalTier, bladeLength);
         wheel.SetWheel(true);
         wheel.UpdateWheel(preview.GetNormalizedDamage(), preview.GetNormalizedSpeed(), preview.GetNormalizedAoE());
