@@ -2,11 +2,16 @@ using UnityEngine;
 
 public class PlayerUIScript : MonoBehaviour
 {
+    public GameObject playerCanvas;
     public Transform playerPanelUI;
     public GameObject bgScheme;
 
     private GameObject _lastScheme;
-    
+
+    private void Awake()
+    {
+        playerCanvas.SetActive(true);
+    }
 
     public void CopyScheme()
     {
