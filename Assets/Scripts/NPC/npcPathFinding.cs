@@ -113,7 +113,12 @@ public class npcPathFinding : MonoBehaviour
         if (evaluator != null && evaluator.uiShapeObject != null)
         {
             WeaponSchemeBuilder scheme = evaluator.uiShapeObject.GetComponent<WeaponSchemeBuilder>();
-            if (scheme != null) scheme.SetTriangles(task.triangles);
+            if (scheme != null)
+            {
+                scheme.SetTriangles(task.triangles);
+                scheme.color = MetalPiece.GetMetalColor(task.requiredMetal);
+            }
+            evaluator.expectedMetal = task.requiredMetal;
         }
 
         bool noScheme = task.triangles == null || task.triangles.Length == 0;
@@ -174,7 +179,7 @@ public class npcPathFinding : MonoBehaviour
                 }
 
                 var spawner = Object.FindFirstObjectByType<prefabSpawning>();
-                if (spawner != null) spawner.OnNPCProcessed();
+                if (spawner != null) spawner.OnNPCProcessed(gameObject);
 
                 if (this != null)
                 {
@@ -190,13 +195,15 @@ public class npcPathFinding : MonoBehaviour
                 gameManager.Instance.AddResource(rewardMaterial, rewardAmount);
 
             var spawner = Object.FindFirstObjectByType<prefabSpawning>();
-            if (spawner != null) spawner.OnNPCProcessed();
+            if (spawner != null) spawner.OnNPCProcessed(gameObject);
             WeaponAccepted();
         }
     }
 
     public void MoveToQueuePosition(Vector3 position)
     {
+        if (agentNPC == null) agentNPC = GetComponent<NavMeshAgent>();
+        if (agentNPC == null) return;
         agentNPC.updateRotation = true;
         agentNPC.SetDestination(position);
     }

@@ -112,7 +112,11 @@ public class ForgeInventorySpawner : MonoBehaviour
         obj.name = $"Sztabka_{metalType}_{currentIngotIndex + 1}";
 
         MetalPiece metal = obj.GetComponent<MetalPiece>();
-        if (metal != null) metal.metalTier = metalType;
+        if (metal != null)
+        {
+            metal.metalTier = metalType;
+            metal.ForceCoolDown();
+        }
 
         currentIngotIndex++;
     }

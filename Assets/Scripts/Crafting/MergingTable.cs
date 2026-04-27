@@ -84,11 +84,16 @@ public class MergingTable : MonoBehaviour
                 draggedObject.position = new Vector3(targetPos.x, dragY, targetPos.z);
             }
 
-            // Obracanie przy pomocy scrolla myszy (obrót na stole wokół osi Y)
+            // Obracanie scrollem — skokowo o stały kąt i snapowane do siatki, żeby zawsze dało się ustawić prosto.
+            // Shift = drobny krok (5°), normalnie 15°.
             float scroll = Input.mouseScrollDelta.y;
-            if (scroll != 0)
+            if (scroll != 0f)
             {
-                draggedObject.Rotate(Vector3.up, scroll * 15f, Space.World);
+                float step = (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)) ? 5f : 15f;
+                int dir = scroll > 0 ? 1 : -1;
+                Vector3 e = draggedObject.eulerAngles;
+                float snappedY = Mathf.Round(e.y / step) * step + dir * step;
+                draggedObject.rotation = Quaternion.Euler(e.x, snappedY, e.z);
             }
         }
         else if (Input.GetMouseButtonUp(0) && draggedObject != null)

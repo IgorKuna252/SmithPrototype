@@ -56,8 +56,18 @@ public class NPCInteractionUI : MonoBehaviour
         else if (rewardText != null)
             rewardText.text = "";
 
-        if (taskSchemeBuilder != null && task != null)
-            taskSchemeBuilder.SetTriangles(task.triangles);
+        if (taskSchemeBuilder != null)
+        {
+            bool hasScheme = task != null && task.triangles != null && task.triangles.Length > 0;
+            taskSchemeBuilder.gameObject.SetActive(hasScheme);
+            if (taskSchemeBuilder.background != null)
+                taskSchemeBuilder.background.SetActive(hasScheme);
+            if (hasScheme)
+            {
+                taskSchemeBuilder.SetTriangles(task.triangles);
+                taskSchemeBuilder.color = MetalPiece.GetMetalColor(task.requiredMetal);
+            }
+        }
 
         if (wheel != null)
             wheel.UpdateWheel(npc.GetNormalizedStrength(), npc.GetNormalizedSpeed(), npc.GetNormalizedIntelligence());

@@ -22,6 +22,7 @@ public class TaskEntry
     public StatRequirement Speed;
     public StatRequirement Aoe;
     public PerimeterTriangle[] Triangles;
+    public MetalType RequiredMetal;
 }
 
 [System.Serializable]
@@ -38,6 +39,7 @@ public class AssignedTask
     public float requiredSpeed;
     public float requiredAoe;
     public PerimeterTriangle[] triangles;
+    public MetalType requiredMetal;
 
     public AssignedTask(TaskEntry entry)
     {
@@ -46,6 +48,7 @@ public class AssignedTask
         requiredSpeed  = entry.Speed  != null && entry.Speed.IsActive  ? entry.Speed.Roll()  : -1f;
         requiredAoe    = entry.Aoe    != null && entry.Aoe.IsActive    ? entry.Aoe.Roll()    : -1f;
         triangles      = entry.Triangles ?? new PerimeterTriangle[0];
+        requiredMetal  = entry.RequiredMetal;
     }
 
     public float CalculateTaskCompletion(WeaponData weapon)

@@ -19,6 +19,9 @@ public struct PerimeterTriangle
 [ExecuteInEditMode]
 public class WeaponSchemeBuilder : Graphic
 {
+    [Header("Tło (opcjonalne — wyłączane razem ze schematem)")]
+    public GameObject background;
+
     [Header("Główny Prostokąt")]
     public Vector2 rectSize = new Vector2(200f, 100f);
 

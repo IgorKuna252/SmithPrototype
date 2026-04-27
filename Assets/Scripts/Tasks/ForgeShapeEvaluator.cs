@@ -18,6 +18,11 @@ public class ForgeShapeEvaluator : MonoBehaviour
     [Range(0f, 2f)]
     public float overspillPenalty = 1.0f;
 
+    // Oczekiwany metal — ustawiany z zewnątrz (np. przez NPC) na podstawie zadania.
+    // Ocena mnoży końcowy wynik przez podobieństwo koloru metalu broni do tego oczekiwanego.
+    [HideInInspector] public MetalType expectedMetal = MetalType.Iron;
+    [Range(0f, 1f)] public float colorMismatchPenalty = 0.5f;
+
     [Header("Shader sylwetki (przypisz 'Unlit/Color' z listy shaderów)")]
     [SerializeField] Shader silhouetteShader;
 
@@ -148,13 +153,35 @@ public class ForgeShapeEvaluator : MonoBehaviour
         ChangeLayerRecursive(forgedMetal.transform, originalLayer);
 
         float result = CompareTextures(forgedSilhouette, targetShapeMask);
+
+        // Sprawdzenie koloru: porównujemy kolor metalu broni z kolorem oczekiwanego metalu schematu.
+        // Mnożymy wynik przez podobieństwo (1 = identyczne, 0 = krańcowo różne) z miękkim minimum z colorMismatchPenalty.
+        MetalType? weaponTier = ResolveWeaponMetalTier(forgedMetal);
+        if (weaponTier.HasValue)
+        {
+            Color expected = MetalPiece.GetMetalColor(expectedMetal);
+            Color actual   = MetalPiece.GetMetalColor(weaponTier.Value);
+            float dr = expected.r - actual.r;
+            float dg = expected.g - actual.g;
+            float db = expected.b - actual.b;
+            float dist = Mathf.Sqrt(dr * dr + dg * dg + db * db) / Mathf.Sqrt(3f);
+            float similarity = 1f - dist;
+            float colorFactor = Mathf.Lerp(colorMismatchPenalty, 1f, similarity);
+            Debug.Log($"[ForgeShapeEvaluator] Metal oczekiwany: {expectedMetal}, faktyczny: {weaponTier.Value}, podobieństwo: {similarity:F2}, mnożnik: {colorFactor:F2}");
+            result *= colorFactor;
+        }
+
         Debug.Log($"[ForgeShapeEvaluator] Wynik porównania: {result:F1}%");
 
         // Powiadamiamy UI debugowania (jeśli ktoś subskrybuje)
         if (OnDebugReady != null && _lastNormScheme != null && _lastNormWeapon != null)
         {
+            Color schemeColor = MetalPiece.GetMetalColor(expectedMetal);
+            Color weaponColor = weaponTier.HasValue ? MetalPiece.GetMetalColor(weaponTier.Value) : Color.white;
+            Texture2D tintedScheme = TintMask(_lastNormScheme, schemeColor);
+            Texture2D tintedWeapon = TintMask(_lastNormWeapon, weaponColor);
             Texture2D overlay = BuildOverlay(_lastNormScheme, _lastNormWeapon);
-            OnDebugReady.Invoke(_lastNormScheme, _lastNormWeapon, overlay);
+            OnDebugReady.Invoke(tintedScheme, tintedWeapon, overlay);
         }
 
         return result;
@@ -260,6 +287,33 @@ public class ForgeShapeEvaluator : MonoBehaviour
         overlay.SetPixels(overlayPixels);
         overlay.Apply();
         return overlay;
+    }
+
+    // Wykuta broń po sklejeniu w MergingTable nie ma już komponentu MetalPiece (jest niszczony),
+    // ale zachowuje tier metalu w FinishedObject. Sprawdzamy oba źródła.
+    private MetalType? ResolveWeaponMetalTier(GameObject forgedMetal)
+    {
+        MetalPiece mp = forgedMetal.GetComponentInChildren<MetalPiece>();
+        if (mp != null) return mp.metalTier;
+        FinishedObject fo = forgedMetal.GetComponentInChildren<FinishedObject>();
+        if (fo != null) return fo.metalTier;
+        return null;
+    }
+
+    // Tworzy kolorową kopię maski: tam gdzie maska jest biała → tint, reszta czarna.
+    private Texture2D TintMask(Texture2D mask, Color tint)
+    {
+        Color[] src = mask.GetPixels();
+        Color[] dst = new Color[src.Length];
+        for (int i = 0; i < src.Length; i++)
+        {
+            if (src[i].r > 0.1f) dst[i] = new Color(tint.r, tint.g, tint.b, 1f);
+            else                 dst[i] = new Color(0f, 0f, 0f, 1f);
+        }
+        Texture2D tex = new Texture2D(mask.width, mask.height, TextureFormat.RGBA32, false);
+        tex.SetPixels(dst);
+        tex.Apply();
+        return tex;
     }
 
     // Wycina bounding box białych pikseli i skaluje do ramki zachowując proporcje (letterbox)

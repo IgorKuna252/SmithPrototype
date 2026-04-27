@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using System.Collections;
 
 // Singleton, żeby by łatwo dostępny z innych skryptów powołujących NPC!
 public class DayNightManager : MonoBehaviour
@@ -25,8 +26,17 @@ public class DayNightManager : MonoBehaviour
 
     [Header("Oświetlenie (Słońce / Księżyc)")]
     public Light directionalLight;
-    public AnimationCurve lightIntensityCurve; 
+    public AnimationCurve lightIntensityCurve;
     public Gradient lightColorGradient;
+
+    [Header("Skyboxy")]
+    public Material daySkybox;
+    public Material nightSkybox;
+    [Tooltip("Czas (w sekundach) płynnego przejścia dzień↔noc")]
+    public float skyboxTransitionDuration = 3f;
+
+    private Material activeSkyboxInstance;
+    private Coroutine skyboxFadeRoutine;
 
     [Header("Stany i Wydarzenia")]
     public bool isDay = false; // Startujemy o 18:00 = NOC
@@ -48,6 +58,70 @@ public class DayNightManager : MonoBehaviour
         }
         Instance = this;
         isDay = currentTime >= startOfDayHour && currentTime < startOfNightHour;
+        ApplySkybox(isDay);
+    }
+
+    private void ApplySkybox(bool day)
+    {
+        Material target = day ? daySkybox : nightSkybox;
+        if (target == null) return;
+
+        // Pierwsze ustawienie (Awake) — bez fade'u, od razu na docelowy poziom
+        if (activeSkyboxInstance == null)
+        {
+            activeSkyboxInstance = new Material(target);
+            RenderSettings.skybox = activeSkyboxInstance;
+            DynamicGI.UpdateEnvironment();
+            return;
+        }
+
+        if (skyboxFadeRoutine != null) StopCoroutine(skyboxFadeRoutine);
+        skyboxFadeRoutine = StartCoroutine(CrossfadeSkybox(target));
+    }
+
+    private IEnumerator CrossfadeSkybox(Material target)
+    {
+        const string EXPOSURE = "_Exposure";
+
+        Material current = activeSkyboxInstance;
+        float currentExposure = current.HasProperty(EXPOSURE) ? current.GetFloat(EXPOSURE) : 1f;
+        float targetExposure  = target.HasProperty(EXPOSURE)  ? target.GetFloat(EXPOSURE)  : 1f;
+
+        float half = Mathf.Max(0.01f, skyboxTransitionDuration * 0.5f);
+
+        // Faza 1: ściemnij obecne niebo
+        float t = 0f;
+        while (t < half)
+        {
+            t += Time.deltaTime;
+            float k = Mathf.Clamp01(t / half);
+            if (current.HasProperty(EXPOSURE))
+                current.SetFloat(EXPOSURE, Mathf.Lerp(currentExposure, 0f, k));
+            yield return null;
+        }
+
+        // Podmień materiał
+        Material newInstance = new Material(target);
+        if (newInstance.HasProperty(EXPOSURE)) newInstance.SetFloat(EXPOSURE, 0f);
+        RenderSettings.skybox = newInstance;
+        if (current != null) Destroy(current);
+        activeSkyboxInstance = newInstance;
+
+        // Faza 2: rozjaśnij nowe niebo
+        t = 0f;
+        while (t < half)
+        {
+            t += Time.deltaTime;
+            float k = Mathf.Clamp01(t / half);
+            if (newInstance.HasProperty(EXPOSURE))
+                newInstance.SetFloat(EXPOSURE, Mathf.Lerp(0f, targetExposure, k));
+            DynamicGI.UpdateEnvironment();
+            yield return null;
+        }
+
+        if (newInstance.HasProperty(EXPOSURE)) newInstance.SetFloat(EXPOSURE, targetExposure);
+        DynamicGI.UpdateEnvironment();
+        skyboxFadeRoutine = null;
     }
 
     /// <summary>
@@ -155,12 +229,14 @@ public class DayNightManager : MonoBehaviour
         if (isCurrentlyDay && !isDay)
         {
             isDay = true;
+            ApplySkybox(true);
             Debug.Log("[Dzień] Nastał Nowy Dzień! Tablica zadań odświeżona.");
             OnDayStarted?.Invoke();
         }
         else if (!isCurrentlyDay && isDay)
         {
             isDay = false;
+            ApplySkybox(false);
             Debug.Log("[Noc] Nastała Noc! Czas na odpoczynek przy piecu.");
             OnNightStarted?.Invoke();
         }

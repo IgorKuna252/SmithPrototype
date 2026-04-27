@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+using System.Collections;
 using UnityEngine;
 
 public class prefabSpawning : MonoBehaviour
@@ -7,14 +7,22 @@ public class prefabSpawning : MonoBehaviour
     [SerializeField] GameObject customerPrefab;
     [SerializeField] int customerCount = 5;
 
+    [Header("Sloty (3 widoczni klienci na raz)")]
+    [SerializeField] int slotCount = 3;
+    [SerializeField] float slotSpacing = 1.5f;
+    [SerializeField] float respawnDelay = 2f;
+    [Tooltip("Odstęp między pojawianiem się kolejnych NPC na początku nocy")]
+    [SerializeField] float initialSpawnDelay = 1.5f;
+
     [Header("Punkty Poruszania")]
-    [SerializeField] Transform spawnObject;
+    [SerializeField] Transform spawnObject;          // środek slotów (gdzie NPC stoją obsługiwani)
+    [SerializeField] Transform spawnEntryPoint;      // miejsce wejścia — stąd NPC przychodzą do slotu
     [SerializeField] Transform targetNPCReject;
     [SerializeField] Transform targetNPCAccept;
-    [SerializeField] float queueSpacing = 1.5f;
 
-    private List<GameObject> npcQueue = new List<GameObject>();
-    private List<Vector3> queuePositions = new List<Vector3>();
+    private GameObject[] slots;
+    private Vector3[] slotPositions;
+    private int spawnedCount = 0;
 
     void Start()
     {
@@ -36,28 +44,29 @@ public class prefabSpawning : MonoBehaviour
         }
     }
 
-    void CalculateQueuePositions(int maxCount)
+    void CalculateSlotPositions()
     {
-        queuePositions.Clear();
+        slotPositions = new Vector3[slotCount];
         Vector3 origin = spawnObject.position;
-        for (int i = 0; i < maxCount; i++)
+        for (int i = 0; i < slotCount; i++)
         {
-            queuePositions.Add(origin + spawnObject.right * (i * queueSpacing));
+            slotPositions[i] = origin + spawnObject.right * (i * slotSpacing);
         }
     }
 
     public void ClearCurrentQueue()
     {
-        npcQueue.Clear();
+        if (slots != null)
+        {
+            for (int i = 0; i < slots.Length; i++) slots[i] = null;
+        }
 
-        // Niszczymy absolutnie każdego klienta NPC błąkającego się po mapie
         ExiledCitizen[] allCitizens = Object.FindObjectsByType<ExiledCitizen>(FindObjectsSortMode.None);
         foreach (var c in allCitizens)
         {
             if (c != null) Destroy(c.gameObject);
         }
 
-        // To samo robimy z Kupcami
         Merchant[] allMerchants = Object.FindObjectsByType<Merchant>(FindObjectsSortMode.None);
         foreach (var m in allMerchants)
         {
@@ -68,20 +77,42 @@ public class prefabSpawning : MonoBehaviour
     private void SpawnNightCustomers()
     {
         ClearCurrentQueue();
-        CalculateQueuePositions(customerCount);
+        CalculateSlotPositions();
 
-        for (int i = 0; i < customerCount; i++)
+        slots = new GameObject[slotCount];
+        spawnedCount = 0;
+
+        StartCoroutine(StaggeredInitialSpawn());
+    }
+
+    private IEnumerator StaggeredInitialSpawn()
+    {
+        int initial = Mathf.Min(slotCount, customerCount);
+        for (int i = 0; i < initial; i++)
         {
-            if (customerPrefab == null) break;
-
-            GameObject obj = Instantiate(customerPrefab, queuePositions[i], Quaternion.Euler(0, -90, 0));
-            obj.name = $"Klient_Nocny_{i + 1}";
-            
-            SetupCitizenData(obj);
-            npcQueue.Add(obj);
+            SpawnIntoSlot(i);
+            if (i < initial - 1)
+                yield return new WaitForSeconds(initialSpawnDelay);
         }
     }
 
+    private void SpawnIntoSlot(int slotIndex)
+    {
+        if (customerPrefab == null) return;
+        if (spawnedCount >= customerCount) return;
+
+        Vector3 entryPos = spawnEntryPoint != null ? spawnEntryPoint.position : slotPositions[slotIndex];
+        GameObject obj = Instantiate(customerPrefab, entryPos, Quaternion.Euler(0, -90, 0));
+        obj.name = $"Klient_Nocny_{spawnedCount + 1}";
+
+        SetupCitizenData(obj);
+        slots[slotIndex] = obj;
+        spawnedCount++;
+
+        // NPC idzie z punktu wejścia do swojego slotu
+        npcPathFinding npc = obj.GetComponent<npcPathFinding>();
+        if (npc != null) npc.MoveToQueuePosition(slotPositions[slotIndex]);
+    }
 
     private void SetupCitizenData(GameObject obj)
     {
@@ -94,11 +125,10 @@ public class prefabSpawning : MonoBehaviour
             citizen.GenerateRandomStats();
             if (TaskManager.Instance != null)
                 citizen.task = TaskManager.Instance.GetRandomTask();
-            
-            // Losowanie nagrody z puli odblokowanych materiałów
+
             if (gameManager.Instance != null)
                 citizen.rewardResource = gameManager.Instance.GetRandomUnlockedMaterial();
-            
+
             CitizenData tempData = new CitizenData(obj.name, citizen);
 
             if (socket != null)
@@ -107,7 +137,7 @@ public class prefabSpawning : MonoBehaviour
                 socket.ownerName = obj.name;
             }
         }
-        
+
         if (npc != null)
         {
             npc.rejectObject = targetNPCReject;
@@ -115,39 +145,34 @@ public class prefabSpawning : MonoBehaviour
         }
     }
 
-    public void OnNPCProcessed()
+    public void OnNPCProcessed(GameObject npc)
     {
-        if (npcQueue.Count == 0) return;
-        npcQueue.RemoveAt(0);
-        RepositionQueue();
-    }
-    
-    public void RemoveNPC(GameObject npc)
-    {
-        npcQueue.Remove(npc);
-        RepositionQueue();
-    }
-
-    void RepositionQueue()
-    {
-        int index = 0;
-        foreach (GameObject npcObj in npcQueue)
+        if (slots == null || npc == null) return;
+        for (int i = 0; i < slots.Length; i++)
         {
-            if (npcObj == null) continue;
-
-            npcPathFinding npc = npcObj.GetComponent<npcPathFinding>();
-
-            if (index < queuePositions.Count)
+            if (slots[i] == npc)
             {
-                if (npc != null) npc.MoveToQueuePosition(queuePositions[index]);
-                index++;
+                FreeSlot(i);
+                return;
             }
         }
     }
 
-    public GameObject GetFirstInQueue()
+    private void FreeSlot(int slotIndex)
     {
-        if (npcQueue.Count == 0) return null;
-        return npcQueue[0];
+        slots[slotIndex] = null;
+        if (spawnedCount < customerCount)
+        {
+            StartCoroutine(RespawnAfterDelay(slotIndex));
+        }
+    }
+
+    private IEnumerator RespawnAfterDelay(int slotIndex)
+    {
+        yield return new WaitForSeconds(respawnDelay);
+        if (slots != null && slotIndex < slots.Length && slots[slotIndex] == null)
+        {
+            SpawnIntoSlot(slotIndex);
+        }
     }
 }

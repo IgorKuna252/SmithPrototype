@@ -524,21 +524,25 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
     public void OnDrop() { }
     public void ForceCoolDown() { currentTemperature = 20f; isInForge = false; UpdateVisuals(); }
 
+    public static Color GetMetalColor(MetalType type)
+    {
+        switch (type)
+        {
+            case MetalType.Copper:    return new Color(0.8f, 0.4f, 0.2f);
+            case MetalType.Bronze:    return new Color(0.7f, 0.5f, 0.1f);
+            case MetalType.Iron:      return new Color(0.15f, 0.15f, 0.15f);
+            case MetalType.Steel:     return new Color(0.35f, 0.35f, 0.4f);
+            case MetalType.Gold:      return new Color(1.0f, 0.8f, 0.0f);
+            case MetalType.Platinum:  return new Color(0.9f, 0.9f, 0.95f);
+            case MetalType.BlueSteel: return new Color(0.2f, 0.3f, 0.5f);
+            case MetalType.Vibranium: return new Color(0.5f, 0.2f, 0.8f);
+            default:                  return new Color(0.15f, 0.15f, 0.15f);
+        }
+    }
+
     public void SetBaseColor()
     {
-        // 1. Przypisujemy kolor docelowy w zależności od wybranego Tieru
-        switch (metalTier)
-        {
-            case MetalType.Copper: baseColdColor = new Color(0.8f, 0.4f, 0.2f); break;
-            case MetalType.Bronze: baseColdColor = new Color(0.7f, 0.5f, 0.1f); break;
-            case MetalType.Iron: baseColdColor = new Color(0.15f, 0.15f, 0.15f); break;
-            case MetalType.Steel: baseColdColor = new Color(0.35f, 0.35f, 0.4f); break;
-            case MetalType.Gold: baseColdColor = new Color(1.0f, 0.8f, 0.0f); break;
-            case MetalType.Platinum: baseColdColor = new Color(0.9f, 0.9f, 0.95f); break;
-            case MetalType.BlueSteel: baseColdColor = new Color(0.2f, 0.3f, 0.5f); break;
-            case MetalType.Vibranium: baseColdColor = new Color(0.5f, 0.2f, 0.8f); break;
-            default: baseColdColor = new Color(0.15f, 0.15f, 0.15f); break;
-        }
+        baseColdColor = GetMetalColor(metalTier);
 
         if (meshRenderer != null)
         {

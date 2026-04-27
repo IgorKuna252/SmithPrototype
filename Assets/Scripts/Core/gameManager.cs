@@ -31,6 +31,11 @@ public class gameManager : MonoBehaviour
         inventory["Copper"] = 3;
         inventory["Bronze"] = 3;
         inventory["Iron"] = 3;
+        inventory["Steel"] = 3;
+        inventory["Gold"] = 3;
+        inventory["Platinum"] = 3;
+        inventory["BlueSteel"] = 3;
+        inventory["Vibranium"] = 3;
         inventory["SwordHandle"] = 9;
     }
 
