@@ -21,6 +21,7 @@ public class NPCInteractionUI : MonoBehaviour
     public WheelController weaponWheel;
 
     private npcPathFinding currentNPC;
+    private AssignedTask currentTask;
     private BlacksmithInteraction blacksmith;
     private prefabSpawning queue;
     private WheelController wheel;
@@ -44,6 +45,7 @@ public class NPCInteractionUI : MonoBehaviour
         if (agent != null) { agent.ResetPath(); agent.isStopped = true; }
 
         AssignedTask task = npc.GetComponent<ExiledCitizen>()?.GetAssignedTask();
+        currentTask = task;
         WeaponData wpn = npc.GetWeaponData();
         ExiledCitizen citizen = npc.GetComponent<ExiledCitizen>();
 
@@ -65,7 +67,7 @@ public class NPCInteractionUI : MonoBehaviour
             if (hasScheme)
             {
                 taskSchemeBuilder.SetTriangles(task.triangles);
-                taskSchemeBuilder.color = MetalPiece.GetMetalColor(task.requiredMetal);
+                taskSchemeBuilder.color = task.checkMetal ? MetalPiece.GetMetalColor(task.requiredMetal) : Color.white;
             }
         }
 
@@ -84,6 +86,7 @@ public class NPCInteractionUI : MonoBehaviour
                 weaponWheel.SetWheel(false);
             }
         }
+
     }
 
     public void Hide()
@@ -97,6 +100,27 @@ public class NPCInteractionUI : MonoBehaviour
             if (agent != null) agent.isStopped = false;
         }
 
+        bool hasScheme = currentTask != null && currentTask.triangles != null && currentTask.triangles.Length > 0;
+        if (hasScheme)
+        {
+            ForgeShapeEvaluator evaluator = Object.FindFirstObjectByType<ForgeShapeEvaluator>();
+            if (evaluator != null && evaluator.uiShapeObject != null)
+            {
+                WeaponSchemeBuilder evalScheme = evaluator.uiShapeObject.GetComponent<WeaponSchemeBuilder>();
+                if (evalScheme != null)
+                {
+                    evalScheme.SetTriangles(currentTask.triangles);
+                    evalScheme.color = currentTask.checkMetal ? MetalPiece.GetMetalColor(currentTask.requiredMetal) : Color.white;
+                }
+                evaluator.expectedMetal = currentTask.requiredMetal;
+                evaluator.checkMetalColor = currentTask.checkMetal;
+
+                PlayerUIScript playerUI = Object.FindFirstObjectByType<PlayerUIScript>();
+                playerUI?.SkopiujSchemat();
+            }
+        }
+
         currentNPC = null;
+        currentTask = null;
     }
 }

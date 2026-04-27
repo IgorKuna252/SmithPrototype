@@ -21,6 +21,7 @@ public class ForgeShapeEvaluator : MonoBehaviour
     // Oczekiwany metal — ustawiany z zewnątrz (np. przez NPC) na podstawie zadania.
     // Ocena mnoży końcowy wynik przez podobieństwo koloru metalu broni do tego oczekiwanego.
     [HideInInspector] public MetalType expectedMetal = MetalType.Iron;
+    [HideInInspector] public bool checkMetalColor = false;
     [Range(0f, 1f)] public float colorMismatchPenalty = 0.5f;
 
     [Header("Shader sylwetki (przypisz 'Unlit/Color' z listy shaderów)")]
@@ -76,6 +77,14 @@ public class ForgeShapeEvaluator : MonoBehaviour
 
         UnityEngine.UI.Graphic graphic = shapeCopy.GetComponent<UnityEngine.UI.Graphic>();
         if (graphic != null) graphic.color = Color.white;
+
+        // Wyłączamy outline schematu na kopii — porównanie ma sprawdzać samą sylwetkę, bez halo.
+        WeaponSchemeBuilder builderCopy = shapeCopy.GetComponent<WeaponSchemeBuilder>();
+        if (builderCopy != null)
+        {
+            builderCopy.drawOutline = false;
+            builderCopy.SetVerticesDirty();
+        }
 
         tempCamObj.layer = tempLayer;
         tempCanvasObj.layer = tempLayer;
@@ -157,7 +166,7 @@ public class ForgeShapeEvaluator : MonoBehaviour
         // Sprawdzenie koloru: porównujemy kolor metalu broni z kolorem oczekiwanego metalu schematu.
         // Mnożymy wynik przez podobieństwo (1 = identyczne, 0 = krańcowo różne) z miękkim minimum z colorMismatchPenalty.
         MetalType? weaponTier = ResolveWeaponMetalTier(forgedMetal);
-        if (weaponTier.HasValue)
+        if (checkMetalColor && weaponTier.HasValue)
         {
             Color expected = MetalPiece.GetMetalColor(expectedMetal);
             Color actual   = MetalPiece.GetMetalColor(weaponTier.Value);
@@ -176,7 +185,7 @@ public class ForgeShapeEvaluator : MonoBehaviour
         // Powiadamiamy UI debugowania (jeśli ktoś subskrybuje)
         if (OnDebugReady != null && _lastNormScheme != null && _lastNormWeapon != null)
         {
-            Color schemeColor = MetalPiece.GetMetalColor(expectedMetal);
+            Color schemeColor = checkMetalColor ? MetalPiece.GetMetalColor(expectedMetal) : Color.white;
             Color weaponColor = weaponTier.HasValue ? MetalPiece.GetMetalColor(weaponTier.Value) : Color.white;
             Texture2D tintedScheme = TintMask(_lastNormScheme, schemeColor);
             Texture2D tintedWeapon = TintMask(_lastNormWeapon, weaponColor);

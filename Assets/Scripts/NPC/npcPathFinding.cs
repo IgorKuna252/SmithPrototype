@@ -116,9 +116,10 @@ public class npcPathFinding : MonoBehaviour
             if (scheme != null)
             {
                 scheme.SetTriangles(task.triangles);
-                scheme.color = MetalPiece.GetMetalColor(task.requiredMetal);
+                scheme.color = task.checkMetal ? MetalPiece.GetMetalColor(task.requiredMetal) : Color.white;
             }
             evaluator.expectedMetal = task.requiredMetal;
+            evaluator.checkMetalColor = task.checkMetal;
         }
 
         bool noScheme = task.triangles == null || task.triangles.Length == 0;
