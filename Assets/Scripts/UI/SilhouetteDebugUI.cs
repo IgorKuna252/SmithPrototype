@@ -88,6 +88,9 @@ public class SilhouetteDebugUI : MonoBehaviour
 
     private void Close()
     {
+        PlayerUIScript playerUI = FindFirstObjectByType<PlayerUIScript>();
+        playerUI?.ClearScheme();
+        
         if (Panel != null)
             Panel.SetActive(false);
 

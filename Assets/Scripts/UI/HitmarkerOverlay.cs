@@ -10,7 +10,7 @@ public class HitmarkerOverlay : MonoBehaviour
     public float thickness = 3f;
     public float gap = 7f;
     public float popScale = 1.18f;
-    public Color color = new Color(1f, 1f, 1f, 0.95f);
+    public Color color = new (1f, 1f, 1f, 0.95f);
 
     Texture2D pixel;
 
