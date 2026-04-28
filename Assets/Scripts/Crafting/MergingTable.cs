@@ -84,11 +84,16 @@ public class MergingTable : MonoBehaviour
                 draggedObject.position = new Vector3(targetPos.x, dragY, targetPos.z);
             }
 
-            // Obracanie przy pomocy scrolla myszy (obrót na stole wokół osi Y)
+            // Obracanie scrollem — skokowo o stały kąt i snapowane do siatki, żeby zawsze dało się ustawić prosto.
+            // Shift = drobny krok (5°), normalnie 15°.
             float scroll = Input.mouseScrollDelta.y;
-            if (scroll != 0)
+            if (scroll != 0f)
             {
-                draggedObject.Rotate(Vector3.up, scroll * 15f, Space.World);
+                float step = (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)) ? 5f : 15f;
+                int dir = scroll > 0 ? 1 : -1;
+                Vector3 e = draggedObject.eulerAngles;
+                float snappedY = Mathf.Round(e.y / step) * step + dir * step;
+                draggedObject.rotation = Quaternion.Euler(e.x, snappedY, e.z);
             }
         }
         else if (Input.GetMouseButtonUp(0) && draggedObject != null)
@@ -256,6 +261,7 @@ public class MergingTable : MonoBehaviour
         craftedWeapon.transform.rotation = baseRot;
 
         Vector3 gripLocalPos = Vector3.zero;
+        Transform bladeTransform = null;
 
         MetalType combinedMetalTier = ResolveCombinedMetalTier(parts);
 
@@ -279,7 +285,15 @@ public class MergingTable : MonoBehaviour
                 else pendingDeductions[key] = 1;
 
                 metal.ForceCoolDown();
+                if (bladeTransform == null) bladeTransform = part;
                 Destroy(metal);
+            }
+            else if (bladeTransform == null && part.GetComponent<WoodPiece>() == null)
+            {
+                // Sklejamy do już skończonej broni — zachowaj jej istniejące ostrze, jeśli było.
+                FinishedObject existingFinished = part.GetComponent<FinishedObject>();
+                if (existingFinished != null && existingFinished.bladeRoot != null)
+                    bladeTransform = existingFinished.bladeRoot;
             }
 
             WoodPiece wood = part.GetComponent<WoodPiece>();
@@ -334,6 +348,7 @@ public class MergingTable : MonoBehaviour
 
         FinishedObject finishedObj = craftedWeapon.AddComponent<FinishedObject>();
         finishedObj.metalTier = combinedMetalTier;
+        finishedObj.bladeRoot = bladeTransform;
 
         // Punkt złapania w powietrzu do ręki
         GameObject grip = new GameObject("GripPoint");

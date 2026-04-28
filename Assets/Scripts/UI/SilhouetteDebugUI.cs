@@ -71,8 +71,10 @@ public class SilhouetteDebugUI : MonoBehaviour
             int ideal = 0, matched = 0;
             for (int i = 0; i < s.Length; i++)
             {
-                if (s[i].r > 0.5f) ideal++;
-                if (s[i].r > 0.5f && w[i].r > 0.1f) matched++;
+                bool inScheme = Mathf.Max(s[i].r, s[i].g, s[i].b) > 0.05f;
+                bool inWeapon = Mathf.Max(w[i].r, w[i].g, w[i].b) > 0.05f;
+                if (inScheme) ideal++;
+                if (inScheme && inWeapon) matched++;
             }
             float pct = ideal > 0 ? (float)matched / ideal * 100f : 0f;
             Label.text = $"Dopasowanie: <color=#00DA33>{pct:F0}%</color>";
@@ -86,6 +88,9 @@ public class SilhouetteDebugUI : MonoBehaviour
 
     private void Close()
     {
+        PlayerUIScript playerUI = FindFirstObjectByType<PlayerUIScript>();
+        playerUI?.ClearScheme();
+        
         if (Panel != null)
             Panel.SetActive(false);
 

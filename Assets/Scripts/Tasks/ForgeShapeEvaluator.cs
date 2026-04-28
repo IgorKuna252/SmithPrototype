@@ -18,6 +18,12 @@ public class ForgeShapeEvaluator : MonoBehaviour
     [Range(0f, 2f)]
     public float overspillPenalty = 1.0f;
 
+    // Oczekiwany metal — ustawiany z zewnątrz (np. przez NPC) na podstawie zadania.
+    // Ocena mnoży końcowy wynik przez podobieństwo koloru metalu broni do tego oczekiwanego.
+    [HideInInspector] public MetalType expectedMetal = MetalType.Iron;
+    [HideInInspector] public bool checkMetalColor = false;
+    [Range(0f, 1f)] public float colorMismatchPenalty = 0.5f;
+
     [Header("Shader sylwetki (przypisz 'Unlit/Color' z listy shaderów)")]
     [SerializeField] Shader silhouetteShader;
 
@@ -72,6 +78,14 @@ public class ForgeShapeEvaluator : MonoBehaviour
         UnityEngine.UI.Graphic graphic = shapeCopy.GetComponent<UnityEngine.UI.Graphic>();
         if (graphic != null) graphic.color = Color.white;
 
+        // Wyłączamy outline schematu na kopii — porównanie ma sprawdzać samą sylwetkę, bez halo.
+        WeaponSchemeBuilder builderCopy = shapeCopy.GetComponent<WeaponSchemeBuilder>();
+        if (builderCopy != null)
+        {
+            builderCopy.drawOutline = false;
+            builderCopy.SetVerticesDirty();
+        }
+
         tempCamObj.layer = tempLayer;
         tempCanvasObj.layer = tempLayer;
         ChangeLayerRecursive(shapeCopy.transform, tempLayer);
@@ -94,11 +108,18 @@ public class ForgeShapeEvaluator : MonoBehaviour
         forgedMetal.transform.position = hiddenPosition;
 
         Quaternion desiredBladeFacing = Quaternion.Euler(-90f, 0f, 0f);
+        Transform bladeT = null;
         MetalPiece metalChild = forgedMetal.GetComponentInChildren<MetalPiece>();
-        if (metalChild != null)
+        if (metalChild != null) bladeT = metalChild.transform;
+        else
         {
-            // relativeRot = obrót MetalPiece względem roota (cały łańcuch localRotation od roota do dziecka)
-            Quaternion relativeRot = Quaternion.Inverse(forgedMetal.transform.rotation) * metalChild.transform.rotation;
+            FinishedObject fo = forgedMetal.GetComponentInChildren<FinishedObject>();
+            if (fo != null && fo.bladeRoot != null) bladeT = fo.bladeRoot;
+        }
+        if (bladeT != null)
+        {
+            // relativeRot = obrót ostrza względem roota (cały łańcuch localRotation od roota do dziecka)
+            Quaternion relativeRot = Quaternion.Inverse(forgedMetal.transform.rotation) * bladeT.rotation;
             forgedMetal.transform.rotation = desiredBladeFacing * Quaternion.Inverse(relativeRot);
         }
         else
@@ -134,6 +155,14 @@ public class ForgeShapeEvaluator : MonoBehaviour
 
         forgedSilhouette = CaptureCameraToTexture(tempCam, resolution, resolution);
 
+        // Drugie ujęcie: broń obrócona o 180° wokół osi ostrza (world Y, bo desiredBladeFacing
+        // mapuje lokalny Z ostrza na +Y). Pozwala dopasować schemat niezależnie od tego,
+        // którą stroną gracz położył broń na stole.
+        Quaternion straightRot = forgedMetal.transform.rotation;
+        forgedMetal.transform.rotation = Quaternion.AngleAxis(180f, Vector3.up) * straightRot;
+        Texture2D flippedSilhouette = CaptureCameraToTexture(tempCam, resolution, resolution);
+        forgedMetal.transform.rotation = straightRot;
+
         // Przywracamy oryginalne materiały
         for (int i = 0; i < renderers.Length; i++)
             renderers[i].sharedMaterials = originalMaterials[i];
@@ -147,14 +176,60 @@ public class ForgeShapeEvaluator : MonoBehaviour
         forgedMetal.transform.rotation = originalRot;
         ChangeLayerRecursive(forgedMetal.transform, originalLayer);
 
-        float result = CompareTextures(forgedSilhouette, targetShapeMask);
+        float resultStraight = CompareTextures(forgedSilhouette, targetShapeMask);
+        Texture2D bestSilhouette = forgedSilhouette;
+        // Zapisujemy znormalizowane bufory z pierwszego porównania, bo CompareTextures je nadpisze.
+        Texture2D normSchemeStraight = _lastNormScheme; _lastNormScheme = null;
+        Texture2D normWeaponStraight = _lastNormWeapon; _lastNormWeapon = null;
+
+        float resultFlipped = CompareTextures(flippedSilhouette, targetShapeMask);
+        float result;
+        if (resultFlipped > resultStraight)
+        {
+            result = resultFlipped;
+            bestSilhouette = flippedSilhouette;
+            if (normSchemeStraight) Destroy(normSchemeStraight);
+            if (normWeaponStraight) Destroy(normWeaponStraight);
+        }
+        else
+        {
+            result = resultStraight;
+            if (_lastNormScheme) Destroy(_lastNormScheme);
+            if (_lastNormWeapon) Destroy(_lastNormWeapon);
+            _lastNormScheme = normSchemeStraight;
+            _lastNormWeapon = normWeaponStraight;
+            Destroy(flippedSilhouette);
+        }
+        forgedSilhouette = bestSilhouette;
+
+        // Sprawdzenie koloru: porównujemy kolor metalu broni z kolorem oczekiwanego metalu schematu.
+        // Mnożymy wynik przez podobieństwo (1 = identyczne, 0 = krańcowo różne) z miękkim minimum z colorMismatchPenalty.
+        MetalType? weaponTier = ResolveWeaponMetalTier(forgedMetal);
+        if (checkMetalColor && weaponTier.HasValue)
+        {
+            Color expected = MetalPiece.GetMetalColor(expectedMetal);
+            Color actual   = MetalPiece.GetMetalColor(weaponTier.Value);
+            float dr = expected.r - actual.r;
+            float dg = expected.g - actual.g;
+            float db = expected.b - actual.b;
+            float dist = Mathf.Sqrt(dr * dr + dg * dg + db * db) / Mathf.Sqrt(3f);
+            float similarity = 1f - dist;
+            float colorFactor = Mathf.Lerp(colorMismatchPenalty, 1f, similarity);
+            Debug.Log($"[ForgeShapeEvaluator] Metal oczekiwany: {expectedMetal}, faktyczny: {weaponTier.Value}, podobieństwo: {similarity:F2}, mnożnik: {colorFactor:F2}");
+            result *= colorFactor;
+        }
+
         Debug.Log($"[ForgeShapeEvaluator] Wynik porównania: {result:F1}%");
 
         // Powiadamiamy UI debugowania (jeśli ktoś subskrybuje)
         if (OnDebugReady != null && _lastNormScheme != null && _lastNormWeapon != null)
         {
+            Color schemeColor = checkMetalColor ? MetalPiece.GetMetalColor(expectedMetal) : Color.white;
+            Color weaponColor = weaponTier.HasValue ? MetalPiece.GetMetalColor(weaponTier.Value) : Color.white;
+            Texture2D tintedScheme = TintMask(_lastNormScheme, schemeColor);
+            Texture2D tintedWeapon = TintMask(_lastNormWeapon, weaponColor);
             Texture2D overlay = BuildOverlay(_lastNormScheme, _lastNormWeapon);
-            OnDebugReady.Invoke(_lastNormScheme, _lastNormWeapon, overlay);
+            OnDebugReady.Invoke(tintedScheme, tintedWeapon, overlay);
         }
 
         return result;
@@ -260,6 +335,33 @@ public class ForgeShapeEvaluator : MonoBehaviour
         overlay.SetPixels(overlayPixels);
         overlay.Apply();
         return overlay;
+    }
+
+    // Wykuta broń po sklejeniu w MergingTable nie ma już komponentu MetalPiece (jest niszczony),
+    // ale zachowuje tier metalu w FinishedObject. Sprawdzamy oba źródła.
+    private MetalType? ResolveWeaponMetalTier(GameObject forgedMetal)
+    {
+        MetalPiece mp = forgedMetal.GetComponentInChildren<MetalPiece>();
+        if (mp != null) return mp.metalTier;
+        FinishedObject fo = forgedMetal.GetComponentInChildren<FinishedObject>();
+        if (fo != null) return fo.metalTier;
+        return null;
+    }
+
+    // Tworzy kolorową kopię maski: tam gdzie maska jest biała → tint, reszta czarna.
+    private Texture2D TintMask(Texture2D mask, Color tint)
+    {
+        Color[] src = mask.GetPixels();
+        Color[] dst = new Color[src.Length];
+        for (int i = 0; i < src.Length; i++)
+        {
+            if (src[i].r > 0.1f) dst[i] = new Color(tint.r, tint.g, tint.b, 1f);
+            else                 dst[i] = new Color(0f, 0f, 0f, 1f);
+        }
+        Texture2D tex = new Texture2D(mask.width, mask.height, TextureFormat.RGBA32, false);
+        tex.SetPixels(dst);
+        tex.Apply();
+        return tex;
     }
 
     // Wycina bounding box białych pikseli i skaluje do ramki zachowując proporcje (letterbox)

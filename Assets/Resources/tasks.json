@@ -2,37 +2,41 @@
     "Tasks": [
         {
             "Task": "Znalazłem taki schemat jak szedłem krowy paść, zrobisz mi?",
-            "Damage": {"Min": 80, "Max": 100},
-            "Speed": {"Min": 0, "Max": 0},
-            "Aoe": {"Min": 0, "Max": 0},
             "Triangles": [
                 {"side": 0, "baseLength": 30, "height": 45, "offsetFromPrevious": 5, "peakOffset": 0.5}
             ]
         },
         {
-            "Task": "Ktoś mi ukradł taką fajną broń, zrób taką samą a ja ją tym razem lepiej schowam.",
-            "Damage": {"Min": 0, "Max": 0},
-            "Speed": {"Min": 0, "Max": 0},
-            "Aoe": {"Min": 35, "Max": 70},
+            "Task": "Babka mówiła że tylko miedź się sprawdzi przeciw demonom. Zrób mi taką.",
             "Triangles": [
+                {"side": 0, "baseLength": 25, "height": 50, "offsetFromPrevious": 7, "peakOffset": 0.5}
+            ],
+            "RequiredMetal": "Copper"
+        },
+        {
+            "Task": "Ktoś mi ukradł taką fajną broń, zrób taką samą a ja ją tym razem lepiej schowam.",
+            "Triangles": [
+                {"side": 0, "baseLength": 40, "height": 60, "offsetFromPrevious": 0, "peakOffset": 0},
                 {"side": 1, "baseLength": 100, "height": 30, "offsetFromPrevious": 50, "peakOffset": 0.5},
                 {"side": 2, "baseLength": 100, "height": 30, "offsetFromPrevious": 50, "peakOffset": 0.5}
             ]
         },
         {
             "Task": "Mój brat mi narysował, fajne? Mówi że jak będę miał taką to wszyscy będą zazdrościć.",
-            "Damage": {"Min": 0, "Max": 0},
-            "Speed": {"Min": 45, "Max": 75},
-            "Aoe": {"Min": 0, "Max": 0},
             "Triangles": [
                 {"side": 0, "baseLength": 20, "height": 60, "offsetFromPrevious": 10, "peakOffset": 0.5}
             ]
         },
         {
+            "Task": "Koniecznie miedziana, mówi że błyszczy najpiękniej.",
+            "Triangles": [
+                {"side": 0, "baseLength": 22, "height": 40, "offsetFromPrevious": 9, "peakOffset": 0.4},
+                {"side": 1, "baseLength": 60, "height": 18, "offsetFromPrevious": 70, "peakOffset": 0.5}
+            ],
+            "RequiredMetal": "Copper"
+        },
+        {
             "Task": "Widziałem u rycerza coś takiego, on mi nie chciał sprzedać więc tu przyszedłem.",
-            "Damage": {"Min": 70, "Max": 100},
-            "Speed": {"Min": 25, "Max": 50},
-            "Aoe": {"Min": 0, "Max": 0},
             "Triangles": [
                 {"side": 0, "baseLength": 28, "height": 40, "offsetFromPrevious": 6, "peakOffset": 0.5},
                 {"side": 1, "baseLength": 60, "height": 20, "offsetFromPrevious": 70, "peakOffset": 0.5},
@@ -41,9 +45,6 @@
         },
         {
             "Task": "Śniło mi się coś takiego tej nocy, może to znak żebym sobie kupił?",
-            "Damage": {"Min": 0, "Max": 0},
-            "Speed": {"Min": 30, "Max": 50},
-            "Aoe": {"Min": 30, "Max": 50},
             "Triangles": [
                 {"side": 0, "baseLength": 22, "height": 35, "offsetFromPrevious": 9, "peakOffset": 0.5},
                 {"side": 1, "baseLength": 80, "height": 25, "offsetFromPrevious": 60, "peakOffset": 0.5},
@@ -52,16 +53,18 @@
         },
         {
             "Task": "Daj mi cokolwiek, idę walczyć z krzyżakami.",
-            "Damage": {"Min": 0, "Max": 0},
-            "Speed": {"Min": 0, "Max": 0},
-            "Aoe": {"Min": 0, "Max": 0},
             "Triangles": []
         },
         {
+            "Task": "Stara wiedźma kazała przynieść miedzianą, niczego innego nie ruszę.",
+            "Triangles": [
+                {"side": 0, "baseLength": 30, "height": 45, "offsetFromPrevious": 5, "peakOffset": 0.5},
+                {"side": 1, "baseLength": 70, "height": 22, "offsetFromPrevious": 60, "peakOffset": 0.5}
+            ],
+            "RequiredMetal": "Copper"
+        },
+        {
             "Task": "Biorę taką i idę zabić króla, ale nie mów nikomu ok?",
-            "Damage": {"Min": 0, "Max": 0},
-            "Speed": {"Min": 0, "Max": 0},
-            "Aoe": {"Min": 0, "Max": 0},
             "Triangles": [
                 {"side": 0, "baseLength": 25, "height": 35, "offsetFromPrevious": 8, "peakOffset": 0.5},
                 {"side": 1, "baseLength": 70, "height": 22, "offsetFromPrevious": 65, "peakOffset": 0.5}

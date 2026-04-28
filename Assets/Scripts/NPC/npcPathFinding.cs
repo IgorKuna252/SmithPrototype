@@ -11,6 +11,15 @@ public class npcPathFinding : MonoBehaviour
     public Transform rejectObject;
     public Transform acceptObject;
 
+    [Header("Wskaźnik aktywnego zadania")]
+    [Tooltip("Obiekt (np. ikona nad głową) zapalany gdy gracz przyjmie zadanie od tego NPC.")]
+    public GameObject taskMarker;
+
+    public void SetTaskMarker(bool active)
+    {
+        if (taskMarker) taskMarker.SetActive(active);
+    }
+
     void Start()
     {
         agentNPC = GetComponent<NavMeshAgent>();
@@ -20,6 +29,8 @@ public class npcPathFinding : MonoBehaviour
 
         if (animator != null)
             animator.applyRootMotion = false;
+
+        if (taskMarker) taskMarker.SetActive(false);
 
         if (agentNPC != null)
             agentNPC.stoppingDistance = 0.5f;
@@ -32,30 +43,29 @@ public class npcPathFinding : MonoBehaviour
 
     void Update()
     {
-        if (agentNPC == null) return;
-
+        if (!agentNPC) return;
         {
-            // Gdy dotarł do celu — zatrzymaj i oddaj kontrolę rotacji skryptowi
             if (!agentNPC.pathPending && agentNPC.hasPath && agentNPC.remainingDistance <= agentNPC.stoppingDistance)
             {
                 agentNPC.ResetPath();
                 agentNPC.velocity = Vector3.zero;
                 agentNPC.updateRotation = false; // Skrypt przejmuje obrót → patrzenie w okienko
 
-                // Jeśli celem, do którego właśnie doszliśmy, były drzwi wyjściowe (rejectObject) - wracamy do domu i znikamy z gry!
-                if (rejectObject != null && Vector3.Distance(transform.position, rejectObject.position) <= 2.5f)
+                // Jeśli celem, do którego właśnie doszliśmy, były drzwi wyjściowe (rejectObject)
+                if (rejectObject && Vector3.Distance(transform.position, rejectObject.position) <= 2.5f)
                 {
+                    NPCInteractionUI.ClearActiveTaskNPC(this);
                     Destroy(gameObject);
                 }
             }
 
-            // Brak ścieżki = stój
+            // Jak brak ścieżki to stój
             if (!agentNPC.hasPath)
             {
                 agentNPC.velocity = Vector3.zero;
 
                 // NPC patrzy W STRONĘ acceptObject (okienka), nie kopiuje jego rotacji
-                if (acceptObject != null)
+                if (acceptObject)
                 {
                     Vector3 dir = acceptObject.position - transform.position;
                     dir.y = 0f;
@@ -68,30 +78,14 @@ public class npcPathFinding : MonoBehaviour
 
         float speed = agentNPC.velocity.magnitude;
         if (speed < 0.15f) speed = 0f;
-        if (animator != null)
+        if (animator)
             animator.SetFloat("Speed", speed);
     }
 
     void SetDestination(Transform target)
     {
-        if (target != null)
+        if (target)
             agentNPC.SetDestination(target.position);
-    }
-
-    public float GetSpeed()             { return citizenStats.GetSpeed(); }
-    public float GetIntelligence()      { return citizenStats.GetIntelligence(); }
-    public float GetStrengh()           { return citizenStats.GetStrength(); }
-
-    public float GetNormalizedStrength()     { return citizenStats.GetNormalizedStrength(); }
-    public float GetNormalizedSpeed()        { return citizenStats.GetNormalizedSpeed(); }
-    public float GetNormalizedIntelligence() { return citizenStats.GetNormalizedIntelligence(); }
-
-    public bool IsTaskFulfilled()
-    {
-        AssignedTask task = citizenStats.GetAssignedTask();
-        WeaponData wpn = GetWeaponData();
-        if (task == null || wpn == null || !wpn.isValid) return false;
-        return task.CheckWeapon(wpn);
     }
 
     public WeaponData GetWeaponData()
@@ -109,11 +103,17 @@ public class npcPathFinding : MonoBehaviour
         if (task == null || wpn == null || !wpn.isValid) return;
 
         // Aktualizujemy schemat UI o trójkąty bieżącego zadania tego NPC
-        ForgeShapeEvaluator evaluator = Object.FindFirstObjectByType<ForgeShapeEvaluator>();
-        if (evaluator != null && evaluator.uiShapeObject != null)
+        ForgeShapeEvaluator evaluator = FindFirstObjectByType<ForgeShapeEvaluator>();
+        if (evaluator && evaluator.uiShapeObject)
         {
             WeaponSchemeBuilder scheme = evaluator.uiShapeObject.GetComponent<WeaponSchemeBuilder>();
-            if (scheme != null) scheme.SetTriangles(task.triangles);
+            if (scheme)
+            {
+                scheme.SetTriangles(task.triangles);
+                scheme.color = task.checkMetal ? MetalPiece.GetMetalColor(task.requiredMetal) : Color.white;
+            }
+            evaluator.expectedMetal = task.requiredMetal;
+            evaluator.checkMetalColor = task.checkMetal;
         }
 
         bool noScheme = task.triangles == null || task.triangles.Length == 0;
@@ -125,11 +125,11 @@ public class npcPathFinding : MonoBehaviour
         else if (evaluator != null && weaponObj != null)
         {
             Transform handle = weaponObj.transform.Find("HandlePart");
-            if (handle != null) handle.gameObject.SetActive(false);
+            if (handle) handle.gameObject.SetActive(false);
 
             schemeMatch = evaluator.EvaluateForgingAccuracy(weaponObj) / 100f;
 
-            if (handle != null) handle.gameObject.SetActive(true);
+            if (handle) handle.gameObject.SetActive(true);
         }
         else
         {
@@ -149,7 +149,7 @@ public class npcPathFinding : MonoBehaviour
 
         Debug.Log($"[Transakcja] Schemat: {matchPercent:F0}% | Nagroda: {rewardMaterial} x{rewardAmount}");
 
-        if (SilhouetteDebugUI.Instance != null)
+        if (SilhouetteDebugUI.Instance)
         {
             StopAllCoroutines();
             agentNPC.ResetPath();
@@ -174,7 +174,7 @@ public class npcPathFinding : MonoBehaviour
                 }
 
                 var spawner = Object.FindFirstObjectByType<prefabSpawning>();
-                if (spawner != null) spawner.OnNPCProcessed();
+                if (spawner != null) spawner.OnNPCProcessed(gameObject);
 
                 if (this != null)
                 {
@@ -185,24 +185,26 @@ public class npcPathFinding : MonoBehaviour
         }
         else
         {
-            // Fallback bez UI
-            if (gameManager.Instance != null)
+            if (gameManager.Instance)
                 gameManager.Instance.AddResource(rewardMaterial, rewardAmount);
 
-            var spawner = Object.FindFirstObjectByType<prefabSpawning>();
-            if (spawner != null) spawner.OnNPCProcessed();
+            var spawner = FindFirstObjectByType<prefabSpawning>();
+            if (spawner) spawner.OnNPCProcessed(gameObject);
             WeaponAccepted();
         }
     }
 
     public void MoveToQueuePosition(Vector3 position)
     {
+        if (agentNPC == null) agentNPC = GetComponent<NavMeshAgent>();
+        if (agentNPC == null) return;
         agentNPC.updateRotation = true;
         agentNPC.SetDestination(position);
     }
 
     public void WeaponAccepted(float waitTime = 2f)
     {
+        NPCInteractionUI.ClearActiveTaskNPC(this);
         StartCoroutine(WeaponAcceptedRoutine(waitTime));
     }
 

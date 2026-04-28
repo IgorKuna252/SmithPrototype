@@ -5,7 +5,7 @@ using System.Linq;
 public enum MetalType { Copper, Bronze, Iron, Steel, Gold, Platinum, BlueSteel, Vibranium }
 public enum HitType { Lengthen, Widen }
 
-// 6punktowy profil
+// 6-punktowy profil
 [System.Serializable]
 public class MetalProfile
 {
@@ -17,7 +17,7 @@ public class MetalProfile
     public float leftHalfHeight;
     public float rightHalfHeight;
 
-    //pauza dla lepszego szlifowania
+    // Pauza dla lepszego szlifowania
     public float leftEdgeIntegrity;
     public float rightEdgeIntegrity;
 }
@@ -49,11 +49,11 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
     public float grindSpeed = 0.09f;
     public float sharpenMultiplier = 20f;
     public float eatMultiplier = 0.03f;
-    public float safetyPauseSeconds = 1.5f;
+    public float safetyPauseSeconds = 0.2f; // ZMNIEJSZONO Z 1.5 dla płynnego wżerania!
 
     [Header("Młotek (Tuning)")]
     public float hammerRadius = 0.15f;   // Promień rażenia młotka
-    public float squishSpeed = 0.004f;   // ZMniejszone z 0.015f (wolniejsze spłaszczanie)
+    public float squishSpeed = 0.004f;   // Wolniejsze spłaszczanie
     public float spreadSpeed = 0.006f;   // Jak mocno rozlewa na boki/długość
 
     [SerializeField]
@@ -100,7 +100,6 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
         switch (partType)
         {
             case MetalPartType.Ingot:
-                // Zwykła Sztabka - gruby, krótki i zwarty blok (bardzo bazowy)
                 length = 0.35f;
                 width = 0.1f;
                 thickness = 0.08f;
@@ -108,17 +107,15 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
                 break;
 
             case MetalPartType.SwordMold:
-                // Foremka miecza - długa wstążka
-                length = 1.1f;    // Odrobinkę dłuższa sztaba ogólna
-                width = 0.15f;    // Szerszy miecz!
-                thickness = 0.065f; // Wyraźnie pogrubiony
+                length = 1.1f;
+                width = 0.15f;
+                thickness = 0.065f;
                 segments = 40;
                 break;
 
             case MetalPartType.AxeMold:
-                // Foremka siekiery - krótka, ale od razu wyprofilowana w szerszy, asymetryczny blok (w X)
                 length = 0.35f;
-                width = 0.25f;  // Dużo szersza, by było miejsce na zakucie ostrza
+                width = 0.25f;
                 thickness = 0.06f;
                 segments = 15;
                 break;
@@ -129,36 +126,28 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
 
         for (int i = 0; i <= segments; i++)
         {
-            float t = (float)i / segments; // Postęp długości od 0.0 (dół) do 1.0 (góra formy)
+            float t = (float)i / segments;
 
             float currentZ = startZ + (i * segmentLength);
             float leftX = -width / 2f;
             float rightX = width / 2f;
             float halfThickness = thickness / 2f;
 
-            // --- PROCEDURALNE KSZTAŁTOWANIE BRYŁ ODLANYCH ---
             if (partType == MetalPartType.SwordMold)
             {
-                // Miecz: Szpic zaczyna się o wiele wcześniej, tworząc znacznie dłuższe ostrze tnące
-                if (t > 0.70f) // Z 85% zeszło na 70% (ostatnie 30% długości zwęży się płynnie w szpic)
+                if (t > 0.70f)
                 {
-                    float taper = 1f - ((t - 0.70f) / 0.30f); // Wartość schodzi od 1.0 do 0.0
-                    leftX *= taper;     
-                    rightX *= taper;    
-                    halfThickness *= (0.15f + 0.85f * taper); 
+                    float taper = 1f - ((t - 0.70f) / 0.30f);
+                    leftX *= taper;
+                    rightX *= taper;
+                    halfThickness *= (0.15f + 0.85f * taper);
                 }
             }
             else if (partType == MetalPartType.AxeMold)
             {
-                // Siekiera: Obrócona na drugą stronę
-                // Teraz twardy ucinany obuch jest pod prawą dłonią (płaski)
-                rightX = 0.05f; 
-                
-                // A brzuch siekiery celuje potężnie na lewo
-                float bowCurve = Mathf.Sin(t * Mathf.PI); 
+                rightX = 0.05f;
+                float bowCurve = Mathf.Sin(t * Mathf.PI);
                 leftX = -0.03f - (0.22f * bowCurve);
-                
-                // Modyfikacja grubości na podobnych zasadach
                 halfThickness = (thickness / 2f) * (0.6f + 0.4f * bowCurve);
             }
 
@@ -176,16 +165,13 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
         }
     }
 
-    // Dodana funkcja dla Twojego 'Mold Table':
     public void SetMoldAndRebuild(MetalPartType newMoldType)
     {
         partType = newMoldType;
         InitializeSpine();
         BuildMeshFromSpine();
-        SetBaseColor(); // Ustawiamy od nowa materiał na bazie metalTier
-        UpdateVisuals(); // Przerysowujemy ze zaktualizowanym kolorem bazowym i aktualną temperaturą
-        
-        // Zależnie jak robisz chłodzenie, być może warto przywrócić mu temperaturę przy wyjmowaniu z formy?
+        SetBaseColor();
+        UpdateVisuals();
     }
 
     public void BuildMeshFromSpine()
@@ -196,9 +182,8 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
         mesh.name = "RibbonSwordMesh";
 
         int segments = metalSpine.Count - 1;
-        // Mamy teraz 6 wierzchołków na profil! (Lewy, Środek, Prawy) * (Góra, Dół)
         Vector3[] vertices = new Vector3[(segments + 1) * 6];
-        int[] triangles = new int[segments * 36 + 24]; // Złożona topologia dla ostrza
+        int[] triangles = new int[segments * 36 + 24];
 
         int v = 0;
         int t = 0;
@@ -237,7 +222,7 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
             // Ściana Dolna Prawa
             triangles[t++] = c + 4; triangles[t++] = c + 5; triangles[t++] = n + 4;
             triangles[t++] = c + 5; triangles[t++] = n + 5; triangles[t++] = n + 4;
-            // Bok Lewy (Zamyka krawędź jeśli nie jest w pełni ostra)
+            // Bok Lewy
             triangles[t++] = c; triangles[t++] = c + 3; triangles[t++] = n;
             triangles[t++] = c + 3; triangles[t++] = n + 3; triangles[t++] = n;
             // Bok Prawy
@@ -260,8 +245,7 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
 
         mesh.vertices = vertices;
         mesh.triangles = triangles;
-        
-        // NOWOŚĆ: Wymuszenie twardych krawędzi (Flat Shading) PRZED obliczaniem odbić
+
         FlatShading(mesh);
 
         mesh.RecalculateNormals();
@@ -271,20 +255,18 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
         meshCollider.sharedMesh = mesh;
     }
 
-    // Dodana funkcja, która rozbija połączoną siatkę uwalniając cienie spod wygładzania Unity
     private void FlatShading(Mesh targetMesh)
     {
         Vector3[] oldVerts = targetMesh.vertices;
         int[] triangles = targetMesh.triangles;
         Vector3[] newVerts = new Vector3[triangles.Length];
-        
+
         for (int i = 0; i < triangles.Length; i++)
         {
             newVerts[i] = oldVerts[triangles[i]];
-            // Przypisanie unikalnego wierzchołka dla KAŻDEGO rogu KAŻDEGO trójkąta!
-            triangles[i] = i; 
+            triangles[i] = i;
         }
-        
+
         targetMesh.vertices = newVerts;
         targetMesh.triangles = triangles;
     }
@@ -301,12 +283,10 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
         float localZ = localHit.z;
         float localX = localHit.x;
 
-        // UWAGA: Usunąłem tutaj 'Mathf.Clamp'! 
-        // Teraz młotek uderza DOKŁADNIE tam gdzie myszka. Nie ma magnesowania do krawędzi.
-
         bool wasDeformed = false;
 
-        float powerSquish = 0.005f;
+        // POPRAWKA: Wydłużanie spłaszcza mocniej, żeby skompensować "uciekanie" punktów!
+        float powerSquish = (hitType == HitType.Lengthen) ? 0.012f : 0.005f;
         float powerWiden = 0.015f;
         float powerLengthen = 0.035f;
 
@@ -318,20 +298,17 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
 
         for (int i = 0; i < metalSpine.Count; i++)
         {
-            // Prawdziwa odległość od faktycznego kliknięcia myszką
             float distZ = Mathf.Abs(metalSpine[i].z - localZ);
             float profileCenterX = (metalSpine[i].leftX + metalSpine[i].rightX) / 2f;
             float distX = Mathf.Abs(profileCenterX - localX);
             float trueDistance = Mathf.Sqrt(distZ * distZ + distX * distX);
 
-            // Jeśli uderzyłeś w powietrze (np. za sztabą), trueDistance będzie większe niż hammerRadius
-            // i ten if po prostu zignoruje uderzenie!
             if (trueDistance < hammerRadius)
             {
                 float force = 1f - (trueDistance / hammerRadius);
                 float targetY = minThickness / 2f;
 
-                // 1. SPŁASZCZANIE W DÓŁ
+                // 1. SPŁASZCZANIE W DÓŁ (Teraz silniejsze przy wydłużaniu)
                 if (metalSpine[i].centerHalfHeight > targetY)
                 {
                     metalSpine[i].centerHalfHeight = Mathf.MoveTowards(metalSpine[i].centerHalfHeight, targetY, powerSquish * force);
@@ -359,7 +336,6 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
                 else if (hitType == HitType.Lengthen)
                 {
                     float pushDirection = (metalSpine[i].z >= swordCenterZ) ? 1f : -1f;
-
                     metalSpine[i].z += pushDirection * powerLengthen * force;
                     wasDeformed = true;
                 }
@@ -375,8 +351,6 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
         return wasDeformed;
     }
 
-    // NOWOŚĆ: Automatyczne dodawanie nowych kręgów po rozciągnięciu
-    // NOWOŚĆ: Automatyczne dodawanie nowych kręgów po rozciągnięciu
     private void SubdivideSpine()
     {
         float maxSegmentLength = (startLength / initialSegments) * 1.5f;
@@ -388,7 +362,6 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
                 MetalProfile p1 = metalSpine[i];
                 MetalProfile p2 = metalSpine[i + 1];
 
-                // Wstawiamy nowy idealnie pośrodku
                 MetalProfile mid = new MetalProfile
                 {
                     z = (p1.z + p2.z) / 2f,
@@ -397,61 +370,62 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
                     centerHalfHeight = (p1.centerHalfHeight + p2.centerHalfHeight) / 2f,
                     leftHalfHeight = (p1.leftHalfHeight + p2.leftHalfHeight) / 2f,
                     rightHalfHeight = (p1.rightHalfHeight + p2.rightHalfHeight) / 2f,
-
-                    // --- POPRAWKA BŁĘDU: Uśredniamy barierę sąsiadów, zamiast zostawiać 0! ---
                     leftEdgeIntegrity = (p1.leftEdgeIntegrity + p2.leftEdgeIntegrity) / 2f,
                     rightEdgeIntegrity = (p1.rightEdgeIntegrity + p2.rightEdgeIntegrity) / 2f
                 };
 
                 metalSpine.Insert(i + 1, mid);
-                i++; // Przeskakujemy go, żeby nie wpaść w nieskończoną pętlę!
+                i++;
             }
         }
     }
 
+    // POPRAWKA: Rozdzielone promienie. Duży do ostrzenia, mały do wżerania. Brak else!
     public void GrindPerfectEdge(float localZPosition, bool isFlipped)
     {
-        float coreWidth = 0.02f;
-        float falloffRadius = 0.015f;
+        float sharpenRadius = 0.04f; // SZEROKI PROMIEŃ (Ostrzenie z góry i z dołu)
+        float eatRadius = 0.015f;    // WĄSKI PROMIEŃ (Wżeranie w bok sztaby)
         bool wasDeformed = false;
 
-        float baseSharpenSpeed = grindSpeed * sharpenMultiplier * 0.01f * Time.deltaTime;
+        float baseSharpenSpeed = grindSpeed * sharpenMultiplier * 0.015f * Time.deltaTime; // Szybsze ostrzenie
         float baseEatSpeed = grindSpeed * eatMultiplier * Time.deltaTime;
-
-        // NOWOŚĆ: Szybkość zjadania pauzy. 1f oznacza około 1 sekundę piłowania w jednym miejscu
-        // zanim kamień zacznie wżerać się w szerokość!
         float integrityDrainSpeed = (1f / safetyPauseSeconds) * Time.deltaTime;
 
         for (int i = 0; i < metalSpine.Count; i++)
         {
             float distance = Mathf.Abs(metalSpine[i].z - localZPosition);
 
-            if (distance < falloffRadius)
+            if (distance < sharpenRadius)
             {
-                float forceMultiplier = distance < coreWidth ? 1f : 1f - ((distance - coreWidth) / (falloffRadius - coreWidth));
-                float curSharpenSpeed = baseSharpenSpeed * forceMultiplier;
-                float curEatSpeed = baseEatSpeed * forceMultiplier;
-                float curIntegrityDrain = integrityDrainSpeed * forceMultiplier;
+                float sharpenForce = 1f - (distance / sharpenRadius);
+                float curSharpenSpeed = baseSharpenSpeed * sharpenForce;
+
+                float eatForce = distance < eatRadius ? 1f - (distance / eatRadius) : 0f;
+                float curEatSpeed = baseEatSpeed * eatForce;
+                float curIntegrityDrain = integrityDrainSpeed * eatForce;
 
                 if (!isFlipped) // PRAWA KRAWĘDŹ
                 {
-                    // ETAP 1: OSTRZENIE (Ścina góra-dół)
+                    // ETAP 1: OSTRZENIE W PIONIE (Niezależne!)
                     if (metalSpine[i].rightHalfHeight > 0.001f)
                     {
                         metalSpine[i].rightHalfHeight = Mathf.MoveTowards(metalSpine[i].rightHalfHeight, 0f, curSharpenSpeed);
                         wasDeformed = true;
                     }
-                    // ETAP 2: PAUZA BEZPIECZEŃSTWA (Zbiera niewidzialne punkty, wizualnie nic się nie psuje!)
-                    else if (metalSpine[i].rightEdgeIntegrity > 0f)
+
+                    // ETAP 2 i 3: WŻERANIE W BOK (Brak ELSE!)
+                    if (eatForce > 0f)
                     {
-                        metalSpine[i].rightEdgeIntegrity -= curIntegrityDrain;
-                        wasDeformed = true; // Zmieniamy dane, więc odświeżamy siatkę
-                    }
-                    // ETAP 3: WŻERANIE (Bariera pękła, kamień zjada szerokość miecza - idealne do ząbków)
-                    else if (metalSpine[i].rightX > 0f)
-                    {
-                        metalSpine[i].rightX = Mathf.MoveTowards(metalSpine[i].rightX, 0f, curEatSpeed);
-                        wasDeformed = true;
+                        if (metalSpine[i].rightEdgeIntegrity > 0f)
+                        {
+                            metalSpine[i].rightEdgeIntegrity -= curIntegrityDrain;
+                            wasDeformed = true;
+                        }
+                        else if (metalSpine[i].rightX > 0f)
+                        {
+                            metalSpine[i].rightX = Mathf.MoveTowards(metalSpine[i].rightX, 0f, curEatSpeed);
+                            wasDeformed = true;
+                        }
                     }
                 }
                 else // LEWA KRAWĘDŹ
@@ -462,28 +436,30 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
                         metalSpine[i].leftHalfHeight = Mathf.MoveTowards(metalSpine[i].leftHalfHeight, 0f, curSharpenSpeed);
                         wasDeformed = true;
                     }
-                    // ETAP 2: PAUZA BEZPIECZEŃSTWA
-                    else if (metalSpine[i].leftEdgeIntegrity > 0f)
+
+                    // ETAP 2 i 3: WŻERANIE
+                    if (eatForce > 0f)
                     {
-                        metalSpine[i].leftEdgeIntegrity -= curIntegrityDrain;
-                        wasDeformed = true;
-                    }
-                    // ETAP 3: WŻERANIE
-                    else if (metalSpine[i].leftX < 0f)
-                    {
-                        metalSpine[i].leftX = Mathf.MoveTowards(metalSpine[i].leftX, 0f, curEatSpeed);
-                        wasDeformed = true;
+                        if (metalSpine[i].leftEdgeIntegrity > 0f)
+                        {
+                            metalSpine[i].leftEdgeIntegrity -= curIntegrityDrain;
+                            wasDeformed = true;
+                        }
+                        else if (metalSpine[i].leftX < 0f)
+                        {
+                            metalSpine[i].leftX = Mathf.MoveTowards(metalSpine[i].leftX, 0f, curEatSpeed);
+                            wasDeformed = true;
+                        }
                     }
                 }
             }
         }
 
-        // --- DETEKCJA ODCIĘCIA (Jeśli krawędzie się spotkały) ---
         if (wasDeformed)
         {
             for (int i = 1; i < metalSpine.Count - 1; i++)
             {
-                if (Mathf.Abs(metalSpine[i].z - localZPosition) < coreWidth)
+                if (Mathf.Abs(metalSpine[i].z - localZPosition) < eatRadius)
                 {
                     if (metalSpine[i].rightX <= metalSpine[i].leftX + 0.005f)
                     {
@@ -508,84 +484,74 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
             if (dist < closestDist)
             {
                 closestDist = dist;
-                // Jeśli niezwrócony, szlifierka czyta prawy X. Jeśli zwrócony, czyta lewy X (jako wartość dodatnią do kamienia)
                 edgeDistance = !isFlipped ? profile.rightX : Mathf.Abs(profile.leftX);
             }
         }
         return edgeDistance * transform.localScale.x;
     }
 
-    // =================================================================
-    // RESZTA FUNKCJI
-    // =================================================================
-
     public bool Interact() => currentTemperature >= forgingTemperature;
     public void OnPickUp() => isInForge = false;
     public void OnDrop() { }
     public void ForceCoolDown() { currentTemperature = 20f; isInForge = false; UpdateVisuals(); }
 
+    public static Color GetMetalColor(MetalType type)
+    {
+        switch (type)
+        {
+            case MetalType.Copper: return new Color(0.8f, 0.4f, 0.2f);
+            case MetalType.Bronze: return new Color(0.7f, 0.5f, 0.1f);
+            case MetalType.Iron: return new Color(0.15f, 0.15f, 0.15f);
+            case MetalType.Steel: return new Color(0.35f, 0.35f, 0.4f);
+            case MetalType.Gold: return new Color(1.0f, 0.8f, 0.0f);
+            case MetalType.Platinum: return new Color(0.9f, 0.9f, 0.95f);
+            case MetalType.BlueSteel: return new Color(0.2f, 0.3f, 0.5f);
+            case MetalType.Vibranium: return new Color(0.5f, 0.2f, 0.8f);
+            default: return new Color(0.15f, 0.15f, 0.15f);
+        }
+    }
+
     public void SetBaseColor()
     {
-        // 1. Przypisujemy kolor docelowy w zależności od wybranego Tieru
-        switch (metalTier)
-        {
-            case MetalType.Copper: baseColdColor = new Color(0.8f, 0.4f, 0.2f); break;
-            case MetalType.Bronze: baseColdColor = new Color(0.7f, 0.5f, 0.1f); break;
-            case MetalType.Iron: baseColdColor = new Color(0.15f, 0.15f, 0.15f); break;
-            case MetalType.Steel: baseColdColor = new Color(0.35f, 0.35f, 0.4f); break;
-            case MetalType.Gold: baseColdColor = new Color(1.0f, 0.8f, 0.0f); break;
-            case MetalType.Platinum: baseColdColor = new Color(0.9f, 0.9f, 0.95f); break;
-            case MetalType.BlueSteel: baseColdColor = new Color(0.2f, 0.3f, 0.5f); break;
-            case MetalType.Vibranium: baseColdColor = new Color(0.5f, 0.2f, 0.8f); break;
-            default: baseColdColor = new Color(0.15f, 0.15f, 0.15f); break;
-        }
+        baseColdColor = GetMetalColor(metalTier);
 
         if (meshRenderer != null)
         {
-            // CAŁKOWICIE ODZINAMY SIĘ OD ORYGINALNEGO KOLORU (CZERWONEGO) PREFABU:
-            // Szukamy standardowego shadera, by zapewnić poprawne działanie odbić i emisji.
             Shader litShader = Shader.Find("Universal Render Pipeline/Lit");
             if (litShader == null) litShader = Shader.Find("Standard");
-            
+
             if (litShader != null)
             {
                 Material freshMetallicMat = new Material(litShader);
-                
-                // Ustawiamy właściwości twardego materiału szarości i przypinamy na stałe do obiektu
                 if (freshMetallicMat.HasProperty("_Color")) freshMetallicMat.SetColor("_Color", baseColdColor);
                 if (freshMetallicMat.HasProperty("_BaseColor")) freshMetallicMat.SetColor("_BaseColor", baseColdColor);
-                
                 meshRenderer.material = freshMetallicMat;
             }
         }
     }
 
-
     private void UpdateVisuals()
     {
         if (meshRenderer == null || meshRenderer.material == null) return;
-        
+
         float t = Mathf.Clamp01((currentTemperature - 20f) / (maxTemperature - 20f));
-        
-        // Zgodnie z oryginałem - oryginalny gorący i stara matematyka
+
         Color hotColor = new Color(0.8f, 0.25f, 0f);
         Color targetColor = Color.Lerp(baseColdColor, hotColor, t);
 
         Material mat = meshRenderer.material;
-        
-        mat.color = targetColor; // Dopiska z oryginału dla niektórych starych shaderów
+
+        mat.color = targetColor;
         if (mat.HasProperty("_Color")) mat.SetColor("_Color", targetColor);
         if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", targetColor);
 
         if (mat.HasProperty("_EmissionColor"))
         {
             mat.EnableKeyword("_EMISSION");
-            // Znaczące osłabienie emisji: t=0 daje czystą czerń (brak świecenia w cieniu), a t=1 daje łagodne x1.5 podbicie zamiast starego x5.
             mat.SetColor("_EmissionColor", targetColor * (t * 1.5f));
         }
     }
 
-    // reset bariery
     public void ResetEdgeIntegrity()
     {
         for (int i = 0; i < metalSpine.Count; i++)
@@ -595,69 +561,108 @@ public class MetalPiece : MonoBehaviour, IInteractable, IPickable
         }
     }
 
-    // NOWOŚĆ: Ukośny Pilnik (Zachowuje i wygładza skosy/szpice!)
+    // POPRAWKA: Inteligentny Pilnik (Tryb Skosów dla zębów / Tryb Równania dla nierówności)
     public void SmoothPerfectEdge(float localZPosition, bool isFlipped)
     {
-        float fileRadius = 0.15f; // Powiększyłem zasięg, żeby łapał fajne, długie skosy
-        float smoothForce = 15f * Time.deltaTime; // Prasuje dużo szybciej!
+        float fileRadius = 0.15f;
+        float smoothForce = 20f * Time.deltaTime;
         bool wasDeformed = false;
 
-        // Szukamy granic działania pilnika na osi Z
         float minZ = localZPosition - fileRadius;
         float maxZ = localZPosition + fileRadius;
 
-        // Zmienne do zapisania prawdziwych punktów na krawędziach pilnika
-        float startX = 0f;
-        float endX = 0f;
         float actualMinZ = float.MaxValue;
         float actualMaxZ = float.MinValue;
+        float startX = 0f;
+        float endX = 0f;
 
-        // 1. ZNAJDUJEMY SKRAJNE PUNKTY (Góra i dół obszaru szlifowania)
+        // 1. ZNAJDUJEMY GRANICE PILNIKA
         for (int i = 0; i < metalSpine.Count; i++)
         {
             float z = metalSpine[i].z;
             if (z >= minZ && z <= maxZ)
             {
-                if (z < actualMinZ)
-                {
-                    actualMinZ = z;
-                    startX = isFlipped ? metalSpine[i].leftX : metalSpine[i].rightX;
-                }
-                if (z > actualMaxZ)
-                {
-                    actualMaxZ = z;
-                    endX = isFlipped ? metalSpine[i].leftX : metalSpine[i].rightX;
-                }
+                float currentX = isFlipped ? Mathf.Abs(metalSpine[i].leftX) : metalSpine[i].rightX;
+                if (z < actualMinZ) { actualMinZ = z; startX = currentX; }
+                if (z > actualMaxZ) { actualMaxZ = z; endX = currentX; }
             }
         }
 
-        if (actualMinZ == float.MaxValue) return; // Zabezpieczenie
+        if (actualMinZ == float.MaxValue) return;
 
-        // 2. PRASUJEMY DO IDEALNEJ LINI UKOŚNEJ (DIAGONALNEJ)
+        // 2. ZNAJDUJEMY NAJWYŻSZY PUNKT W ZASIĘGU
+        float peakZ = actualMinZ;
+        float peakX = startX;
+
         for (int i = 0; i < metalSpine.Count; i++)
         {
             float z = metalSpine[i].z;
             if (z >= actualMinZ && z <= actualMaxZ)
             {
-                // Obliczamy "procent" dystansu między początkiem a końcem pilnika (0.0 do 1.0)
-                float t = Mathf.InverseLerp(actualMinZ, actualMaxZ, z);
-
-                // Wyliczamy idealny punkt X na skośnej linii
-                float targetDiagonalX = Mathf.Lerp(startX, endX, t);
-
-                // Im bliżej środka pilnika, tym mocniej działa
-                float distance = Mathf.Abs(z - localZPosition);
-                float force = 1f - (distance / fileRadius);
-
-                if (!isFlipped)
+                float currentX = isFlipped ? Mathf.Abs(metalSpine[i].leftX) : metalSpine[i].rightX;
+                if (currentX > peakX)
                 {
-                    metalSpine[i].rightX = Mathf.Lerp(metalSpine[i].rightX, targetDiagonalX, smoothForce * force);
+                    peakX = currentX;
+                    peakZ = z;
+                }
+            }
+        }
+
+        // 3. INTELIGENCJA PILNIKA: Czy to duży Ząb, czy tylko Nierówność?
+        float tPeak = Mathf.InverseLerp(actualMinZ, actualMaxZ, peakZ);
+        float baselineXAtPeak = Mathf.Lerp(startX, endX, tPeak);
+
+        bool isIntentionalTooth = (peakX - baselineXAtPeak) > 0.01f;
+
+        // 4. SZLIFOWANIE
+        for (int i = 0; i < metalSpine.Count; i++)
+        {
+            float z = metalSpine[i].z;
+            if (z >= actualMinZ && z <= actualMaxZ)
+            {
+                float targetDiagonalX;
+
+                if (isIntentionalTooth)
+                {
+                    // TRYB 1: SKOSY (Ochrona dużego Zęba)
+                    if (z <= peakZ)
+                    {
+                        float t = Mathf.InverseLerp(actualMinZ, peakZ, z);
+                        targetDiagonalX = Mathf.Lerp(startX, peakX, t);
+                    }
+                    else
+                    {
+                        float t = Mathf.InverseLerp(peakZ, actualMaxZ, z);
+                        targetDiagonalX = Mathf.Lerp(peakX, endX, t);
+                    }
                 }
                 else
                 {
-                    metalSpine[i].leftX = Mathf.Lerp(metalSpine[i].leftX, targetDiagonalX, smoothForce * force);
+                    // TRYB 2: RÓWNANIE (Ścinanie nierówności)
+                    float t = Mathf.InverseLerp(actualMinZ, actualMaxZ, z);
+                    targetDiagonalX = Mathf.Lerp(startX, endX, t);
                 }
-                wasDeformed = true;
+
+                float distanceMultiplier = 1f - (Mathf.Abs(z - localZPosition) / fileRadius);
+                if (distanceMultiplier < 0f) distanceMultiplier = 0f;
+
+                if (!isFlipped) // PRAWA KRAWĘDŹ
+                {
+                    if (metalSpine[i].rightX > targetDiagonalX + 0.0005f)
+                    {
+                        metalSpine[i].rightX = Mathf.Lerp(metalSpine[i].rightX, targetDiagonalX, smoothForce * distanceMultiplier);
+                        wasDeformed = true;
+                    }
+                }
+                else // LEWA KRAWĘDŹ
+                {
+                    float leftTargetX = -targetDiagonalX;
+                    if (metalSpine[i].leftX < leftTargetX - 0.0005f)
+                    {
+                        metalSpine[i].leftX = Mathf.Lerp(metalSpine[i].leftX, leftTargetX, smoothForce * distanceMultiplier);
+                        wasDeformed = true;
+                    }
+                }
             }
         }
 
