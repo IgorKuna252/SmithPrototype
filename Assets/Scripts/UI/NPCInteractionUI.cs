@@ -19,6 +19,9 @@ public class NPCInteractionUI : MonoBehaviour
 
     private npcPathFinding currentNPC;
     private AssignedTask currentTask;
+
+    // NPC od którego gracz aktualnie ma przyjęte zadanie (jego schemat widnieje w PlayerUI).
+    public static npcPathFinding ActiveTaskNPC { get; private set; }
     private BlacksmithInteraction blacksmith;
     private prefabSpawning queue;
 
@@ -92,10 +95,24 @@ public class NPCInteractionUI : MonoBehaviour
 
                 PlayerUIScript playerUI = FindFirstObjectByType<PlayerUIScript>();
                 playerUI?.CopyScheme();
+
+                if (ActiveTaskNPC && ActiveTaskNPC != currentNPC)
+                    ActiveTaskNPC.SetTaskMarker(false);
+                ActiveTaskNPC = currentNPC;
+                if (ActiveTaskNPC) ActiveTaskNPC.SetTaskMarker(true);
             }
         }
 
         currentNPC = null;
         currentTask = null;
+    }
+
+    public static void ClearActiveTaskNPC(npcPathFinding npc)
+    {
+        if (ActiveTaskNPC == npc)
+        {
+            if (ActiveTaskNPC) ActiveTaskNPC.SetTaskMarker(false);
+            ActiveTaskNPC = null;
+        }
     }
 }

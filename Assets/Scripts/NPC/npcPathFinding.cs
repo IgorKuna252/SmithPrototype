@@ -11,6 +11,15 @@ public class npcPathFinding : MonoBehaviour
     public Transform rejectObject;
     public Transform acceptObject;
 
+    [Header("Wskaźnik aktywnego zadania")]
+    [Tooltip("Obiekt (np. ikona nad głową) zapalany gdy gracz przyjmie zadanie od tego NPC.")]
+    public GameObject taskMarker;
+
+    public void SetTaskMarker(bool active)
+    {
+        if (taskMarker) taskMarker.SetActive(active);
+    }
+
     void Start()
     {
         agentNPC = GetComponent<NavMeshAgent>();
@@ -20,6 +29,8 @@ public class npcPathFinding : MonoBehaviour
 
         if (animator != null)
             animator.applyRootMotion = false;
+
+        if (taskMarker) taskMarker.SetActive(false);
 
         if (agentNPC != null)
             agentNPC.stoppingDistance = 0.5f;
@@ -43,6 +54,7 @@ public class npcPathFinding : MonoBehaviour
                 // Jeśli celem, do którego właśnie doszliśmy, były drzwi wyjściowe (rejectObject)
                 if (rejectObject && Vector3.Distance(transform.position, rejectObject.position) <= 2.5f)
                 {
+                    NPCInteractionUI.ClearActiveTaskNPC(this);
                     Destroy(gameObject);
                 }
             }
@@ -192,6 +204,7 @@ public class npcPathFinding : MonoBehaviour
 
     public void WeaponAccepted(float waitTime = 2f)
     {
+        NPCInteractionUI.ClearActiveTaskNPC(this);
         StartCoroutine(WeaponAcceptedRoutine(waitTime));
     }
 

@@ -21596,7 +21596,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DayNightManager
   currentTime: 8
-  timeMultipler: 5
+  timeMultipler: 3
   fastForwardMultiplier: 120
   isTimeFlowing: 0
   isFastForwarding: 0

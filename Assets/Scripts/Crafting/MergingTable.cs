@@ -261,6 +261,7 @@ public class MergingTable : MonoBehaviour
         craftedWeapon.transform.rotation = baseRot;
 
         Vector3 gripLocalPos = Vector3.zero;
+        Transform bladeTransform = null;
 
         MetalType combinedMetalTier = ResolveCombinedMetalTier(parts);
 
@@ -284,7 +285,15 @@ public class MergingTable : MonoBehaviour
                 else pendingDeductions[key] = 1;
 
                 metal.ForceCoolDown();
+                if (bladeTransform == null) bladeTransform = part;
                 Destroy(metal);
+            }
+            else if (bladeTransform == null && part.GetComponent<WoodPiece>() == null)
+            {
+                // Sklejamy do już skończonej broni — zachowaj jej istniejące ostrze, jeśli było.
+                FinishedObject existingFinished = part.GetComponent<FinishedObject>();
+                if (existingFinished != null && existingFinished.bladeRoot != null)
+                    bladeTransform = existingFinished.bladeRoot;
             }
 
             WoodPiece wood = part.GetComponent<WoodPiece>();
@@ -339,6 +348,7 @@ public class MergingTable : MonoBehaviour
 
         FinishedObject finishedObj = craftedWeapon.AddComponent<FinishedObject>();
         finishedObj.metalTier = combinedMetalTier;
+        finishedObj.bladeRoot = bladeTransform;
 
         // Punkt złapania w powietrzu do ręki
         GameObject grip = new GameObject("GripPoint");

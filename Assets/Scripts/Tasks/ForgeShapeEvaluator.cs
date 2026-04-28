@@ -108,11 +108,18 @@ public class ForgeShapeEvaluator : MonoBehaviour
         forgedMetal.transform.position = hiddenPosition;
 
         Quaternion desiredBladeFacing = Quaternion.Euler(-90f, 0f, 0f);
+        Transform bladeT = null;
         MetalPiece metalChild = forgedMetal.GetComponentInChildren<MetalPiece>();
-        if (metalChild != null)
+        if (metalChild != null) bladeT = metalChild.transform;
+        else
         {
-            // relativeRot = obrót MetalPiece względem roota (cały łańcuch localRotation od roota do dziecka)
-            Quaternion relativeRot = Quaternion.Inverse(forgedMetal.transform.rotation) * metalChild.transform.rotation;
+            FinishedObject fo = forgedMetal.GetComponentInChildren<FinishedObject>();
+            if (fo != null && fo.bladeRoot != null) bladeT = fo.bladeRoot;
+        }
+        if (bladeT != null)
+        {
+            // relativeRot = obrót ostrza względem roota (cały łańcuch localRotation od roota do dziecka)
+            Quaternion relativeRot = Quaternion.Inverse(forgedMetal.transform.rotation) * bladeT.rotation;
             forgedMetal.transform.rotation = desiredBladeFacing * Quaternion.Inverse(relativeRot);
         }
         else
@@ -148,6 +155,14 @@ public class ForgeShapeEvaluator : MonoBehaviour
 
         forgedSilhouette = CaptureCameraToTexture(tempCam, resolution, resolution);
 
+        // Drugie ujęcie: broń obrócona o 180° wokół osi ostrza (world Y, bo desiredBladeFacing
+        // mapuje lokalny Z ostrza na +Y). Pozwala dopasować schemat niezależnie od tego,
+        // którą stroną gracz położył broń na stole.
+        Quaternion straightRot = forgedMetal.transform.rotation;
+        forgedMetal.transform.rotation = Quaternion.AngleAxis(180f, Vector3.up) * straightRot;
+        Texture2D flippedSilhouette = CaptureCameraToTexture(tempCam, resolution, resolution);
+        forgedMetal.transform.rotation = straightRot;
+
         // Przywracamy oryginalne materiały
         for (int i = 0; i < renderers.Length; i++)
             renderers[i].sharedMaterials = originalMaterials[i];
@@ -161,7 +176,31 @@ public class ForgeShapeEvaluator : MonoBehaviour
         forgedMetal.transform.rotation = originalRot;
         ChangeLayerRecursive(forgedMetal.transform, originalLayer);
 
-        float result = CompareTextures(forgedSilhouette, targetShapeMask);
+        float resultStraight = CompareTextures(forgedSilhouette, targetShapeMask);
+        Texture2D bestSilhouette = forgedSilhouette;
+        // Zapisujemy znormalizowane bufory z pierwszego porównania, bo CompareTextures je nadpisze.
+        Texture2D normSchemeStraight = _lastNormScheme; _lastNormScheme = null;
+        Texture2D normWeaponStraight = _lastNormWeapon; _lastNormWeapon = null;
+
+        float resultFlipped = CompareTextures(flippedSilhouette, targetShapeMask);
+        float result;
+        if (resultFlipped > resultStraight)
+        {
+            result = resultFlipped;
+            bestSilhouette = flippedSilhouette;
+            if (normSchemeStraight) Destroy(normSchemeStraight);
+            if (normWeaponStraight) Destroy(normWeaponStraight);
+        }
+        else
+        {
+            result = resultStraight;
+            if (_lastNormScheme) Destroy(_lastNormScheme);
+            if (_lastNormWeapon) Destroy(_lastNormWeapon);
+            _lastNormScheme = normSchemeStraight;
+            _lastNormWeapon = normWeaponStraight;
+            Destroy(flippedSilhouette);
+        }
+        forgedSilhouette = bestSilhouette;
 
         // Sprawdzenie koloru: porównujemy kolor metalu broni z kolorem oczekiwanego metalu schematu.
         // Mnożymy wynik przez podobieństwo (1 = identyczne, 0 = krańcowo różne) z miękkim minimum z colorMismatchPenalty.
